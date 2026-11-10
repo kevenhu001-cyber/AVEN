@@ -7,22 +7,36 @@ export { databaseUrlFor, applicationDatabaseUrl, migrationDatabaseUrl } from './
 export { seedIds, seedVersion } from './seed-data.js';
 
 export type DatabasePoolRole = 'aven_app' | 'aven_worker' | 'aven_auth';
+export type DatabasePool = Pool;
+
+export const requiredSchemaVersion = '0004_readiness_schema_version';
 
 export function createPool(
   role: DatabasePoolRole = 'aven_app',
-  options: { max?: number; connectionString?: string } = {},
+  options: {
+    max?: number;
+    connectionString?: string;
+    connectionTimeoutMillis?: number;
+    statementTimeout?: number;
+  } = {},
 ): Pool {
   return new Pool({
     connectionString: options.connectionString ?? databaseUrlFor(role),
     max: options.max ?? 5,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
-    statement_timeout: 10_000,
+    connectionTimeoutMillis: options.connectionTimeoutMillis ?? 5_000,
+    statement_timeout: options.statementTimeout ?? 10_000,
     application_name: `aven-${role}`,
   });
 }
 
-export function createApplicationPool(options: { max?: number } = {}): Pool {
+export function createApplicationPool(
+  options: {
+    max?: number;
+    connectionTimeoutMillis?: number;
+    statementTimeout?: number;
+  } = {},
+): Pool {
   return createPool('aven_app', { ...options, connectionString: applicationDatabaseUrl() });
 }
 

@@ -1,6 +1,7 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { LivenessResponseSchema } from '@aven/contracts';
+import { LivenessResponseSchema, ReadinessResponseSchema } from '@aven/contracts';
+import { getReadinessRuntime } from '@aven/service-health';
 import { responseRequestId, ServiceNotReadyException } from './http-errors';
 
 @Controller('health')
@@ -16,7 +17,20 @@ export class HealthController {
   }
 
   @Get('ready')
-  ready(): never {
-    throw new ServiceNotReadyException();
+  async ready(@Res({ passthrough: true }) response: Response) {
+    const result = await getReadinessRuntime().check();
+    if (!result.ok) {
+      throw new ServiceNotReadyException(
+        'Database, Redis, migrations, or consumers are not ready.',
+        result.retryable,
+      );
+    }
+    return ReadinessResponseSchema.parse({
+      status: 'ok',
+      service: 'api',
+      stage: 'foundation',
+      checks: result.checks,
+      request_id: responseRequestId(response),
+    });
   }
 }

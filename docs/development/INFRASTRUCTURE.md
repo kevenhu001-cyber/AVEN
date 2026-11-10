@@ -1,10 +1,10 @@
 # M0-04 开发基础设施
 
-日期：2026-11-11 · 状态：本地 Compose 与角色验证通过；D1 迁移见 [MIGRATIONS.md](MIGRATIONS.md)；API/Worker 连接池与扩展启用未实现
+日期：2026-11-11 · 状态：本地 Compose 与角色验证通过；D1 迁移见 [MIGRATIONS.md](MIGRATIONS.md)；就绪探针见 [READINESS.md](READINESS.md)；扩展启用未实现
 
 ## 范围
 
-本轮只提供开发环境的 PostgreSQL 与 Redis、环境模板、数据库角色和验证脚本。D1 表、迁移与 seed 已在 M0-05 交付；业务 API、API/Worker 数据库连接、就绪探针依赖检查与 CI 服务容器仍未实现，不能据此宣称数据库层或业务可用。
+本轮只提供开发环境的 PostgreSQL 与 Redis、环境模板、数据库角色和验证脚本。D1 表、迁移与 seed 已在 M0-05 交付；API/Worker 就绪探针已在 M0-06 接入。业务 API、业务连接池、生产编排与 CI 服务容器仍未实现，不能据此宣称数据库层或业务可用。
 
 按 [ADR-008](../architecture/decisions/0008-progressive-delivery.md)，基础环境不预装 pgvector/PostGIS，也不制作组合镜像。语义检索与真实地理查询出现时，分别通过独立迁移和启用门验证。
 

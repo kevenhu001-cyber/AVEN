@@ -7,6 +7,11 @@ import type { Request, Response, NextFunction } from 'express';
 import type { ApiEnvironment } from '@aven/config/env';
 import type { LogWriter } from '@aven/config/logger';
 import { RequestIdSchema } from '@aven/contracts';
+import {
+  configureReadiness,
+  createReadinessRuntime,
+  type ReadinessRuntime,
+} from '@aven/service-health';
 import { AppModule } from './app.module';
 import { HttpErrorFilter } from './http-errors';
 
@@ -14,7 +19,9 @@ export async function createApiApplication(
   env: ApiEnvironment,
   log: LogWriter,
   rootModule: Type<unknown> = AppModule,
+  readiness: ReadinessRuntime = createReadinessRuntime(),
 ): Promise<NestExpressApplication> {
+  configureReadiness(readiness);
   const app = await NestFactory.create<NestExpressApplication>(rootModule, { logger: false });
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   app.use((request: Request, response: Response, next: NextFunction) => {
@@ -50,6 +57,11 @@ export async function createApiApplication(
   });
   app.useGlobalFilters(new HttpErrorFilter());
   app.enableShutdownHooks();
+  const close = app.close.bind(app);
+  app.close = async () => {
+    await readiness.close();
+    await close();
+  };
   await app.init();
   return app;
 }

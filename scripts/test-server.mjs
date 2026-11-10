@@ -19,6 +19,11 @@ const child = spawn(command[0], command[1], {
     API_PORT: '3001',
     API_INTERNAL_URL: 'http://127.0.0.1:3001',
     WEB_ORIGIN: 'http://127.0.0.1:3100',
+    // The E2E server intentionally has no working dependencies so readiness
+    // failure rendering is deterministic. Real dependency checks run in
+    // scripts/check-readiness.mjs against Compose.
+    POSTGRES_PORT: '1',
+    REDIS_PORT: '1',
     NEXT_TELEMETRY_DISABLED: '1',
   },
 });

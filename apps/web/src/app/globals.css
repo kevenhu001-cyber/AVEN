@@ -74,6 +74,9 @@ p {
   background: var(--aven-color-surface-secondary);
   border-radius: var(--aven-radius-lg);
 }
+.connection + .connection {
+  margin-top: var(--aven-space-24);
+}
 .connection > div > p:not(.eyebrow) {
   color: var(--aven-color-foreground-secondary);
 }

@@ -52,6 +52,27 @@ export const LivenessResponseSchema = z
   })
   .strict();
 
+export const ReadinessChecksSchema = z
+  .object({
+    database: z.boolean(),
+    redis: z.boolean(),
+    migrations: z.boolean(),
+    consumers: z.boolean().optional(),
+  })
+  .strict();
+
+export const ReadinessResponseSchema = z
+  .object({
+    status: z.literal('ok'),
+    service: z.enum(['api', 'worker']),
+    stage: z.literal('foundation'),
+    checks: ReadinessChecksSchema,
+    request_id: RequestIdSchema,
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
+export type ReadinessChecks = z.infer<typeof ReadinessChecksSchema>;
+export type ReadinessResponse = z.infer<typeof ReadinessResponseSchema>;

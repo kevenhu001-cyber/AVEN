@@ -60,5 +60,7 @@ jobs:
       - run: pnpm infra:up
       - run: pnpm infra:verify
       - run: pnpm db:verify
+      - run: pnpm build
+      - run: pnpm check:readiness
       - if: always()
         run: pnpm infra:down

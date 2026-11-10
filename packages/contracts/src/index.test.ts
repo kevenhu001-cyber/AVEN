@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiErrorResponseSchema, LivenessResponseSchema } from './index';
+import { ApiErrorResponseSchema, LivenessResponseSchema, ReadinessResponseSchema } from './index';
 
 const requestId = 'b434644d-d195-4978-b457-765c6d9b755e';
 describe('public engineering contracts', () => {
@@ -44,5 +44,25 @@ describe('public engineering contracts', () => {
         },
       }).error.code,
     ).toBe('SERVICE_NOT_READY');
+  });
+  it('requires explicit readiness checks and rejects unknown ones', () => {
+    expect(
+      ReadinessResponseSchema.parse({
+        status: 'ok',
+        service: 'api',
+        stage: 'foundation',
+        checks: { database: true, redis: true, migrations: true },
+        request_id: requestId,
+      }).checks.database,
+    ).toBe(true);
+    expect(
+      ReadinessResponseSchema.safeParse({
+        status: 'ok',
+        service: 'api',
+        stage: 'foundation',
+        checks: { database: true, redis: true, migrations: true, secret: true },
+        request_id: requestId,
+      }).success,
+    ).toBe(false);
   });
 });

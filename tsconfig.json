@@ -5,6 +5,8 @@
     "paths": {
       "@aven/contracts": ["packages/contracts/src/index.ts"],
       "@aven/api-client": ["packages/api-client/src/index.ts"],
+      "@aven/database": ["packages/database/src/index.ts"],
+      "@aven/service-health": ["packages/service-health/src/index.ts"],
       "@aven/design-tokens": ["packages/design-tokens/src/index.ts"],
       "@aven/config/*": ["packages/config/src/*"]
     }

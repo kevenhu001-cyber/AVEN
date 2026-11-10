@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('three migrations are recorded', migrations.rows[0]?.count === '3');
+    check('four migrations are recorded', migrations.rows[0]?.count === '4');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );

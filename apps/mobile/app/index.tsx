@@ -37,13 +37,20 @@ type State =
   | { kind: 'success'; requestId: string }
   | { kind: 'error'; code: string };
 
+function errorCode(error: unknown): string {
+  return error instanceof ApiClientError ? (error.apiCode ?? error.code) : 'NETWORK_ERROR';
+}
+
 export default function FoundationScreen() {
   const theme = colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const [readyState, setReadyState] = useState<State>({ kind: 'idle' });
   const active = useRef<AbortController | null>(null);
+  const readyActive = useRef<AbortController | null>(null);
   useEffect(
     () => () => {
       active.current?.abort();
+      readyActive.current?.abort();
     },
     [],
   );
@@ -59,15 +66,30 @@ export default function FoundationScreen() {
         setState({ kind: 'success', requestId: result.request_id });
     } catch (error) {
       if (active.current === controller && !controller.signal.aborted)
-        setState({
-          kind: 'error',
-          code: error instanceof ApiClientError ? error.code : 'NETWORK_ERROR',
-        });
+        setState({ kind: 'error', code: errorCode(error) });
     } finally {
       if (active.current === controller) active.current = null;
     }
   }
+  async function checkReady() {
+    if (!config.client) return;
+    readyActive.current?.abort();
+    const controller = new AbortController();
+    readyActive.current = controller;
+    setReadyState({ kind: 'loading' });
+    try {
+      const result = await config.client.getReadiness(controller.signal);
+      if (readyActive.current === controller)
+        setReadyState({ kind: 'success', requestId: result.request_id });
+    } catch (error) {
+      if (readyActive.current === controller && !controller.signal.aborted)
+        setReadyState({ kind: 'error', code: errorCode(error) });
+    } finally {
+      if (readyActive.current === controller) readyActive.current = null;
+    }
+  }
   const disabled = !config.client || state.kind === 'loading';
+  const readyDisabled = !config.client || readyState.kind === 'loading';
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -136,6 +158,70 @@ export default function FoundationScreen() {
               </Text>
             )}
             {state.kind === 'cancelled' && (
+              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
+                已取消本次检查。
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={[styles.connection, { backgroundColor: theme['surface-secondary'] }]}>
+          <Text accessibilityRole="header" style={[styles.title, { color: theme.foreground }]}>
+            检查依赖就绪
+          </Text>
+          <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
+            数据库、Redis 与迁移版本；未就绪时不会显示成功。
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: readyDisabled, busy: readyState.kind === 'loading' }}
+            disabled={readyDisabled}
+            onPress={() => void checkReady()}
+            style={[styles.button, { backgroundColor: theme.primary }]}
+          >
+            <Text style={[styles.buttonText, { color: theme['primary-foreground'] }]}>
+              {readyState.kind === 'loading'
+                ? '正在检查…'
+                : readyState.kind === 'error'
+                  ? '重试依赖检查'
+                  : '检查依赖'}
+            </Text>
+          </Pressable>
+          {readyState.kind === 'loading' && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                readyActive.current?.abort();
+                readyActive.current = null;
+                setReadyState({ kind: 'cancelled' });
+              }}
+              style={[styles.button, { borderWidth: 1, borderColor: theme['control-border'] }]}
+            >
+              <Text style={[styles.buttonText, { color: theme.foreground }]}>取消检查</Text>
+            </Pressable>
+          )}
+          <View accessibilityLiveRegion="polite">
+            {readyState.kind === 'idle' && (
+              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
+                尚未检查。依赖就绪不代表业务功能已完成。
+              </Text>
+            )}
+            {readyState.kind === 'success' && (
+              <>
+                <Text style={[styles.body, { color: theme.success }]}>依赖已就绪</Text>
+                <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
+                  数据库、Redis 与迁移版本均已确认；业务接口仍未开放。
+                </Text>
+                <Text selectable style={[styles.body, { color: theme['foreground-secondary'] }]}>
+                  Request ID: {readyState.requestId}
+                </Text>
+              </>
+            )}
+            {readyState.kind === 'error' && (
+              <Text style={[styles.body, { color: theme.destructive }]}>
+                依赖尚未就绪，请启动本地基础设施并执行迁移后重试。错误类型：{readyState.code}
+              </Text>
+            )}
+            {readyState.kind === 'cancelled' && (
               <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
                 已取消本次检查。
               </Text>

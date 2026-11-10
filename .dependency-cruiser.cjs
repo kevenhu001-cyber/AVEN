@@ -11,7 +11,9 @@ module.exports = {
       name: 'no-frontend-backend',
       severity: 'error',
       from: { path: '^apps/(web|mobile)/' },
-      to: { path: '^(apps/(api|worker)|packages/(database|domain|ai-core))/' },
+      to: {
+        path: '^(apps/(api|worker)|packages/(database|domain|ai-core|service-health))/',
+      },
     },
     {
       name: 'no-cross-application-imports',

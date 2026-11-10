@@ -1,5 +1,9 @@
-import { ApiErrorResponseSchema, LivenessResponseSchema } from '@aven/contracts';
-import type { LivenessResponse } from '@aven/contracts';
+import {
+  ApiErrorResponseSchema,
+  LivenessResponseSchema,
+  ReadinessResponseSchema,
+} from '@aven/contracts';
+import type { ApiErrorCode, LivenessResponse, ReadinessResponse } from '@aven/contracts';
 
 export class ApiClientError extends Error {
   constructor(
@@ -7,6 +11,7 @@ export class ApiClientError extends Error {
       'NETWORK_ERROR' | 'TIMEOUT' | 'CANCELLED' | 'INVALID_RESPONSE' | 'HTTP_ERROR',
     public readonly status?: number,
     public readonly requestId?: string,
+    public readonly apiCode?: ApiErrorCode,
   ) {
     super(code);
     this.name = 'ApiClientError';
@@ -38,48 +43,77 @@ export function createApiClient(
   const timeoutMs = options.timeoutMs ?? 5000;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error('Invalid timeout.');
 
+  async function request<T>(
+    path: string,
+    parse: (value: unknown) => T,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    if (signal?.aborted) throw new ApiClientError('CANCELLED');
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    let timedOut = false;
+    signal?.addEventListener('abort', abort, { once: true });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    try {
+      const response = await fetcher(`${baseUrl}${path}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        signal: controller.signal,
+        redirect: 'error',
+      });
+      const body: unknown = await response.json();
+      if (!response.ok) {
+        const error = ApiErrorResponseSchema.safeParse(body);
+        throw new ApiClientError(
+          'HTTP_ERROR',
+          response.status,
+          error.success ? error.data.error.request_id : undefined,
+          error.success ? error.data.error.code : undefined,
+        );
+      }
+      return parse(body);
+    } catch (error) {
+      if (signal?.aborted) throw new ApiClientError('CANCELLED');
+      if (timedOut) throw new ApiClientError('TIMEOUT');
+      if (error instanceof ApiClientError) throw error;
+      if (error instanceof SyntaxError) throw new ApiClientError('INVALID_RESPONSE');
+      throw new ApiClientError('NETWORK_ERROR');
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+    }
+  }
+
   return {
     async getLiveness(signal?: AbortSignal): Promise<LivenessResponse> {
-      if (signal?.aborted) throw new ApiClientError('CANCELLED');
-      const controller = new AbortController();
-      const abort = () => controller.abort();
-      let timedOut = false;
-      signal?.addEventListener('abort', abort, { once: true });
-      const timer = setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, timeoutMs);
-      try {
-        const response = await fetcher(`${baseUrl}/health/live`, {
-          headers: { Accept: 'application/json' },
-          credentials: 'include',
-          cache: 'no-store',
-          signal: controller.signal,
-          redirect: 'error',
-        });
-        const body: unknown = await response.json();
-        if (!response.ok) {
-          const error = ApiErrorResponseSchema.safeParse(body);
-          throw new ApiClientError(
-            'HTTP_ERROR',
-            response.status,
-            error.success ? error.data.error.request_id : undefined,
-          );
-        }
-        const result = LivenessResponseSchema.safeParse(body);
-        if (!result.success || result.data.service !== 'api')
-          throw new ApiClientError('INVALID_RESPONSE');
-        return result.data;
-      } catch (error) {
-        if (signal?.aborted) throw new ApiClientError('CANCELLED');
-        if (timedOut) throw new ApiClientError('TIMEOUT');
-        if (error instanceof ApiClientError) throw error;
-        if (error instanceof SyntaxError) throw new ApiClientError('INVALID_RESPONSE');
-        throw new ApiClientError('NETWORK_ERROR');
-      } finally {
-        clearTimeout(timer);
-        signal?.removeEventListener('abort', abort);
-      }
+      return request(
+        '/health/live',
+        (value) => {
+          const result = LivenessResponseSchema.safeParse(value);
+          if (!result.success || result.data.service !== 'api') {
+            throw new ApiClientError('INVALID_RESPONSE');
+          }
+          return result.data;
+        },
+        signal,
+      );
+    },
+    async getReadiness(signal?: AbortSignal): Promise<ReadinessResponse> {
+      return request(
+        '/health/ready',
+        (value) => {
+          const result = ReadinessResponseSchema.safeParse(value);
+          if (!result.success || result.data.service !== 'api') {
+            throw new ApiClientError('INVALID_RESPONSE');
+          }
+          return result.data;
+        },
+        signal,
+      );
     },
   };
 }

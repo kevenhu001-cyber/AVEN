@@ -6,8 +6,11 @@ import type { ApiErrorCode, ApiErrorResponse } from '@aven/contracts';
 import type { Response } from 'express';
 
 export class ServiceNotReadyException extends HttpException {
-  constructor() {
-    super('Foundation dependencies are not configured.', 503);
+  constructor(
+    message = 'Foundation dependencies are not configured.',
+    public readonly retryable = false,
+  ) {
+    super(message, 503);
   }
 }
 
@@ -23,9 +26,11 @@ export function formatException(
   let status = error instanceof HttpException ? error.getStatus() : 500;
   let code: ApiErrorCode = 'INTERNAL';
   let message = 'The service could not complete this request.';
+  let retryable = false;
   if (error instanceof ServiceNotReadyException) {
     code = 'SERVICE_NOT_READY';
     message = 'Foundation dependencies and consumers are not configured.';
+    retryable = error.retryable;
   } else if (status === 404) {
     code = 'NOT_FOUND';
     message = 'Resource not found.';
@@ -42,13 +47,14 @@ export function formatException(
   } else if (status === 429) {
     code = 'RATE_LIMITED';
     message = 'Too many requests.';
+    retryable = true;
   } else {
     status = 500;
   }
   return {
     status,
     body: ApiErrorResponseSchema.parse({
-      error: { code, message, request_id: requestId, retryable: code === 'RATE_LIMITED' },
+      error: { code, message, request_id: requestId, retryable },
     }),
   };
 }

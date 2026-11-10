@@ -57,6 +57,7 @@ aven/
 ├── packages/
 │   ├── contracts/           # Zod Schema、DTO、事件、权限常量
 │   ├── database/            # Drizzle Schema、迁移、Repository
+│   ├── service-health/      # API/Worker 共享存活/就绪探针
 │   ├── domain/              # 领域服务（M0-07 验证后创建）
 │   ├── api-client/          # HTTP/SSE 客户端
 │   ├── design-tokens/       # 颜色、间距、字号、圆角
@@ -88,6 +89,7 @@ aven/
 
 ```text
 api / worker  →  domain  →  database  →  contracts
+api / worker  →  service-health  →  database / config
 web / mobile  →  api-client  →  contracts
 web / mobile  →  design-tokens
 web           →  ui-web
@@ -98,6 +100,7 @@ web           →  ui-web
 
 - `contracts` 只依赖 Zod 和标准库，不依赖数据库、Nest、React。
 - `database` 可以依赖 `contracts`，是唯一迁移来源；其他包不得直接写 SQL 或建连接池。
+- `service-health` 只提供 API/Worker 的存活/就绪探针，不包含业务规则；Web/Mobile 不得依赖。
 - `domain` 依赖 `contracts` 和 `database`，不依赖 Nest、HTTP、React；API 和 Worker 共享它。
 - `api` 只做 HTTP 适配、鉴权、DTO 校验、事务边界和错误映射；复杂逻辑在 `domain`。
 - `worker` 只做队列适配、重试、幂等和上下文恢复；业务规则在 `domain`。

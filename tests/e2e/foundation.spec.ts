@@ -21,9 +21,12 @@ test('readiness failure is not rendered as a successful connection', async ({ pa
   expect(response.status()).toBe(503);
   const body = await response.json();
   expect(body.error.code).toBe('SERVICE_NOT_READY');
-  expect(body.error.retryable).toBe(false);
+  expect(body.error.retryable).toBe(true);
   await page.goto('/');
   await expect(page.getByText('尚未检查。请先在另一个终端启动 API。')).toBeVisible();
+  await page.getByRole('button', { name: '检查依赖' }).click();
+  await expect(page.getByText('依赖尚未就绪')).toBeVisible();
+  await expect(page.getByText('依赖已就绪')).toHaveCount(0);
 });
 
 test('no horizontal overflow at the mobile viewport', async ({ page }) => {

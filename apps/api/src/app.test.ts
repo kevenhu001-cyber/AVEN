@@ -1,9 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Controller, Get, Module } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { ApiErrorResponseSchema, LivenessResponseSchema, RequestIdSchema } from '@aven/contracts';
+import {
+  ApiErrorResponseSchema,
+  LivenessResponseSchema,
+  ReadinessResponseSchema,
+  RequestIdSchema,
+} from '@aven/contracts';
 import { parseApiEnvironment } from '@aven/config/env';
 import type { LogEntry } from '@aven/config/logger';
+import type { ReadinessRuntime } from '@aven/service-health';
 import { AppModule } from './app.module';
 import { createApiApplication } from './app';
 
@@ -20,11 +26,20 @@ describe('API skeleton over real HTTP', () => {
   let app: NestExpressApplication;
   let baseUrl: string;
   const logs: LogEntry[] = [];
+  const readiness: ReadinessRuntime = {
+    check: async () => ({
+      ok: false,
+      checks: { database: false, redis: false, migrations: false },
+      retryable: true,
+    }),
+    close: async () => undefined,
+  };
   beforeAll(async () => {
     app = await createApiApplication(
       parseApiEnvironment({ APP_ENV: 'test' }),
       (entry) => logs.push(entry),
       TestModule,
+      readiness,
     );
     await app.listen(0, '127.0.0.1');
     baseUrl = await app.getUrl();
@@ -48,12 +63,12 @@ describe('API skeleton over real HTTP', () => {
     });
     expect(RequestIdSchema.safeParse(response.headers.get('x-request-id')).success).toBe(true);
   });
-  it('fails readiness explicitly before dependencies and consumers exist', async () => {
+  it('fails readiness explicitly when dependencies are not ready', async () => {
     const response = await fetch(`${baseUrl}/health/ready`);
     expect(response.status).toBe(503);
     expect(ApiErrorResponseSchema.parse(await response.json()).error).toMatchObject({
       code: 'SERVICE_NOT_READY',
-      retryable: false,
+      retryable: true,
     });
   });
   it('uses uniform errors and does not echo unknown URLs', async () => {
@@ -80,5 +95,40 @@ describe('API skeleton over real HTTP', () => {
       headers: { Origin: 'https://untrusted.example' },
     });
     expect(blocked.headers.get('access-control-allow-origin')).toBeNull();
+  });
+});
+
+describe('API readiness when dependencies are available', () => {
+  let app: NestExpressApplication;
+  let baseUrl: string;
+  beforeAll(async () => {
+    app = await createApiApplication(
+      parseApiEnvironment({ APP_ENV: 'test' }),
+      () => undefined,
+      AppModule,
+      {
+        check: async () => ({
+          ok: true,
+          checks: { database: true, redis: true, migrations: true },
+          retryable: false,
+        }),
+        close: async () => undefined,
+      },
+    );
+    await app.listen(0, '127.0.0.1');
+    baseUrl = await app.getUrl();
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+  it('reports dependency checks without exposing connection details', async () => {
+    const response = await fetch(`${baseUrl}/health/ready`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    const body = ReadinessResponseSchema.parse(await response.json());
+    expect(body.service).toBe('api');
+    expect(body.checks).toEqual({ database: true, redis: true, migrations: true });
+    expect(JSON.stringify(body)).not.toContain('postgres');
+    expect(JSON.stringify(body)).not.toContain('redis://');
   });
 });

@@ -42,6 +42,8 @@ export default tseslint.config(
           patterns: [
             '@aven/database',
             '@aven/database/*',
+            '@aven/service-health',
+            '@aven/service-health/*',
             '@aven/domain',
             '@aven/domain/*',
             '@nestjs/*',

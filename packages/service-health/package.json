@@ -1,0 +1,24 @@
+{
+  "name": "@aven/service-health",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aven/config": "workspace:*",
+    "@aven/database": "workspace:*",
+    "ioredis": "6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

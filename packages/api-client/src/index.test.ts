@@ -7,12 +7,32 @@ const health = {
   stage: 'foundation',
   request_id: 'b434644d-d195-4978-b457-765c6d9b755e',
 };
+const readiness = {
+  ...health,
+  checks: { database: true, redis: true, migrations: true },
+};
 describe('API transport', () => {
   it('validates output and uses the same-origin health path without caching', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json(health));
     expect(await createApiClient({ fetcher }).getLiveness()).toEqual(health);
     expect(fetcher.mock.calls[0]?.[0]).toBe('/health/live');
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ cache: 'no-store', redirect: 'error' });
+  });
+  it('reads readiness checks from the same-origin ready path', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json(readiness));
+    expect(await createApiClient({ fetcher }).getReadiness()).toEqual(readiness);
+    expect(fetcher.mock.calls[0]?.[0]).toBe('/health/ready');
+  });
+  it('rejects a readiness response with unknown checks', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        ...readiness,
+        checks: { ...readiness.checks, secret: true },
+      }),
+    );
+    await expect(createApiClient({ fetcher }).getReadiness()).rejects.toMatchObject({
+      code: 'INVALID_RESPONSE',
+    });
   });
   it('rejects success-shaped but invalid data', async () => {
     const fetcher = vi
@@ -23,12 +43,23 @@ describe('API transport', () => {
     });
   });
   it('does not expose upstream error text', async () => {
-    const fetcher = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json({ private: 'secret' }, { status: 503 }));
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: 'SERVICE_NOT_READY',
+            message: 'Not configured',
+            request_id: 'b434644d-d195-4978-b457-765c6d9b755e',
+            retryable: true,
+          },
+        },
+        { status: 503 },
+      ),
+    );
     await expect(createApiClient({ fetcher }).getLiveness()).rejects.toMatchObject({
       code: 'HTTP_ERROR',
       status: 503,
+      apiCode: 'SERVICE_NOT_READY',
       message: 'HTTP_ERROR',
     });
   });

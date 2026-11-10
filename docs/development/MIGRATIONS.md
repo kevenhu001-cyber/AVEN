@@ -76,6 +76,6 @@ corepack pnpm db:verify
 
 - 未实现 D2–D6 表、机会/引荐/授权/关系/Agent/Outbox/Audit。
 - 未实现注册、登录、会话、邀请接受、组织写操作与 `FORCE RLS`。
-- 未接入 API/Worker 连接池与就绪探针；M0-06 负责。
+- 就绪探针已接入 API/Worker（M0-06）；业务连接池与认证池仍待 M2。
 - 未验证生产迁移、备份恢复、扩展启用（pgvector/PostGIS）或大表回填。
 - `aven_test` 由 `db:verify` 重建；不要在其中保存需要保留的数据。

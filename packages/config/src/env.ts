@@ -61,3 +61,11 @@ export function parseWorkerEnvironment(input: Record<string, unknown>): WorkerEn
 export function parseApiOrigin(value: string): string {
   return OriginSchema.parse(value).replace(/\/$/, '');
 }
+
+export function redisUrl(): string {
+  const host = process.env.REDIS_HOST ?? '127.0.0.1';
+  const port = process.env.REDIS_PORT ?? '6379';
+  const password = process.env.REDIS_PASSWORD;
+  if (!password) throw new Error('Missing REDIS_PASSWORD.');
+  return `redis://:${encodeURIComponent(password)}@${host}:${port}`;
+}

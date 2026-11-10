@@ -30,6 +30,7 @@
     "db:seed": "pnpm --filter @aven/database db:seed",
     "db:verify": "node scripts/db-verify.mjs",
     "db:verify:current": "pnpm --filter @aven/database db:verify",
+    "check:readiness": "node scripts/check-readiness.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",
