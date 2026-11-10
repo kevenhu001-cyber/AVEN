@@ -41,3 +41,17 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - run: cp .env.example .env
+      - run: node scripts/infra.mjs up
+      - run: node scripts/verify-infra.mjs
+      - if: always()
+        run: node scripts/infra.mjs down

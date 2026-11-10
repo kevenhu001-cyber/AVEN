@@ -4,8 +4,8 @@
 
 ## 1. 当前阶段
 
-- 已完成 **M0-01**、1.1 契约修订与 **M0-02：依赖与运行时**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-04：基础设施**。
-- 已建立依赖清单、lockfile、公共配置、四应用最小骨架与基础 CI；数据库迁移、业务功能、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
+- 已完成 **M0-01**、1.1 契约修订、**M0-02：依赖与运行时**与 **M0-04：开发基础设施**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-05：迁移及测试数据**。
+- 已建立依赖清单、lockfile、公共配置、四应用最小骨架、基础 CI、Compose/PostgreSQL/Redis 与逐用途数据库角色；数据库迁移、业务功能、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
 - 不要把规划、文档、脚手架、Mock 或开发数据描述为功能完成。
 - 工程诊断页仅验证联通，不是产品核心 UI；M1-07 的双端设计门仍适用。
 - 任何状态变更以实际代码、命令输出和验证结果为依据，并同步更新 README 和开发计划执行记录。
@@ -117,10 +117,11 @@
 
 ## 10. 当前禁止
 
-阶段门（M0-02/03 骨架已建立；完成声明仍须证据）：
+阶段门（M0-02/03 骨架与 M0-04 基础设施已建立；完成声明仍须证据）：
 
-- 不初始化数据库、不运行迁移，直到 M0-04/M0-05 的 Compose、角色与迁移流程实际验证。
+- 不运行迁移，直到 M0-05 的迁移流程、空库执行与回滚/前向修复方案实际验证。
 - 不声称 Web/API/Worker/Expo 已完成或可发布；当前仅通过最小构建与工程探针。
+- 不把 Compose 启动、角色存在或工程探针当作数据库层、RLS 或业务可用。
 - 不接入真实 AI Provider。
 - 不开始 Android 应用实现（当前无 Android SDK；M0-03 先验证 Expo Go 连接，M5 前建立 development build 主线）。
 - 不把 Expo JS 导出、Web E2E 或截图当作原生真机/发布构建证据。
@@ -147,7 +148,18 @@ corepack pnpm build
 corepack pnpm test:e2e   # 本机缺少 Playwright headless shell 时加 PLAYWRIGHT_CHANNEL=chrome
 ```
 
-开发启动：`corepack pnpm dev:web`、`dev:api`、`dev:worker`、`dev:mobile`。数据库迁移、seed 与 Compose 命令在 M0-04/M0-05 实际验证后补充，不要提前编造。
+开发启动：`corepack pnpm dev:web`、`dev:api`、`dev:worker`、`dev:mobile`。数据库迁移与 seed 命令在 M0-05 实际验证后补充，不要提前编造。
+
+本地基础设施（M0-04 已验证）：
+
+```bash
+cp .env.example .env
+corepack pnpm infra:up
+corepack pnpm infra:verify
+corepack pnpm infra:status
+corepack pnpm infra:down
+corepack pnpm infra:reset   # 删除本地卷
+```
 
 当前可用的环境检查：
 

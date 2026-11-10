@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目处于 **M0 基础工程**阶段。已完成 **M0-01：最小产品与工程文档**、**M0-02：依赖与运行时**；**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。数据库、迁移、业务 API、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+项目处于 **M0 基础工程**阶段。已完成 **M0-01：最小产品与工程文档**、**M0-02：依赖与运行时**、**M0-04：开发基础设施**；**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。数据库迁移、业务 API、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -22,6 +22,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [ADR](docs/architecture/decisions/) | 运行时、身份、数据运行、RLS、Outbox、AI Provider 决策 |
 | [详细开发计划](docs/development/DEVELOPMENT_PLAN.md) | 阶段任务、依赖、接口与真实数据准入门 |
 | [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md) | M0-02/03 版本依据、实际验证命令、未完成项 |
+| [开发基础设施](docs/development/INFRASTRUCTURE.md) | Compose、PostgreSQL/Redis、数据库角色与验证门 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -49,9 +50,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项任务是 **M0-04：基础设施**，建立 Compose、PostgreSQL/Redis、环境模板与逐用途数据库角色；M0-03 的真机 Expo Go 连接与原生流式探针待有设备环境后补验。核心旅程高保真/原型可作为 M1-07 并行设计，目前尚未交付。
+下一项任务是 **M0-05：迁移及测试数据**，建立 Drizzle 迁移流程、空库迁移与显式开发 seed；M0-03 的真机 Expo Go 连接与原生流式探针待有设备环境后补验。核心旅程高保真/原型可作为 M1-07 并行设计，目前尚未交付。
 
-开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。M0-02/03 的版本、构建与限制见 [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md)。
+开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。M0-02/03 的版本、构建与限制见 [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md)，M0-04 的 Compose/角色验证见 [开发基础设施](docs/development/INFRASTRUCTURE.md)。
 
 ## 环境现状
 
@@ -63,12 +64,12 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | npm | 11.17.0 |
 | pnpm | 12.18.0（Corepack 激活） |
 | Docker | 29.1.3，可用 |
-| PostgreSQL 客户端 | 16.14；服务端尚未通过 Compose 启动 |
-| Redis | 未安装；计划用 Docker |
+| PostgreSQL 客户端 | 16.14；服务端通过 Compose 运行 17.11（127.0.0.1:55432） |
+| Redis | 通过 Compose 运行 7.4.12（127.0.0.1:6379，需密码） |
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；数据库扩展镜像、真机连接与 CI 尚未验证。M0-04 必须实际启动依赖并更新本文。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离与持久化已实际验证。数据库扩展镜像、真机连接、迁移与 CI 尚未验证。M0-05 必须实际执行空库迁移并更新本文。
 
 ## 开发命令
 
@@ -94,7 +95,18 @@ corepack pnpm dev:worker
 corepack pnpm dev:mobile
 ```
 
-`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。数据库迁移、seed 与 Compose 命令在 M0-04/M0-05 实际验证后补充。
+本地基础设施：
+
+```bash
+cp .env.example .env
+corepack pnpm infra:up
+corepack pnpm infra:verify
+corepack pnpm infra:status
+corepack pnpm infra:down
+corepack pnpm infra:reset   # 删除本地卷，开发数据丢失
+```
+
+`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。数据库迁移、seed 与 API/Worker 连接池在 M0-05/M0-06 实际验证后补充。
 
 ## 协作方式
 

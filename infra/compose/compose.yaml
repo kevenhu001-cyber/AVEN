@@ -1,0 +1,62 @@
+name: aven-dev
+
+services:
+  postgres:
+    image: postgres:17.11-alpine3.24
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-55432}:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-aven}
+      AVEN_MIGRATOR_PASSWORD: ${AVEN_MIGRATOR_PASSWORD:?Set AVEN_MIGRATOR_PASSWORD in .env}
+      AVEN_APP_PASSWORD: ${AVEN_APP_PASSWORD:?Set AVEN_APP_PASSWORD in .env}
+      AVEN_WORKER_PASSWORD: ${AVEN_WORKER_PASSWORD:?Set AVEN_WORKER_PASSWORD in .env}
+      AVEN_AUTH_PASSWORD: ${AVEN_AUTH_PASSWORD:?Set AVEN_AUTH_PASSWORD in .env}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=50
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - password_encryption=scram-sha-256
+    volumes:
+      - aven-postgres-data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    shm_size: 256mb
+
+  redis:
+    image: redis:7.4.12-alpine
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    command:
+      - sh
+      - -c
+      - >-
+        exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes
+        --appendfsync everysec --maxmemory 128mb --maxmemory-policy noeviction --save ""
+    volumes:
+      - aven-redis-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  aven-postgres-data:
+  aven-redis-data:
