@@ -1,5 +1,16 @@
 import { writeFile } from 'node:fs/promises';
-import { colors, space, radius, fontSize, duration } from '../dist/index.js';
+import {
+  colors,
+  space,
+  radius,
+  fontSize,
+  lineHeight,
+  fontWeight,
+  letterSpacing,
+  breakpoint,
+  fontFamily,
+  duration,
+} from '../dist/index.js';
 
 const variables = (values, prefix, unit = '') =>
   Object.entries(values)
@@ -10,10 +21,18 @@ const base = [
   variables(space, 'space', 'px'),
   variables(radius, 'radius', 'px'),
   variables(fontSize, 'font-size', 'px'),
+  variables(lineHeight, 'line-height'),
+  variables(fontWeight, 'font-weight'),
+  variables(letterSpacing, 'letter-spacing'),
+  variables(breakpoint, 'breakpoint', 'px'),
+  variables(fontFamily, 'font-family'),
   variables(duration, 'duration', 'ms'),
 ].join('\n');
 const dark = variables(colors.dark, 'color');
+const reducedMotion = Object.keys(duration)
+  .map((name) => `    --aven-duration-${name}: 0ms;`)
+  .join('\n');
 await writeFile(
   new URL('../dist/tokens.css', import.meta.url),
-  `/* Generated from src/index.ts. Do not edit this output. */\n:root {\n${base}\n  color-scheme: light;\n}\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${dark}\n    color-scheme: dark;\n  }\n}\n:root[data-theme="dark"] {\n${dark}\n  color-scheme: dark;\n}\n`,
+  `/* Generated from src/index.ts. Do not edit this output. */\n:root {\n${base}\n  color-scheme: light;\n}\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${dark}\n    color-scheme: dark;\n  }\n}\n:root[data-theme="dark"] {\n${dark}\n  color-scheme: dark;\n}\n@media (prefers-reduced-motion: reduce) {\n  :root {\n${reducedMotion}\n  }\n  html {\n    scroll-behavior: auto;\n  }\n}\n`,
 );

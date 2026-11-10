@@ -38,8 +38,8 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 
 ## 2. 当前基线与执行方式
 
-- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查。
-- 已有原始规格、启动建议、本计划、M0-01 文档集及 M0-02/03/04/05/06/07/08 交付记录；README 说明当前状态。
+- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌。
+- 已有原始规格、启动建议、本计划、M0-01 文档集及 M0-02/03/04/05/06/07/08 与 M1-01 交付记录；README 说明当前状态。
 - 2026-11-11 复检：Node v24.19.0、npm 11.17.0、pnpm 12.18.0（Corepack）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、无 Android SDK/adb；Next/Nest/Expo 最小构建已实际通过。
 - PostgreSQL 17.11 与 Redis 7.4.12 已通过 Compose 启动并验证角色隔离；D1 空库迁移、已有库升级、seed 幂等、RLS 读策略、API/Worker 就绪检查与 Outbox 故障恢复已实际验证。扩展按 ADR-008 启用门单独验证；CI 尚未在 GitHub Actions 实跑。
 - 仓库与后续工程文档使用 AVEN，原始规格中的 PAN 代号保留。
@@ -356,7 +356,7 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 规划轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
 
-M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查。下一项是 **M1-07：核心旅程设计评审**，交付桌面/手机高保真与可点击原型；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭 M0 验收。
+M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌。下一项是 **M1-07：核心旅程设计评审**，交付桌面/手机高保真与可点击原型；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭 M0 验收。
 
 ## 19. 执行记录
 
@@ -371,5 +371,6 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M0-06 | DONE | 2026-11-11 | `packages/service-health`、readiness 契约/客户端、API/Worker `/health/ready`、Web/Expo 探针、`scripts/check-readiness.mjs`；API 200、Redis 故障 503、Worker 消费者运行时就绪 200、48 项单测与 6 项 E2E 通过；见 READINESS.md | 就绪检查已验证；业务队列、限流、认证与生产编排未实现 |
 | M0-07 | DONE | 2026-11-11 | `outbox_events`/`job_receipts`/样例表、`packages/domain`、Outbox 派发器、BullMQ Worker、`scripts/async-verify.ts`；29 项成功/重复/未知/死信/租约/崩溃/Redis 重启检查通过；见 ASYNC.md | 仅工程样例；业务队列、死信运维、指标与 exactly-once 未实现 |
 | M0-08 | DONE | 2026-11-11 | `.github/workflows/ci.yml`（verify + infrastructure）、`docs/development/SETUP.md`、`docs/development/DEPLOYMENT_INVESTIGATION.md`、README 实测命令；本地 format/lint/type/test/build/e2e/db/readiness/async 全部通过 | CI 工作流已定义但未在 GitHub Actions 实跑；部署/预算/校园网络仅为初查清单，无真实测量或报价 |
+| M1-01 | DONE | 2026-11-11 | `packages/design-tokens` 语义/状态色、字体/行高/字重/字距、断点、深色主题、减少动态；Web/Expo 使用令牌；52 项测试、对比度矩阵与生成 CSS 检查通过；见 M1-01_TOKENS.md | 仅令牌层；组件、页面、双端高保真与真机字体缩放未验证 |
 
-M0-02/M0-04/M0-05/M0-06/M0-07/M0-08 的完成不代表 M0 验收通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证。
+M0-02/M0-04/M0-05/M0-06/M0-07/M0-08 与 M1-01 的完成不代表 M0 验收或设计评审通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M1-07 的高保真/原型评审仍未交付。

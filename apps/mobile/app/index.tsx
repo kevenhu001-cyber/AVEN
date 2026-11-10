@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiClientError, createApiClient } from '@aven/api-client';
-import { colors, fontSize, radius, space } from '@aven/design-tokens';
+import { colors, fontSize, lineHeight, radius, space } from '@aven/design-tokens';
 
 const configuredOrigin = process.env.EXPO_PUBLIC_API_URL?.trim() ?? '';
 function connectionConfig() {
@@ -238,10 +238,25 @@ export default function FoundationScreen() {
 const styles = StyleSheet.create({
   content: { padding: space[24], gap: space[16], flexGrow: 1 },
   brand: { fontSize: fontSize.h3, fontWeight: '600', letterSpacing: 2 },
-  meta: { fontSize: fontSize['body-sm'] },
-  heading: { fontSize: fontSize.h1, lineHeight: 38, fontWeight: '600', marginTop: space[24] },
-  title: { fontSize: fontSize.h2, fontWeight: '500' },
-  body: { fontSize: fontSize['body-native'], lineHeight: 27 },
+  meta: {
+    fontSize: fontSize['body-sm'],
+    lineHeight: fontSize['body-sm'] * lineHeight['body-sm'],
+  },
+  heading: {
+    fontSize: fontSize.h1,
+    lineHeight: fontSize.h1 * lineHeight.h1,
+    fontWeight: '600',
+    marginTop: space[24],
+  },
+  title: {
+    fontSize: fontSize.h2,
+    lineHeight: fontSize.h2 * lineHeight.h2,
+    fontWeight: '500',
+  },
+  body: {
+    fontSize: fontSize['body-native'],
+    lineHeight: fontSize['body-native'] * lineHeight.body,
+  },
   connection: { padding: space[20], gap: space[16], borderRadius: radius.lg },
   button: {
     minHeight: 48,
@@ -250,5 +265,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonText: { fontSize: fontSize['body-native'], fontWeight: '500' },
+  buttonText: {
+    fontSize: fontSize['body-native'],
+    lineHeight: fontSize['body-native'] * lineHeight['body-sm'],
+    fontWeight: '500',
+  },
 });
