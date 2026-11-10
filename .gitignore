@@ -1,0 +1,51 @@
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+.aws/
+
+# Local databases and container volumes
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+.data/
+.volumes/
+
+# Test reports and runtime output
+coverage/
+playwright-report/
+test-results/
+*.log
+logs/
+
+# Mobile generated files
+.expo/
+*.apk
+*.aab
+*.ipa
+
+# Machine-specific files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.local
