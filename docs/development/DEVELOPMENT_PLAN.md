@@ -43,6 +43,7 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 - 2026-11-10 复检：Node v24.19.0、npm 11.17.0、pnpm 未安装（corepack 0.35.0 可用）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、Redis 未安装、无 Android SDK/adb；尚未验证与目标框架兼容性。
 - Docker 已可用；Redis 和 PostgreSQL 扩展计划通过 Compose 提供，不默认本机已具备全部运行条件。
 - 仓库与后续工程文档使用 AVEN，原始规格中的 PAN 代号保留。
+- 项目初期采用直接推送 `main` 的方式；需要审查、多人协作或高风险变更时再开分支 + PR。
 
 每项工作分为 `TODO → IN_PROGRESS → REVIEW → DONE`；遇到外部阻塞记录原因和下一步，不将阻塞视为完成。本文初始所有实施任务均为 TODO；实际执行状态记录在第 19 节，只有交付并验证后才更新。
 
