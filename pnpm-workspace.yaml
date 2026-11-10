@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Quarantine new releases briefly; the pinned framework versions above are ~18h old.
+minimumReleaseAge: 720
+strictPeerDependencies: true
+autoInstallPeers: false
+allowBuilds:
+  esbuild: true

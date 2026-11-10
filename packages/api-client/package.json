@@ -1,0 +1,23 @@
+{
+  "name": "@aven/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "react-native": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aven/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@aven/config": "workspace:*",
+    "typescript": "6.0.3"
+  }
+}

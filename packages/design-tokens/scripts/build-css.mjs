@@ -1,0 +1,19 @@
+import { writeFile } from 'node:fs/promises';
+import { colors, space, radius, fontSize, duration } from '../dist/index.js';
+
+const variables = (values, prefix, unit = '') =>
+  Object.entries(values)
+    .map(([name, value]) => `  --aven-${prefix}-${name}: ${value}${unit};`)
+    .join('\n');
+const base = [
+  variables(colors.light, 'color'),
+  variables(space, 'space', 'px'),
+  variables(radius, 'radius', 'px'),
+  variables(fontSize, 'font-size', 'px'),
+  variables(duration, 'duration', 'ms'),
+].join('\n');
+const dark = variables(colors.dark, 'color');
+await writeFile(
+  new URL('../dist/tokens.css', import.meta.url),
+  `/* Generated from src/index.ts. Do not edit this output. */\n:root {\n${base}\n  color-scheme: light;\n}\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${dark}\n    color-scheme: dark;\n  }\n}\n:root[data-theme="dark"] {\n${dark}\n  color-scheme: dark;\n}\n`,
+);

@@ -1,0 +1,66 @@
+import { randomUUID } from 'node:crypto';
+import { Catch, HttpException } from '@nestjs/common';
+import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { ApiErrorResponseSchema, RequestIdSchema } from '@aven/contracts';
+import type { ApiErrorCode, ApiErrorResponse } from '@aven/contracts';
+import type { Response } from 'express';
+
+export class ServiceNotReadyException extends HttpException {
+  constructor() {
+    super('Foundation dependencies are not configured.', 503);
+  }
+}
+
+export function responseRequestId(response: Response): string {
+  const id = RequestIdSchema.safeParse(response.getHeader('X-Request-Id'));
+  return id.success ? id.data : randomUUID();
+}
+
+export function formatException(
+  error: unknown,
+  requestId: string,
+): { status: number; body: ApiErrorResponse } {
+  let status = error instanceof HttpException ? error.getStatus() : 500;
+  let code: ApiErrorCode = 'INTERNAL';
+  let message = 'The service could not complete this request.';
+  if (error instanceof ServiceNotReadyException) {
+    code = 'SERVICE_NOT_READY';
+    message = 'Foundation dependencies and consumers are not configured.';
+  } else if (status === 404) {
+    code = 'NOT_FOUND';
+    message = 'Resource not found.';
+  } else if (status === 400 || status === 422) {
+    status = 422;
+    code = 'VALIDATION_ERROR';
+    message = 'The request is invalid.';
+  } else if (status === 401) {
+    code = 'UNAUTHENTICATED';
+    message = 'Authentication is required.';
+  } else if (status === 403) {
+    code = 'FORBIDDEN';
+    message = 'Access is not allowed.';
+  } else if (status === 429) {
+    code = 'RATE_LIMITED';
+    message = 'Too many requests.';
+  } else {
+    status = 500;
+  }
+  return {
+    status,
+    body: ApiErrorResponseSchema.parse({
+      error: { code, message, request_id: requestId, retryable: code === 'RATE_LIMITED' },
+    }),
+  };
+}
+
+@Catch()
+export class HttpErrorFilter implements ExceptionFilter {
+  catch(error: unknown, host: ArgumentsHost): void {
+    const response = host.switchToHttp().getResponse<Response>();
+    const requestId = responseRequestId(response);
+    const result = formatException(error, requestId);
+    response.setHeader('X-Request-Id', requestId);
+    response.setHeader('Cache-Control', 'no-store');
+    response.status(result.status).json(result.body);
+  }
+}

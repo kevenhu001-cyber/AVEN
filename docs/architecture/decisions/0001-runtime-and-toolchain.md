@@ -1,6 +1,6 @@
 # ADR-001：运行时与工具链
 
-- 状态：提议（M0-02 验证后转为已接受）
+- 状态：已接受（M0-02 锁定兼容矩阵，M0-03 完成实际应用构建；真机/原生流式验证另记）
 - 日期：2026-11-10
 - 相关：[TDD](../TDD.md) · [DEVELOPMENT_PLAN](../../development/DEVELOPMENT_PLAN.md)
 
@@ -44,8 +44,10 @@
 
 ## 验证
 
-- [ ] `corepack enable` 后 `pnpm -v` 可用。
-- [ ] 最小 workspace 安装成功，lockfile 生成。
-- [ ] TypeScript strict 类型检查通过。
-- [ ] Next/Nest/Expo 最小构建通过。
-- [ ] 记录实际版本、命令和失败项到 M0-02 交付说明。
+- [x] `corepack enable` 后 `pnpm -v` 可用（12.18.0）。
+- [x] 最小 workspace 安装成功，lockfile 生成（`pnpm install --frozen-lockfile` 通过）。
+- [x] TypeScript strict 类型检查通过（12/12 Turbo tasks）。
+- [x] M0-03 在实际 Next/Nest/Expo 骨架完成最小构建（Next 生产构建、API/Worker `tsc`、Expo Android JS 导出）。
+- [x] 在 M0-02/03 交付说明记录版本、官方兼容依据、命令与失败项，见 [FOUNDATION_REPORT](../../development/FOUNDATION_REPORT.md)。
+
+未完成：Expo Go 真机连接、原生 SSE/取消探针与 development build；这些不改变本 ADR 的工具链结论，但属于 M0-03 的剩余验收。

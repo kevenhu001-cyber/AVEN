@@ -1,0 +1,43 @@
+{
+  "name": "aven",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=24.19.0 <25",
+    "pnpm": "12.18.0"
+  },
+  "scripts": {
+    "dev:web": "pnpm build:packages && node scripts/dev.mjs web",
+    "dev:api": "pnpm build:packages && node scripts/dev.mjs api",
+    "dev:worker": "pnpm build:packages && node scripts/dev.mjs worker",
+    "dev:mobile": "pnpm build:packages && node scripts/dev.mjs mobile",
+    "build": "turbo run build --concurrency=1",
+    "build:packages": "turbo run build --filter='./packages/*' --concurrency=1",
+    "typecheck": "turbo run typecheck --concurrency=1",
+    "lint": "eslint . --max-warnings=0 && pnpm check:boundaries",
+    "check:boundaries": "depcruise apps packages --config .dependency-cruiser.cjs --output-type err",
+    "check:expo": "pnpm --filter @aven/mobile check:expo",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm build:packages && vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@playwright/test": "1.65.0",
+    "@types/node": "24.10.1",
+    "dependency-cruiser": "18.7.2",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.4.6",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "turbo": "2.11.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.7",
+    "vitest": "5.1.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@aven/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "react-native": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./css": "./dist/tokens.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build-css.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@aven/config": "workspace:*",
+    "typescript": "6.0.3"
+  }
+}

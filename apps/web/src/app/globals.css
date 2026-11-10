@@ -1,0 +1,158 @@
+@import 'tailwindcss';
+@import '@aven/design-tokens/css';
+
+@theme inline {
+  --color-background: var(--aven-color-background);
+  --color-foreground: var(--aven-color-foreground);
+  --color-accent: var(--aven-color-accent);
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--aven-color-background);
+  color: var(--aven-color-foreground);
+  font-family:
+    Inter, Geist, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: var(--aven-font-size-body);
+  line-height: 1.65;
+}
+.workspace {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--aven-space-40);
+}
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aven-space-16);
+  padding-bottom: var(--aven-space-24);
+  border-bottom: 1px solid var(--aven-color-border);
+}
+.brand {
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  font-size: var(--aven-font-size-h3);
+}
+.stage,
+.eyebrow,
+footer {
+  color: var(--aven-color-foreground-secondary);
+  font-size: var(--aven-font-size-body-sm);
+}
+.intro {
+  padding: var(--aven-space-64) 0 var(--aven-space-40);
+}
+.eyebrow {
+  margin: 0 0 var(--aven-space-12);
+}
+h1 {
+  margin: 0 0 var(--aven-space-20);
+  font-size: var(--aven-font-size-display);
+  line-height: 1.25;
+  font-weight: 600;
+}
+h2 {
+  font-size: var(--aven-font-size-h2);
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 0 0 var(--aven-space-12);
+}
+p {
+  margin: 0 0 var(--aven-space-12);
+}
+.description {
+  max-width: 42rem;
+  color: var(--aven-color-foreground-secondary);
+}
+.connection {
+  padding: var(--aven-space-24);
+  background: var(--aven-color-surface-secondary);
+  border-radius: var(--aven-radius-lg);
+}
+.connection > div > p:not(.eyebrow) {
+  color: var(--aven-color-foreground-secondary);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aven-space-12);
+  margin: var(--aven-space-20) 0;
+}
+button {
+  min-height: 48px;
+  padding: var(--aven-space-12) var(--aven-space-20);
+  border: 1px solid transparent;
+  border-radius: var(--aven-radius-md);
+  background: var(--aven-color-primary);
+  color: var(--aven-color-primary-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+}
+button:focus-visible {
+  outline: 2px solid var(--aven-color-focus-ring);
+  outline-offset: 4px;
+}
+button.secondary {
+  border-color: var(--aven-color-control-border);
+  color: var(--aven-color-foreground);
+  background: transparent;
+}
+.feedback {
+  overflow-wrap: anywhere;
+}
+.feedback .success {
+  color: var(--aven-color-success);
+}
+.feedback .failure {
+  color: var(--aven-color-destructive);
+}
+code {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: var(--aven-font-size-body-sm);
+}
+.scope {
+  margin-top: var(--aven-space-48);
+}
+dl {
+  margin: 0;
+}
+dl > div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--aven-space-20);
+  padding: var(--aven-space-20) 0;
+  border-bottom: 1px solid var(--aven-color-border);
+}
+dt {
+  font-weight: 500;
+}
+dd {
+  margin: 0;
+  color: var(--aven-color-foreground-secondary);
+}
+footer {
+  margin-top: var(--aven-space-48);
+}
+@media (max-width: 640px) {
+  body {
+    font-size: var(--aven-font-size-body-native);
+  }
+  .workspace {
+    padding: var(--aven-space-24) var(--aven-space-20);
+  }
+  .intro {
+    padding-top: var(--aven-space-40);
+  }
+  dl > div {
+    grid-template-columns: 1fr;
+    gap: var(--aven-space-8);
+  }
+}

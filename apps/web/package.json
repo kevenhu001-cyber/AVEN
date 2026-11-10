@@ -1,0 +1,28 @@
+{
+  "name": "@aven/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "typecheck": "next typegen && tsc --noEmit",
+    "start": "next start --hostname 127.0.0.1"
+  },
+  "dependencies": {
+    "@aven/api-client": "workspace:*",
+    "@aven/contracts": "workspace:*",
+    "@aven/design-tokens": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@aven/config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "24.10.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "6.0.3"
+  }
+}

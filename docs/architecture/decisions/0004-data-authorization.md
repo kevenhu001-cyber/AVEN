@@ -1,6 +1,6 @@
 # ADR-004：数据授权与 RLS
 
-- 状态：已接受（M0-05 验证）
+- 状态：被 [ADR-007](0007-authorization-boundaries.md) 取代；以下保留历史结论，角色/函数/撤销语义以新 ADR 为准
 - 日期：2026-11-10
 - 相关：[TDD](../TDD.md) · [SCHEMA](../../database/SCHEMA.md)
 
