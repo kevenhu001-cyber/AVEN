@@ -4,8 +4,8 @@
 
 ## 1. 当前阶段
 
-- 已完成 **M0-01**、1.1 契约修订、**M0-02：依赖与运行时**、**M0-04：开发基础设施**、**M0-05：迁移及测试数据**与 **M0-06：服务可用性**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-07：异步可靠性样例**。
-- 已建立依赖清单、lockfile、公共配置、四应用最小骨架、基础 CI、Compose/PostgreSQL/Redis、逐用途数据库角色、D1 迁移与只读 RLS、存活/就绪探针；认证写路径、队列消费者、业务功能、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
+- 已完成 **M0-01**、1.1 契约修订、**M0-02：依赖与运行时**、**M0-04：开发基础设施**、**M0-05：迁移及测试数据**、**M0-06：服务可用性**与 **M0-07：异步可靠性样例**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-08：CI 与开发说明**。
+- 已建立依赖清单、lockfile、公共配置、四应用最小骨架、基础 CI、Compose/PostgreSQL/Redis、逐用途数据库角色、D1 迁移与只读 RLS、存活/就绪探针、Outbox/BullMQ 样例与故障验证；认证写路径、业务功能、生产队列运维、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
 - 不要把规划、文档、脚手架、Mock 或开发数据描述为功能完成。
 - 工程诊断页仅验证联通，不是产品核心 UI；M1-07 的双端设计门仍适用。
 - 任何状态变更以实际代码、命令输出和验证结果为依据，并同步更新 README 和开发计划执行记录。
@@ -45,7 +45,7 @@
 | `packages/contracts` | Zod Schema、DTO、事件、权限常量 | 依赖数据库/Nest/React |
 | `packages/database` | Drizzle Schema、迁移、Repository | 被 Web/Mobile 直接依赖 |
 | `packages/service-health` | API/Worker 共享的存活/就绪探针 | 存放业务逻辑；被 Web/Mobile 依赖 |
-| `packages/domain` | 框架无关领域服务（M0-07 验证后创建） | 依赖 Nest/HTTP/React |
+| `packages/domain` | 框架无关领域服务 | 依赖 Nest/HTTP/React |
 | `packages/api-client` | HTTP/SSE 客户端 | 混入 UI 状态 |
 | `packages/design-tokens` | 设计令牌 | 依赖应用代码 |
 | `packages/ai-core` | Provider/工具契约（M3） | 直接访问数据库 |
@@ -118,13 +118,13 @@
 
 ## 10. 当前禁止
 
-阶段门（M0-02/03 骨架、M0-04 基础设施、M0-05 迁移与 M0-06 探针已建立；完成声明仍须证据）：
+阶段门（M0-02/03 骨架、M0-04 基础设施、M0-05 迁移、M0-06 探针与 M0-07 异步样例已建立；完成声明仍须证据）：
 
 - 不声称认证、组织写操作、`FORCE RLS` 或业务 API 已完成；M2 前只开放已验证的只读路径。
-- 不声称队列消费、Outbox 投递或任务重试已完成；M0-07 前 Worker 就绪必须保持失败。
+- 不声称业务队列、死信运维、指标或 exactly-once 已完成；M0-07 仅是工程样例，至少一次投递仍需业务幂等。
 - 不修改已应用的迁移文件；修正必须新增迁移并重新验证空库/升级路径。
 - 不声称 Web/API/Worker/Expo 已完成或可发布；当前仅通过最小构建与工程探针。
-- 不把 Compose 启动、D1 只读策略、seed 或工程探针当作数据库层、RLS 或业务可用。
+- 不把 Compose 启动、D1 只读策略、seed、探针或样例任务当作数据库层、RLS 或业务可用。
 - 不接入真实 AI Provider。
 - 不开始 Android 应用实现（当前无 Android SDK；M0-03 先验证 Expo Go 连接，M5 前建立 development build 主线）。
 - 不把 Expo JS 导出、Web E2E 或截图当作原生真机/发布构建证据。
@@ -179,6 +179,12 @@ corepack pnpm db:verify:current
 ```bash
 corepack pnpm build
 corepack pnpm check:readiness
+```
+
+异步可靠性（M0-07 已验证，会短暂停止 Redis）：
+
+```bash
+corepack pnpm async:verify
 ```
 
 当前可用的环境检查：

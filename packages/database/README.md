@@ -1,6 +1,6 @@
 # @aven/database
 
-D1 身份与组织表的 Drizzle Schema、版本化 SQL 迁移、开发 seed 与数据库验证。当前只覆盖 D1；D2–D6 业务表随对应模块交付。
+D1 身份与组织表、Outbox/回执/异步样例表的 Drizzle Schema、版本化 SQL 迁移、开发 seed 与数据库验证。D2–D6 业务表随对应模块交付。
 
 ## 命令
 
@@ -40,8 +40,9 @@ corepack pnpm db:verify:current  # 只验证当前 POSTGRES_DB
 
 ## 当前 RLS 状态
 
-- 13 张 D1 表均启用 RLS；`aven_app` 没有写权限，越权写入在权限层直接失败。
+- 13 张 D1 表与 `outbox_events`、`job_receipts` 均启用 RLS；`aven_app` 对 D1 表没有写权限，越权写入在权限层直接失败。
 - 已交付读策略：本人主体/用户/私有邮箱/会话、公开组织资料、认证用户校园、同组织成员关系、组织管理员邀请。
+- 异步样例只开放受控 INSERT/最小 SELECT；`aven_app` 不能读 Outbox payload，`aven_worker` 只获得租约、回执与样例结果所需列。
 - 尚未 `FORCE ROW LEVEL SECURITY`：表所有者（迁移角色）仍可执行 seed 和维护；M2 在补齐写策略与受控函数后切换 FORCE。
 - 尚未交付注册、登录、会话创建/撤销、邀请接受等写路径与认证函数；M2 负责。
 - `credentials`、`sessions.token_hash`、验证/重置 token 对 `aven_app` 无权限。
@@ -53,4 +54,4 @@ corepack pnpm db:verify:current  # 只验证当前 POSTGRES_DB
 
 ## 未实现
 
-D2–D6 表、写策略、`FORCE RLS`、认证/会话函数、Outbox/Audit、连接池接入 API/Worker、备份恢复与生产迁移流程。
+D2–D6 表、写策略、`FORCE RLS`、认证/会话函数、Audit、业务队列运维、连接池接入 API/Worker、备份恢复与生产迁移流程。

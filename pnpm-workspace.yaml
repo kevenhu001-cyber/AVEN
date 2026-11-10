@@ -8,3 +8,4 @@ strictPeerDependencies: true
 autoInstallPeers: false
 allowBuilds:
   esbuild: true
+  msgpackr-extract: true

@@ -133,10 +133,14 @@ async function main() {
       'http://127.0.0.1:3103/health/ready',
       (r) => r.status === 503 || r.status === 200,
     );
-    check('worker readiness does not claim unconfigured consumers', ready.status === 503);
     check(
-      'worker readiness uses the uniform error',
-      ready.body?.error?.code === 'SERVICE_NOT_READY',
+      'worker readiness reports a running consumer',
+      ready.status === 200 && ready.body?.checks?.consumers === true,
+      JSON.stringify(ready),
+    );
+    check(
+      'worker readiness reports dependency checks',
+      ready.body?.checks?.database === true && ready.body?.checks?.redis === true,
       JSON.stringify(ready.body),
     );
   } finally {

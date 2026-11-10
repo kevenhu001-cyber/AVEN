@@ -58,7 +58,7 @@ aven/
 │   ├── contracts/           # Zod Schema、DTO、事件、权限常量
 │   ├── database/            # Drizzle Schema、迁移、Repository
 │   ├── service-health/      # API/Worker 共享存活/就绪探针
-│   ├── domain/              # 领域服务（M0-07 验证后创建）
+│   ├── domain/              # 框架无关领域服务
 │   ├── api-client/          # HTTP/SSE 客户端
 │   ├── design-tokens/       # 颜色、间距、字号、圆角
 │   ├── ai-core/             # Provider 与工具契约（M3）
@@ -781,11 +781,11 @@ SENTRY_DSN=
 
 | ADR | 决策 | 状态 |
 |---|---|---|
-| [ADR-001](decisions/0001-runtime-and-toolchain.md) | 运行时与工具链 | 提议，M0-02 锁定/M0-03 构建 |
+| [ADR-001](decisions/0001-runtime-and-toolchain.md) | 运行时与工具链 | 已接受，M0-02/03 验证 |
 | [ADR-002](decisions/0002-identity-and-sessions.md) | 自建邮箱密码与会话 | 已接受，M2 实现 |
 | [ADR-003](decisions/0003-data-runtime.md) | Docker Compose 数据运行 | 部分被 ADR-008 取代 |
 | [ADR-004](decisions/0004-data-authorization.md) | RLS 与运行角色 | 被 ADR-007 取代 |
-| [ADR-005](decisions/0005-async-and-outbox.md) | Outbox + BullMQ + 共享领域服务 | 提议，M0-07 验证 |
+| [ADR-005](decisions/0005-async-and-outbox.md) | Outbox + BullMQ + 共享领域服务 | 已接受，M0-07 样例验证 |
 | [ADR-006](decisions/0006-ai-provider.md) | Mock + OpenAI-compatible Provider | 已接受，M3 验证 |
 | [ADR-007](decisions/0007-authorization-boundaries.md) | 字段用途、引荐隔离、最小权限与撤销语义 | 已接受，未实现 |
 | [ADR-008](decisions/0008-progressive-delivery.md) | 按需扩展、双端设计与渐进验证门 | 已接受，未验证 |

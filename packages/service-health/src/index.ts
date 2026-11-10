@@ -134,9 +134,25 @@ export function createReadinessRuntime(
   };
 }
 
-export function createWorkerReadinessRuntime(): ReadinessRuntime {
-  // No queue consumer exists until M0-07; readiness must not claim otherwise.
-  return createReadinessRuntime({ extraChecks: { consumers: false } });
+export function createWorkerReadinessRuntime(
+  options: { consumers?: () => boolean } = {},
+): ReadinessRuntime {
+  const base = createReadinessRuntime();
+  return {
+    async check() {
+      const result = await base.check();
+      let consumers = false;
+      try {
+        consumers = options.consumers?.() ?? false;
+      } catch {
+        consumers = false;
+      }
+      const checks: ReadinessChecks = { ...result.checks, consumers };
+      const ok = result.ok && consumers;
+      return { ok, checks, retryable: !ok };
+    },
+    close: () => base.close(),
+  };
 }
 
 let configuredRuntime: ReadinessRuntime | undefined;

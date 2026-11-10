@@ -11,9 +11,13 @@
   "dependencies": {
     "@aven/config": "workspace:*",
     "@aven/contracts": "workspace:*",
+    "@aven/database": "workspace:*",
+    "@aven/domain": "workspace:*",
     "@aven/service-health": "workspace:*",
     "@nestjs/common": "12.4.2",
     "@nestjs/core": "12.4.2",
+    "bullmq": "6.7.2",
+    "ioredis": "6.0.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },

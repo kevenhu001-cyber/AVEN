@@ -62,5 +62,6 @@ jobs:
       - run: pnpm db:verify
       - run: pnpm build
       - run: pnpm check:readiness
+      - run: pnpm async:verify
       - if: always()
         run: pnpm infra:down

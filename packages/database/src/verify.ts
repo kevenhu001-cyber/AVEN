@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('four migrations are recorded', migrations.rows[0]?.count === '4');
+    check('six migrations are recorded', migrations.rows[0]?.count === '6');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -82,6 +82,25 @@ async function main(): Promise<void> {
        )`,
     );
     check('RLS is enabled on all D1 tables', rls.rows[0]?.count === '13');
+
+    const asyncTables = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relkind = 'r'
+         AND c.relname IN ('outbox_events', 'job_receipts')`,
+    );
+    check('outbox and receipt tables exist', asyncTables.rows[0]?.count === '2');
+    const asyncRls = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relrowsecurity
+         AND c.relname IN ('outbox_events', 'job_receipts')`,
+    );
+    check('RLS is enabled on async tables', asyncRls.rows[0]?.count === '2');
+    check(
+      'app cannot read outbox payloads',
+      await appError('SELECT payload FROM public.outbox_events'),
+    );
 
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));
     check(

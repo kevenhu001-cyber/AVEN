@@ -6,6 +6,9 @@ export type LogEntry = {
   route?: string;
   status?: number;
   latency_ms?: number;
+  count?: number;
+  error_code?: string;
+  job_id?: string;
 };
 export type LogWriter = (entry: LogEntry) => void;
 

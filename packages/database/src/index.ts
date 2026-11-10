@@ -6,10 +6,10 @@ export * from './schema.js';
 export { databaseUrlFor, applicationDatabaseUrl, migrationDatabaseUrl } from './env.js';
 export { seedIds, seedVersion } from './seed-data.js';
 
-export type DatabasePoolRole = 'aven_app' | 'aven_worker' | 'aven_auth';
+export type DatabasePoolRole = 'aven_migrator' | 'aven_app' | 'aven_worker' | 'aven_auth';
 export type DatabasePool = Pool;
 
-export const requiredSchemaVersion = '0004_readiness_schema_version';
+export const requiredSchemaVersion = '0006_outbox_available_at_grant';
 
 export function createPool(
   role: DatabasePoolRole = 'aven_app',

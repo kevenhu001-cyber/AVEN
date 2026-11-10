@@ -1,18 +1,31 @@
 import { parseWorkerEnvironment } from '@aven/config/env';
 import { createLogWriter } from '@aven/config/logger';
 import { createWorker } from './worker';
+import { createWorkerRuntime } from './runtime';
 
 const log = createLogWriter('worker');
 async function bootstrap() {
   const env = parseWorkerEnvironment(process.env);
+  const runtime = createWorkerRuntime(log);
   const worker = await createWorker(
     { host: env.WORKER_HEALTH_HOST, port: env.WORKER_HEALTH_PORT },
     log,
+    runtime.readiness,
   );
-  log({ level: 'info', event: 'worker.started.foundation.no_consumers' });
+  void runtime.start().catch((error: unknown) => {
+    log({
+      level: 'error',
+      event: 'worker.runtime_start_failed',
+      error_code: error instanceof Error ? error.name : 'UNKNOWN',
+    });
+  });
+  log({ level: 'info', event: 'worker.started.foundation.outbox_sample' });
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => {
-      void worker.close().catch(() => {
+      void (async () => {
+        await worker.close();
+        await runtime.close();
+      })().catch(() => {
         process.exitCode = 1;
       });
     });

@@ -1,10 +1,10 @@
 # M0-05 迁移与开发数据
 
-日期：2026-11-11 · 状态：迁移流程、D1 表、读策略与开发 seed 已验证；M2 写路径与 FORCE RLS 未实现
+日期：2026-11-11 · 状态：迁移流程、D1 表、异步样例表、读策略与开发 seed 已验证；M2 写路径与 FORCE RLS 未实现
 
 ## 范围
 
-本轮建立唯一迁移入口 `packages/database/migrations`、校验和 runner、D1 身份与组织表、只读 RLS 策略、显式开发 seed 和验证脚本。D2–D6 业务表、认证/会话写函数、Outbox/Audit、API/Worker 连接池与生产迁移流程不在本轮。
+本轮建立唯一迁移入口 `packages/database/migrations`、校验和 runner、D1 身份与组织表、Outbox/回执/样例表、只读 RLS 策略、显式开发 seed 和验证脚本。D2–D6 业务表、认证/会话写函数、Audit、业务队列与生产迁移流程不在本轮。
 
 ## 交付
 
@@ -13,6 +13,9 @@
 | `packages/database/migrations/0001_identity_organization.sql` | 11 个 D1 枚举、13 张表、外键、唯一/部分索引与检查约束 |
 | `packages/database/migrations/0002_identity_organization_hardening.sql` | `app` schema、更新时间/主体类型触发器、上下文与组织辅助函数、RLS 读策略、列级授权、seed 记录表 |
 | `packages/database/migrations/0003_function_owner_execute.sql` | 安全定义函数所有者调用上下文函数所需的 EXECUTE |
+| `packages/database/migrations/0004_readiness_schema_version.sql` | 就绪探针只读迁移版本 |
+| `packages/database/migrations/0005_outbox_and_sample_task.sql` | Outbox、消费回执、样例任务/结果/外部效果表、RLS 与列级授权 |
+| `packages/database/migrations/0006_outbox_available_at_grant.sql` | Worker 回退待处理事件所需的 `available_at` 更新权限 |
 | `packages/database/src/migrate.ts` | 事务化 runner、SHA-256 校验和、`--to` 升级路径、`--status` |
 | `packages/database/src/seed.ts` | 可重复执行的开发 seed |
 | `packages/database/src/verify.ts` | 表/约束/RLS/函数/seed 验证 |
@@ -25,15 +28,15 @@
 
 | 命令 | 结果 |
 |---|---|
-| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用 `0002/0003`；seed 与迁移重复执行均幂等；36 项数据库检查通过 |
-| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 36 项检查 |
+| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；39 项数据库检查通过 |
+| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 39 项检查 |
 | 修改已应用迁移后运行 `db:migrate` | 按预期拒绝：`changed after it was applied. Add a new migration instead of editing history.` |
 | `corepack pnpm infra:verify` | 通过；角色隔离、Redis 认证与持久化检查 |
 
 覆盖的关键检查：
 
-- 13 张 D1 表存在，全部启用 RLS。
-- `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`，不能插入/更新/删除 `principals`。
+- 13 张 D1 表存在，全部启用 RLS；`outbox_events`、`job_receipts` 存在并启用 RLS。
+- `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`、`outbox_events.payload`，不能插入/更新/删除 `principals`。
 - 无上下文时看不到用户主体、校园、成员关系；公开组织资料可见。
 - 用户只能看本人主体、私有邮箱和会话；同组织成员关系按组织隔离。
 - `app.is_org_member`、`is_org_admin`、`can_represent`、`is_verified_campus_member`、`is_platform_admin` 返回预期结果。
@@ -58,7 +61,8 @@ corepack pnpm db:verify
 
 ## RLS 与权限边界
 
-- `aven_app` 只有列级 SELECT 和辅助函数 EXECUTE；没有 INSERT/UPDATE/DELETE。
+- `aven_app` 对 D1 表只有列级 SELECT 和辅助函数 EXECUTE；对异步样例只有 `sample_tasks`/`outbox_events` 的受控 INSERT 与最小 SELECT，不能读取 Outbox payload。
+- `aven_worker` 只获得租约领取、回执、样例结果/外部效果所需的列级权限；不能读取 D1 私有表。
 - `credentials`、token 哈希、`sessions.token_hash`、`platform_role_assignments` 不对普通池开放。
 - 安全定义函数由 `aven_function_owner` 持有，固定 `search_path`，`PUBLIC` 无 EXECUTE；函数所有者仅拥有成员表/平台角色的显式 SELECT 策略。
 - 当前仅 `ENABLE ROW LEVEL SECURITY`，未 `FORCE`；表所有者仍可 seed/维护。M2 补齐写策略与受控函数后切换 FORCE，并增加连接池复用隔离测试。
@@ -74,7 +78,8 @@ corepack pnpm db:verify
 
 ## 已知限制
 
-- 未实现 D2–D6 表、机会/引荐/授权/关系/Agent/Outbox/Audit。
+- 未实现 D2–D6 表、机会/引荐/授权/关系/Agent/Audit。
+- Outbox/回执仅用于工程样例；业务队列、死信运维、指标与 exactly-once 未实现。
 - 未实现注册、登录、会话、邀请接受、组织写操作与 `FORCE RLS`。
 - 就绪探针已接入 API/Worker（M0-06）；业务连接池与认证池仍待 M2。
 - 未验证生产迁移、备份恢复、扩展启用（pgvector/PostGIS）或大表回填。

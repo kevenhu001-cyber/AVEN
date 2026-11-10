@@ -4,11 +4,11 @@
 
 | ADR | 决策 | 状态 |
 |---|---|---|
-| [ADR-001](0001-runtime-and-toolchain.md) | Node 24 LTS、pnpm、Turborepo 与框架版本锁定 | 提议，M0-02 验证 |
+| [ADR-001](0001-runtime-and-toolchain.md) | Node 24 LTS、pnpm、Turborepo 与框架版本锁定 | 已接受，M0-02/03 验证 |
 | [ADR-002](0002-identity-and-sessions.md) | 自建邮箱 + 密码、不透明会话、校园认证分离 | 已接受，M2 实现 |
 | [ADR-003](0003-data-runtime.md) | Docker Compose 数据运行 | 扩展/验证时机部分被 ADR-008 取代 |
 | [ADR-004](0004-data-authorization.md) | RLS + 事务本地上下文基线 | 被 ADR-007 取代，保留历史 |
-| [ADR-005](0005-async-and-outbox.md) | Transactional Outbox + BullMQ + 共享领域服务 | 提议，M0-07 验证 |
+| [ADR-005](0005-async-and-outbox.md) | Transactional Outbox + BullMQ + 共享领域服务 | 已接受，M0-07 样例验证；业务可靠性未实现 |
 | [ADR-006](0006-ai-provider.md) | Mock 默认 + OpenAI-compatible Provider 抽象 | 已接受，M3 验证 |
 | [ADR-007](0007-authorization-boundaries.md) | 字段用途、独立引荐、最小权限与撤销语义 | 已接受，未实现；取代 ADR-004 |
 | [ADR-008](0008-progressive-delivery.md) | 按需扩展、双端设计与真实数据准入 | 已接受，未验证；部分取代 ADR-003 |
