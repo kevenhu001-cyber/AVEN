@@ -44,6 +44,10 @@ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'aven_function_owner');
 \gexec
 ALTER ROLE aven_function_owner WITH NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
 
+-- The migration role may transfer function ownership to the NOLOGIN function
+-- owner. Runtime roles must not be members of any other aven role.
+GRANT aven_function_owner TO aven_migrator;
+
 SELECT 'CREATE DATABASE aven_test OWNER aven_migrator'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'aven_test');
 \gexec

@@ -44,14 +44,21 @@ jobs:
 
   infrastructure:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+          run_install: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24.19.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
-      - run: node scripts/infra.mjs up
-      - run: node scripts/verify-infra.mjs
+      - run: pnpm infra:up
+      - run: pnpm infra:verify
+      - run: pnpm db:verify
       - if: always()
-        run: node scripts/infra.mjs down
+        run: pnpm infra:down

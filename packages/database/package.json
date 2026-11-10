@@ -1,0 +1,30 @@
+{
+  "name": "@aven/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:migrate": "tsx src/migrate.ts",
+    "db:status": "tsx src/migrate.ts --status",
+    "db:seed": "tsx src/seed.ts",
+    "db:verify": "tsx src/verify.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@aven/config": "workspace:*",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

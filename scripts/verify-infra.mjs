@@ -146,14 +146,29 @@ check(
   outputIs('f'),
 );
 check(
-  'aven roles have no explicit memberships',
+  'runtime roles have no explicit memberships',
   psql(
     'aven_migrator',
     migrator,
     db,
-    "SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member JOIN pg_roles g ON g.oid = m.roleid WHERE r.rolname LIKE 'aven_%' OR g.rolname LIKE 'aven_%';",
+    "SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member JOIN pg_roles g ON g.oid = m.roleid WHERE r.rolname IN ('aven_app', 'aven_worker', 'aven_auth') OR g.rolname IN ('aven_app', 'aven_worker', 'aven_auth');",
   ),
   outputIs('0'),
+);
+check(
+  'migrator is a member only of the function owner',
+  psql(
+    'aven_migrator',
+    migrator,
+    db,
+    "SELECT string_agg(g.rolname, ',' ORDER BY g.rolname) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member JOIN pg_roles g ON g.oid = m.roleid WHERE r.rolname = 'aven_migrator';",
+  ),
+  outputIs('aven_function_owner'),
+);
+check(
+  'migrator can SET ROLE to the function owner',
+  psql('aven_migrator', migrator, db, 'SET ROLE aven_function_owner; RESET ROLE;'),
+  succeeded,
 );
 check(
   'test database exists',

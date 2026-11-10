@@ -1163,7 +1163,8 @@ GRANT EXECUTE ON FUNCTION app.auth_lookup(text) TO aven_auth;
 ### 13.1 迁移流程
 
 - 唯一迁移目录：`packages/database/migrations`。
-- 使用 Drizzle Kit 生成 SQL，人工审查后提交；生产不使用 `drizzle-kit push`。
+- 表结构可用 Drizzle Kit 生成草稿，但触发器、RLS、函数与权限以人工审查的 SQL 迁移为准；生产不使用 `drizzle-kit push`。
+- 迁移 runner 记录版本与校验和；已应用文件不得修改，修正必须新增迁移。
 - 每个迁移包含：schema 变更、索引、约束、RLS、权限、必要的存量数据处理。
 - 迁移文件按序号命名：`0001_identity.sql`、`0002_memory_opportunity.sql` 等。
 - 迁移前检查：空库执行、上一版本升级、执行失败后的恢复；迁移 runner 防止重复应用，不要求每条不可逆 DDL 可随意重放。可选扩展未启用时基础迁移必须通过。

@@ -1,10 +1,10 @@
 # M0-04 开发基础设施
 
-日期：2026-11-11 · 状态：本地 Compose 与角色验证通过；迁移、API/Worker 连接池与扩展启用未实现
+日期：2026-11-11 · 状态：本地 Compose 与角色验证通过；D1 迁移见 [MIGRATIONS.md](MIGRATIONS.md)；API/Worker 连接池与扩展启用未实现
 
 ## 范围
 
-本轮只提供开发环境的 PostgreSQL 与 Redis、环境模板、数据库角色和验证脚本。业务表、迁移、seed、API/Worker 数据库连接、就绪探针依赖检查与 CI 服务容器仍未实现；不能据此宣称数据库层或业务可用。
+本轮只提供开发环境的 PostgreSQL 与 Redis、环境模板、数据库角色和验证脚本。D1 表、迁移与 seed 已在 M0-05 交付；业务 API、API/Worker 数据库连接、就绪探针依赖检查与 CI 服务容器仍未实现，不能据此宣称数据库层或业务可用。
 
 按 [ADR-008](../architecture/decisions/0008-progressive-delivery.md)，基础环境不预装 pgvector/PostGIS，也不制作组合镜像。语义检索与真实地理查询出现时，分别通过独立迁移和启用门验证。
 
@@ -79,7 +79,7 @@ corepack pnpm infra:reset    # 删除本地卷，所有开发数据丢失
 
 ## 已知限制
 
-- 未在 CI 之外的全新机器复验；CI 已增加 `infrastructure` job，使用 `.env.example` 启动并运行同一验证脚本。
-- 未实现迁移、表、RLS、连接池、API/Worker 就绪探针或数据库备份恢复。
+- 未在 CI 之外的全新机器复验；CI 已增加 `infrastructure` job，使用 `.env.example` 启动、验证角色并运行 `db:verify`。
+- 未实现 API/Worker 连接池、就绪探针、数据库备份恢复或生产迁移流程。
 - Redis 密码通过容器环境变量传入，开发环境可接受；生产必须使用 Secret Manager 和受控网络。
 - 本机 3.6 GiB 内存，同时运行 PostgreSQL、Redis、Next、Nest 与 Metro 时需限制并发。

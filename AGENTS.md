@@ -4,8 +4,8 @@
 
 ## 1. 当前阶段
 
-- 已完成 **M0-01**、1.1 契约修订、**M0-02：依赖与运行时**与 **M0-04：开发基础设施**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-05：迁移及测试数据**。
-- 已建立依赖清单、lockfile、公共配置、四应用最小骨架、基础 CI、Compose/PostgreSQL/Redis 与逐用途数据库角色；数据库迁移、业务功能、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
+- 已完成 **M0-01**、1.1 契约修订、**M0-02：依赖与运行时**、**M0-04：开发基础设施**与 **M0-05：迁移及测试数据**；**M0-03：应用与共享包**的骨架与构建已完成，Expo Go 真机连接与原生流式探针待设备环境补验。下一项是 **M0-06：服务可用性**。
+- 已建立依赖清单、lockfile、公共配置、四应用最小骨架、基础 CI、Compose/PostgreSQL/Redis、逐用途数据库角色、D1 迁移与只读 RLS；认证写路径、业务功能、原生设备验收和 M0 全量验收仍未完成，具体以开发计划执行记录为准。
 - 不要把规划、文档、脚手架、Mock 或开发数据描述为功能完成。
 - 工程诊断页仅验证联通，不是产品核心 UI；M1-07 的双端设计门仍适用。
 - 任何状态变更以实际代码、命令输出和验证结果为依据，并同步更新 README 和开发计划执行记录。
@@ -117,11 +117,12 @@
 
 ## 10. 当前禁止
 
-阶段门（M0-02/03 骨架与 M0-04 基础设施已建立；完成声明仍须证据）：
+阶段门（M0-02/03 骨架、M0-04 基础设施与 M0-05 迁移已建立；完成声明仍须证据）：
 
-- 不运行迁移，直到 M0-05 的迁移流程、空库执行与回滚/前向修复方案实际验证。
+- 不声称认证、组织写操作、`FORCE RLS` 或业务 API 已完成；M2 前只开放已验证的只读路径。
+- 不修改已应用的迁移文件；修正必须新增迁移并重新验证空库/升级路径。
 - 不声称 Web/API/Worker/Expo 已完成或可发布；当前仅通过最小构建与工程探针。
-- 不把 Compose 启动、角色存在或工程探针当作数据库层、RLS 或业务可用。
+- 不把 Compose 启动、D1 只读策略、seed 或工程探针当作数据库层、RLS 或业务可用。
 - 不接入真实 AI Provider。
 - 不开始 Android 应用实现（当前无 Android SDK；M0-03 先验证 Expo Go 连接，M5 前建立 development build 主线）。
 - 不把 Expo JS 导出、Web E2E 或截图当作原生真机/发布构建证据。
@@ -159,6 +160,16 @@ corepack pnpm infra:verify
 corepack pnpm infra:status
 corepack pnpm infra:down
 corepack pnpm infra:reset   # 删除本地卷
+```
+
+数据库迁移与开发数据（M0-05 已验证）：
+
+```bash
+corepack pnpm db:status
+corepack pnpm db:migrate
+corepack pnpm db:seed
+corepack pnpm db:verify        # 重建 aven_test，验证空库/升级/seed/RLS
+corepack pnpm db:verify:current
 ```
 
 当前可用的环境检查：
