@@ -59,6 +59,8 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm infra:up
       - run: pnpm infra:verify
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - run: pnpm db:verify
       - run: pnpm build
       - run: pnpm check:readiness

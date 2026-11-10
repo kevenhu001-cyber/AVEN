@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目处于 **M0 基础工程**阶段。已完成 **M0-01：最小产品与工程文档**、**M0-02：依赖与运行时**、**M0-04：开发基础设施**、**M0-05：迁移及测试数据**、**M0-06：服务可用性**、**M0-07：异步可靠性样例**；**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。业务 API、认证、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+项目处于 **M0 基础工程**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07** 与 **M0-08**；**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。业务 API、认证、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。下一项是 **M1-07：核心旅程设计评审**（纯设计，可与 M0-03 真机补验并行）。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -26,6 +26,8 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [迁移与开发数据](docs/development/MIGRATIONS.md) | 迁移 runner、D1 表、RLS 读策略、seed 与验证记录 |
 | [服务可用性](docs/development/READINESS.md) | 存活/就绪探针、依赖失败语义与真实进程验证 |
 | [异步可靠性](docs/development/ASYNC.md) | Outbox、BullMQ 消费、回执、重试、死信与故障注入 |
+| [开发环境启动](docs/development/SETUP.md) | 首次启动、日常命令、故障处理与 CI 说明 |
+| [部署与网络初查](docs/development/DEPLOYMENT_INVESTIGATION.md) | 候选地域、预算驱动项、校园/移动网络检查清单 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -53,9 +55,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项任务是 **M0-08：CI 与开发说明**，补齐从空环境启动的 CI、迁移检查、启动/故障处理文档与部署网络初查；M0-03 的真机 Expo Go 连接与原生流式探针待有设备环境后补验。核心旅程高保真/原型可作为 M1-07 并行设计，目前尚未交付。
+下一项是 **M1-07：核心旅程设计评审**，交付桌面/手机高保真与可点击原型，作为对应 UI 编码前的门；M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
 
-开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。M0-02/03 的版本、构建与限制见 [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md)，M0-04 的 Compose/角色验证见 [开发基础设施](docs/development/INFRASTRUCTURE.md)，M0-05 的迁移与 RLS 读策略见 [迁移与开发数据](docs/development/MIGRATIONS.md)，M0-06 的探针验证见 [服务可用性](docs/development/READINESS.md)，M0-07 的异步验证见 [异步可靠性](docs/development/ASYNC.md)。
+首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。M0-02/03 的版本、构建与限制见 [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md)，M0-04 的 Compose/角色验证见 [开发基础设施](docs/development/INFRASTRUCTURE.md)，M0-05 的迁移与 RLS 读策略见 [迁移与开发数据](docs/development/MIGRATIONS.md)，M0-06 的探针验证见 [服务可用性](docs/development/READINESS.md)，M0-07 的异步验证见 [异步可靠性](docs/development/ASYNC.md)。
 
 ## 环境现状
 
@@ -72,7 +74,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证。数据库扩展镜像、真机连接、生产队列运维与 CI 尚未验证。M0-08 必须从空环境复验并更新本文。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证。数据库扩展镜像、真机连接、生产队列运维与 GitHub Actions 实跑尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
 
 ## 开发命令
 
@@ -121,7 +123,7 @@ corepack pnpm db:verify        # 重建 aven_test，验证空库迁移/升级/se
 corepack pnpm db:verify:current
 ```
 
-`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织与异步样例表；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox/样例消费者。认证写路径、业务表与业务 API 尚未实现。
+`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织与异步样例表；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox/样例消费者。认证写路径、业务表与业务 API 尚未实现。完整启动、故障处理与 CI 说明见 [开发环境启动](docs/development/SETUP.md)。
 
 ## 协作方式
 
