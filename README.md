@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目进入 **M1 设计系统**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08** 与 **M1-01：设计令牌与主题**；**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。业务 API、认证、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。下一项是 **M1-07：核心旅程设计评审**（纯设计，可与 M0-03 真机补验并行）。
+项目进入 **M1 设计系统**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**，并交付 **M1-07：核心旅程可点击原型**；正式双端设计评审待完成。**M0-03：应用与共享包**的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。业务 API、认证、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -29,6 +29,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [开发环境启动](docs/development/SETUP.md) | 首次启动、日常命令、故障处理与 CI 说明 |
 | [部署与网络初查](docs/development/DEPLOYMENT_INVESTIGATION.md) | 候选地域、预算驱动项、校园/移动网络检查清单 |
 | [M1-01 设计令牌](docs/development/M1-01_TOKENS.md) | 语义/状态色、排版、断点、减少动态与对比度验证 |
+| [M1-07 设计评审](docs/design/M1-07_REVIEW.md) | 核心旅程可点击原型、状态矩阵、自检证据与未决问题 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -56,9 +57,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项是 **M1-07：核心旅程设计评审**，交付桌面/手机高保真与可点击原型，作为对应 UI 编码前的门；M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
+下一项是 **M1-07 正式双端设计评审**：评审桌面/手机原型、状态矩阵、撤销文案与未决问题；通过后再进入 M1-02 导航/布局与 M1-03 组件实现。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
 
-首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。M0-02/03 的版本、构建与限制见 [工程骨架交付记录](docs/development/FOUNDATION_REPORT.md)，M0-04 的 Compose/角色验证见 [开发基础设施](docs/development/INFRASTRUCTURE.md)，M0-05 的迁移与 RLS 读策略见 [迁移与开发数据](docs/development/MIGRATIONS.md)，M0-06 的探针验证见 [服务可用性](docs/development/READINESS.md)，M0-07 的异步验证见 [异步可靠性](docs/development/ASYNC.md)。
+原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
 ## 环境现状
 

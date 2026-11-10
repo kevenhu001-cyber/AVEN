@@ -356,7 +356,7 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 规划轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
 
-M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌。下一项是 **M1-07：核心旅程设计评审**，交付桌面/手机高保真与可点击原型；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭 M0 验收。
+M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M1-07 已交付可点击原型与自检记录，正式双端评审待完成。下一项是 **M1-07 正式双端设计评审**，通过后进入 M1-02 导航/布局与 M1-03 组件；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭 M0 验收。
 
 ## 19. 执行记录
 
@@ -372,5 +372,6 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M0-07 | DONE | 2026-11-11 | `outbox_events`/`job_receipts`/样例表、`packages/domain`、Outbox 派发器、BullMQ Worker、`scripts/async-verify.ts`；29 项成功/重复/未知/死信/租约/崩溃/Redis 重启检查通过；见 ASYNC.md | 仅工程样例；业务队列、死信运维、指标与 exactly-once 未实现 |
 | M0-08 | DONE | 2026-11-11 | `.github/workflows/ci.yml`（verify + infrastructure）、`docs/development/SETUP.md`、`docs/development/DEPLOYMENT_INVESTIGATION.md`、README 实测命令；本地 format/lint/type/test/build/e2e/db/readiness/async 全部通过 | CI 工作流已定义但未在 GitHub Actions 实跑；部署/预算/校园网络仅为初查清单，无真实测量或报价 |
 | M1-01 | DONE | 2026-11-11 | `packages/design-tokens` 语义/状态色、字体/行高/字重/字距、断点、深色主题、减少动态；Web/Expo 使用令牌；52 项测试、对比度矩阵与生成 CSS 检查通过；见 M1-01_TOKENS.md | 仅令牌层；组件、页面、双端高保真与真机字体缩放未验证 |
+| M1-07 | REVIEW | 2026-11-11 | 可点击原型 `docs/design/prototypes/m1-07/index.html`、令牌快照、原型说明与 `M1-07_REVIEW.md`；覆盖 8 个页面、双身份、浅深色、状态切换、接受/发送/撤销对话框；Chrome 无头自检通过、移动端溢出 0 | 正式双端设计评审未进行；底栏标签、代表范围文案、撤销文案、关系用途流程等未决；不标记 DONE |
 
-M0-02/M0-04/M0-05/M0-06/M0-07/M0-08 与 M1-01 的完成不代表 M0 验收或设计评审通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M1-07 的高保真/原型评审仍未交付。
+M0-02/M0-04/M0-05/M0-06/M0-07/M0-08 与 M1-01 的完成不代表 M0 验收或设计评审通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M1-07 原型已交付但正式双端评审未完成，不能进入 UI 编码门。

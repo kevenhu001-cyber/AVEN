@@ -1,0 +1,2111 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AVEN · M1-07 核心旅程设计原型</title>
+    <link rel="stylesheet" href="./tokens.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        background: var(--aven-color-background);
+      }
+      body {
+        margin: 0;
+        background: var(--aven-color-background);
+        color: var(--aven-color-foreground);
+        font-family: var(--aven-font-family-sans);
+        font-size: var(--aven-font-size-body);
+        line-height: var(--aven-line-height-body);
+        -webkit-font-smoothing: antialiased;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      a {
+        color: var(--aven-color-accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--aven-color-focus-ring);
+        outline-offset: 3px;
+      }
+      .skip-link {
+        position: absolute;
+        left: 16px;
+        top: -48px;
+        z-index: 100;
+        padding: 10px 14px;
+        background: var(--aven-color-primary);
+        color: var(--aven-color-primary-foreground);
+        border-radius: var(--aven-radius-md);
+      }
+      .skip-link:focus {
+        top: 16px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .icon {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr) 300px;
+      }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: var(--aven-space-20);
+        padding: var(--aven-space-24) var(--aven-space-20);
+        border-right: 1px solid var(--aven-color-border);
+        background: var(--aven-color-background-secondary);
+      }
+      .brand-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--aven-space-8);
+      }
+      .brand {
+        font-size: var(--aven-font-size-h3);
+        font-weight: var(--aven-font-weight-semibold);
+        letter-spacing: var(--aven-letter-spacing-brand);
+      }
+      .version {
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-micro);
+      }
+      .identity-switch {
+        display: grid;
+        gap: var(--aven-space-8);
+        padding: var(--aven-space-8);
+        border: 1px solid var(--aven-color-border);
+        border-radius: var(--aven-radius-lg);
+        background: var(--aven-color-surface);
+      }
+      .identity-switch button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--aven-space-8);
+        min-height: 44px;
+        padding: var(--aven-space-8) var(--aven-space-12);
+        border: 1px solid transparent;
+        border-radius: var(--aven-radius-md);
+        background: transparent;
+        text-align: left;
+      }
+      .identity-switch button[aria-pressed='true'] {
+        border-color: var(--aven-color-accent);
+        background: var(--aven-color-accent-surface);
+        color: var(--aven-color-accent);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .identity-switch small {
+        display: block;
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-micro);
+        line-height: var(--aven-line-height-micro);
+      }
+      .nav {
+        display: grid;
+        gap: 2px;
+      }
+      .nav-label {
+        margin: var(--aven-space-8) var(--aven-space-12) var(--aven-space-4);
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-micro);
+        letter-spacing: 0.04em;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: var(--aven-space-12);
+        min-height: 44px;
+        padding: var(--aven-space-8) var(--aven-space-12);
+        border: 0;
+        border-radius: var(--aven-radius-md);
+        background: transparent;
+        color: var(--aven-color-foreground-secondary);
+        text-align: left;
+      }
+      .nav-item:hover {
+        background: var(--aven-color-surface-hover);
+        color: var(--aven-color-foreground);
+      }
+      .nav-item[aria-current='page'] {
+        background: var(--aven-color-surface-selected);
+        color: var(--aven-color-foreground);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        display: grid;
+        gap: var(--aven-space-8);
+        padding-top: var(--aven-space-16);
+        border-top: 1px solid var(--aven-color-border);
+      }
+      .sidebar-footer p {
+        margin: 0;
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-micro);
+        line-height: var(--aven-line-height-micro);
+      }
+      .main {
+        min-width: 0;
+        width: 100%;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: var(--aven-space-32) var(--aven-space-40) var(--aven-space-64);
+      }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--aven-space-16);
+        padding-bottom: var(--aven-space-20);
+        border-bottom: 1px solid var(--aven-color-border);
+      }
+      .crumb {
+        margin: 0 0 var(--aven-space-4);
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-caption);
+        line-height: var(--aven-line-height-caption);
+      }
+      .page-title {
+        margin: 0;
+        font-size: var(--aven-font-size-h1);
+        line-height: var(--aven-line-height-h1);
+        font-weight: var(--aven-font-weight-semibold);
+      }
+      .topbar-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--aven-space-8);
+      }
+      .select,
+      .input,
+      .textarea {
+        min-height: 44px;
+        padding: var(--aven-space-8) var(--aven-space-12);
+        border: 1px solid var(--aven-color-control-border);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-surface);
+        color: var(--aven-color-foreground);
+      }
+      .textarea {
+        width: 100%;
+        min-height: 96px;
+        resize: vertical;
+      }
+      .select {
+        max-width: 180px;
+      }
+      .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--aven-space-8);
+        min-height: 44px;
+        padding: var(--aven-space-8) var(--aven-space-12);
+        border: 1px solid var(--aven-color-control-border);
+        border-radius: var(--aven-radius-md);
+        background: transparent;
+        color: var(--aven-color-foreground);
+      }
+      .icon-button:hover {
+        background: var(--aven-color-surface-hover);
+      }
+      .prototype-note {
+        margin: var(--aven-space-20) 0 0;
+        padding: var(--aven-space-12) var(--aven-space-16);
+        border: 1px solid var(--aven-color-warning);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-warning-surface);
+        color: var(--aven-color-warning);
+        font-size: var(--aven-font-size-body-sm);
+        line-height: var(--aven-line-height-body-sm);
+      }
+      .state-banner {
+        margin: var(--aven-space-16) 0 0;
+        padding: var(--aven-space-12) var(--aven-space-16);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-info-surface);
+        color: var(--aven-color-info);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .screen {
+        padding-top: var(--aven-space-24);
+      }
+      .screen-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--aven-space-16);
+        margin-bottom: var(--aven-space-20);
+      }
+      .screen-header h2 {
+        margin: 0 0 var(--aven-space-4);
+        font-size: var(--aven-font-size-h2);
+        line-height: var(--aven-line-height-h2);
+        font-weight: var(--aven-font-weight-semibold);
+      }
+      .screen-header p {
+        margin: 0;
+        color: var(--aven-color-foreground-secondary);
+        max-width: 58ch;
+      }
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--aven-space-8);
+        min-height: 44px;
+        margin-bottom: var(--aven-space-12);
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--aven-color-foreground-secondary);
+      }
+      .back-button:hover {
+        color: var(--aven-color-foreground);
+      }
+      .card {
+        padding: var(--aven-space-20);
+        border: 1px solid var(--aven-color-border);
+        border-radius: var(--aven-radius-lg);
+        background: var(--aven-color-surface);
+      }
+      .card + .card {
+        margin-top: var(--aven-space-16);
+      }
+      .card h3 {
+        margin: 0 0 var(--aven-space-8);
+        font-size: var(--aven-font-size-h3);
+        line-height: var(--aven-line-height-h3);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .card p {
+        margin: 0 0 var(--aven-space-8);
+      }
+      .card p:last-child {
+        margin-bottom: 0;
+      }
+      .eyebrow {
+        margin: 0 0 var(--aven-space-8);
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-micro);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .meta {
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+        line-height: var(--aven-line-height-body-sm);
+      }
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--aven-space-8) var(--aven-space-16);
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--aven-space-8);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--aven-space-4);
+        min-height: 28px;
+        padding: 2px 10px;
+        border: 1px solid var(--aven-color-border-strong);
+        border-radius: var(--aven-radius-full);
+        background: var(--aven-color-surface-secondary);
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-caption);
+        line-height: var(--aven-line-height-caption);
+      }
+      .chip.is-active {
+        border-color: var(--aven-color-accent);
+        background: var(--aven-color-accent-surface);
+        color: var(--aven-color-accent);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 10px;
+        border-radius: var(--aven-radius-full);
+        font-size: var(--aven-font-size-caption);
+        line-height: var(--aven-line-height-caption);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .badge-neutral {
+        background: var(--aven-color-surface-secondary);
+        color: var(--aven-color-foreground-secondary);
+      }
+      .badge-accent {
+        background: var(--aven-color-accent-surface);
+        color: var(--aven-color-accent);
+      }
+      .badge-success {
+        background: var(--aven-color-success-surface);
+        color: var(--aven-color-success);
+      }
+      .badge-warning {
+        background: var(--aven-color-warning-surface);
+        color: var(--aven-color-warning);
+      }
+      .badge-danger {
+        background: var(--aven-color-destructive-surface);
+        color: var(--aven-color-destructive);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--aven-space-8);
+        min-height: 48px;
+        padding: var(--aven-space-12) var(--aven-space-20);
+        border: 1px solid transparent;
+        border-radius: var(--aven-radius-md);
+        font-weight: var(--aven-font-weight-medium);
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--aven-color-primary);
+        color: var(--aven-color-primary-foreground);
+      }
+      .btn-primary:hover {
+        background: var(--aven-color-foreground);
+        color: var(--aven-color-background);
+      }
+      .btn-secondary {
+        border-color: var(--aven-color-control-border);
+        background: transparent;
+        color: var(--aven-color-foreground);
+      }
+      .btn-secondary:hover {
+        background: var(--aven-color-surface-hover);
+      }
+      .btn-danger {
+        background: var(--aven-color-destructive);
+        color: var(--aven-color-destructive-foreground);
+      }
+      .btn-danger:hover {
+        filter: brightness(0.94);
+      }
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+        color: var(--aven-color-foreground-secondary);
+      }
+      .btn-ghost:hover {
+        background: var(--aven-color-surface-hover);
+        color: var(--aven-color-foreground);
+      }
+      .btn:disabled {
+        cursor: not-allowed;
+        border-color: var(--aven-color-disabled-border);
+        background: var(--aven-color-disabled-background);
+        color: var(--aven-color-disabled-foreground);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--aven-space-12);
+        margin-top: var(--aven-space-20);
+      }
+      .actions-end {
+        justify-content: flex-end;
+      }
+      .list {
+        display: grid;
+        gap: var(--aven-space-12);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .list-item {
+        display: grid;
+        gap: var(--aven-space-8);
+        padding: var(--aven-space-16);
+        border: 1px solid var(--aven-color-border);
+        border-radius: var(--aven-radius-lg);
+        background: var(--aven-color-surface);
+      }
+      .list-item:hover {
+        border-color: var(--aven-color-border-strong);
+        background: var(--aven-color-surface-hover);
+      }
+      .list-item h3 {
+        margin: 0;
+        font-size: var(--aven-font-size-h3);
+        line-height: var(--aven-line-height-h3);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .list-item p {
+        margin: 0;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: var(--aven-space-20);
+        align-items: start;
+      }
+      .evidence {
+        padding: var(--aven-space-16);
+        border-left: 3px solid var(--aven-color-accent);
+        border-radius: 0 var(--aven-radius-md) var(--aven-radius-md) 0;
+        background: var(--aven-color-accent-surface);
+      }
+      .evidence h4 {
+        margin: 0 0 var(--aven-space-8);
+        font-size: var(--aven-font-size-body);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .evidence ul {
+        margin: 0;
+        padding-left: 1.1em;
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .field-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--aven-space-12);
+        align-items: start;
+        padding: var(--aven-space-12) 0;
+        border-bottom: 1px solid var(--aven-color-border);
+      }
+      .field-row:last-child {
+        border-bottom: 0;
+      }
+      .field-row strong {
+        display: block;
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .field-row span {
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--aven-space-12);
+        min-height: 44px;
+        padding: var(--aven-space-8) 0;
+      }
+      .checkbox-row input {
+        width: 20px;
+        height: 20px;
+        margin-top: 3px;
+        accent-color: var(--aven-color-accent);
+      }
+      .checkbox-row label {
+        flex: 1;
+      }
+      .checkbox-row small {
+        display: block;
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-caption);
+        line-height: var(--aven-line-height-caption);
+      }
+      .not-shared {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: var(--aven-space-8);
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .not-shared li {
+        display: flex;
+        gap: var(--aven-space-8);
+        align-items: flex-start;
+      }
+      .timeline {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .timeline li {
+        position: relative;
+        padding: 0 0 var(--aven-space-20) var(--aven-space-24);
+      }
+      .timeline li::before {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 8px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--aven-color-accent);
+      }
+      .timeline li::after {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 20px;
+        bottom: 0;
+        width: 1px;
+        background: var(--aven-color-border);
+      }
+      .timeline li:last-child::after {
+        display: none;
+      }
+      .timeline time {
+        display: block;
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-caption);
+      }
+      .master-detail {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: var(--aven-space-20);
+        align-items: start;
+      }
+      .inbox-list {
+        display: grid;
+        gap: var(--aven-space-8);
+      }
+      .inbox-item {
+        display: grid;
+        gap: 4px;
+        padding: var(--aven-space-12);
+        border: 1px solid var(--aven-color-border);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-surface);
+        text-align: left;
+      }
+      .inbox-item[aria-current='true'] {
+        border-color: var(--aven-color-accent);
+        background: var(--aven-color-accent-surface);
+      }
+      .inbox-item strong {
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .inbox-item span {
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-caption);
+      }
+      .empty-state,
+      .error-state,
+      .denied-state,
+      .disabled-state {
+        padding: var(--aven-space-40) var(--aven-space-20);
+        border: 1px dashed var(--aven-color-border-strong);
+        border-radius: var(--aven-radius-lg);
+        text-align: center;
+        color: var(--aven-color-foreground-secondary);
+      }
+      .empty-state h3,
+      .error-state h3,
+      .denied-state h3,
+      .disabled-state h3 {
+        margin: 0 0 var(--aven-space-8);
+        color: var(--aven-color-foreground);
+        font-size: var(--aven-font-size-h3);
+      }
+      .state-block {
+        display: none;
+      }
+      main[data-state='loading'] .screen.has-states .state-loading,
+      main[data-state='empty'] .screen.has-states .state-empty,
+      main[data-state='error'] .screen.has-states .state-error,
+      main[data-state='denied'] .screen.has-states .state-denied,
+      main[data-state='disabled'] .screen.has-states .state-disabled {
+        display: block;
+      }
+      main[data-state='loading'] .screen.has-states .default-content,
+      main[data-state='empty'] .screen.has-states .default-content,
+      main[data-state='error'] .screen.has-states .default-content,
+      main[data-state='denied'] .screen.has-states .default-content,
+      main[data-state='disabled'] .screen.has-states .default-content {
+        display: none;
+      }
+      .skeleton-list {
+        display: grid;
+        gap: var(--aven-space-12);
+      }
+      .skeleton {
+        height: 92px;
+        border-radius: var(--aven-radius-lg);
+        background: var(--aven-color-skeleton);
+      }
+      .context {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        padding: var(--aven-space-32) var(--aven-space-20);
+        border-left: 1px solid var(--aven-color-border);
+        background: var(--aven-color-background-secondary);
+      }
+      .context h2 {
+        margin: 0 0 var(--aven-space-12);
+        font-size: var(--aven-font-size-h3);
+        line-height: var(--aven-line-height-h3);
+        font-weight: var(--aven-font-weight-medium);
+      }
+      .context p {
+        margin: 0 0 var(--aven-space-12);
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+        line-height: var(--aven-line-height-body-sm);
+      }
+      .context dl {
+        margin: 0;
+        display: grid;
+        gap: var(--aven-space-12);
+      }
+      .context dt {
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-micro);
+      }
+      .context dd {
+        margin: 2px 0 0;
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .bottom-nav {
+        display: none;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        z-index: 60;
+        max-width: min(520px, calc(100vw - 32px));
+        padding: var(--aven-space-12) var(--aven-space-16);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-primary);
+        color: var(--aven-color-primary-foreground);
+        box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+        opacity: 0;
+        transform: translate(-50%, 8px);
+        pointer-events: none;
+        transition:
+          opacity var(--aven-duration-fast) ease,
+          transform var(--aven-duration-fast) ease;
+      }
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      .dialog-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: grid;
+        place-items: center;
+        padding: var(--aven-space-16);
+        background: var(--aven-color-overlay);
+      }
+      .dialog {
+        width: min(520px, 100%);
+        max-height: min(80vh, 720px);
+        overflow: auto;
+        padding: var(--aven-space-24);
+        border-radius: var(--aven-radius-xl);
+        background: var(--aven-color-surface);
+        box-shadow: 0 24px 64px rgb(0 0 0 / 24%);
+      }
+      .dialog h2 {
+        margin: 0 0 var(--aven-space-12);
+        font-size: var(--aven-font-size-h2);
+        line-height: var(--aven-line-height-h2);
+        font-weight: var(--aven-font-weight-semibold);
+      }
+      .dialog p,
+      .dialog li {
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+        line-height: var(--aven-line-height-body-sm);
+      }
+      .dialog ul {
+        margin: 0 0 var(--aven-space-16);
+        padding-left: 1.2em;
+      }
+      .dialog-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--aven-space-12);
+        margin-top: var(--aven-space-20);
+      }
+      .danger-zone {
+        border-color: var(--aven-color-destructive);
+        background: var(--aven-color-destructive-surface);
+      }
+      .danger-zone h3 {
+        color: var(--aven-color-destructive);
+      }
+      .inline-note {
+        padding: var(--aven-space-12);
+        border-radius: var(--aven-radius-md);
+        background: var(--aven-color-surface-secondary);
+        color: var(--aven-color-foreground-secondary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .result-count {
+        color: var(--aven-color-foreground-tertiary);
+        font-size: var(--aven-font-size-body-sm);
+      }
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--aven-space-8);
+        align-items: center;
+      }
+      .form-row .input {
+        flex: 1 1 220px;
+      }
+      .ai-composer {
+        display: grid;
+        gap: var(--aven-space-8);
+      }
+      .ai-composer textarea {
+        min-height: 84px;
+      }
+      .mobile-only {
+        display: none;
+      }
+      @media (max-width: 1200px) {
+        .app {
+          grid-template-columns: 248px minmax(0, 1fr);
+        }
+        .context {
+          display: none;
+        }
+      }
+      @media (max-width: 900px) {
+        .app {
+          display: block;
+        }
+        .sidebar {
+          display: none;
+        }
+        .main {
+          padding: var(--aven-space-20) var(--aven-space-16) 104px;
+        }
+        .page-title {
+          font-size: var(--aven-font-size-h2);
+        }
+        .split,
+        .master-detail {
+          grid-template-columns: 1fr;
+        }
+        .bottom-nav {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 40;
+          display: flex;
+          justify-content: space-around;
+          gap: 4px;
+          padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+          border-top: 1px solid var(--aven-color-border);
+          background: var(--aven-color-surface);
+        }
+        .bottom-nav button {
+          flex: 1;
+          display: grid;
+          justify-items: center;
+          gap: 2px;
+          min-height: 48px;
+          padding: 4px;
+          border: 0;
+          border-radius: var(--aven-radius-md);
+          background: transparent;
+          color: var(--aven-color-foreground-secondary);
+          font-size: var(--aven-font-size-micro);
+        }
+        .bottom-nav button[aria-current='page'] {
+          background: var(--aven-color-surface-selected);
+          color: var(--aven-color-foreground);
+        }
+        .mobile-only {
+          display: inline-flex;
+        }
+        .desktop-only {
+          display: none !important;
+        }
+        .topbar {
+          align-items: center;
+        }
+        .topbar-tools {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .select {
+          max-width: 150px;
+        }
+        .actions .btn {
+          flex: 1 1 100%;
+        }
+        .toast {
+          bottom: 84px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0ms !important;
+          animation-duration: 0ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <svg aria-hidden="true" style="display: none">
+      <symbol id="i-home" viewBox="0 0 24 24">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
+      </symbol>
+      <symbol id="i-send" viewBox="0 0 24 24">
+        <path d="m21 3-7 18-4-7-7-4 18-7Z" />
+        <path d="M10 14 21 3" />
+      </symbol>
+      <symbol id="i-users" viewBox="0 0 24 24">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+        <path d="M16 5.5a3 3 0 0 1 0 5.8" />
+        <path d="M18 14.5c2.3.8 4 3 4 5.5" />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" />
+        <path d="m9 12 2 2 4-4" />
+      </symbol>
+      <symbol id="i-inbox" viewBox="0 0 24 24">
+        <path d="M4 4h16v16H4z" />
+        <path d="M4 14h5l2 3h2l2-3h5" />
+      </symbol>
+      <symbol id="i-building" viewBox="0 0 24 24">
+        <path d="M4 21V4h10v17" />
+        <path d="M14 9h6v12" />
+        <path d="M8 8h2M8 12h2M8 16h2M17 13h1M17 17h1" />
+      </symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24">
+        <path d="m9 6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24">
+        <path d="m15 6-6 6 6 6" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24">
+        <path d="M12 3 22 21H2L12 3Z" />
+        <path d="M12 9v5M12 17.5v.5" />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <rect x="5" y="10" width="14" height="11" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" />
+      </symbol>
+    </svg>
+
+    <div class="app" id="app" data-identity="personal">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand-row">
+          <span class="brand">AVEN</span>
+          <span class="version">M1-07 · v0.1</span>
+        </div>
+        <div class="identity-switch" role="group" aria-label="切换身份">
+          <button type="button" data-identity="personal" aria-pressed="true">
+            <span>个人 · 张雨<small>自动化 · 大三</small></span>
+            <svg class="icon" aria-hidden="true"><use href="#i-check" /></svg>
+          </button>
+          <button type="button" data-identity="org" aria-pressed="false">
+            <span>组织 · 智能系统实验室<small>开发样例 · 未认证</small></span>
+            <svg class="icon" aria-hidden="true"><use href="#i-building" /></svg>
+          </button>
+        </div>
+
+        <nav class="nav" data-nav="personal" aria-label="个人导航">
+          <span class="nav-label">个人</span>
+          <button type="button" class="nav-item" data-screen="today" aria-current="page">
+            <svg class="icon" aria-hidden="true"><use href="#i-home" /></svg>今日
+          </button>
+          <button type="button" class="nav-item" data-screen="discover">
+            <svg class="icon" aria-hidden="true"><use href="#i-compass" /></svg>发现
+          </button>
+          <button type="button" class="nav-item" data-screen="referrals">
+            <svg class="icon" aria-hidden="true"><use href="#i-send" /></svg>我的引荐
+          </button>
+          <button type="button" class="nav-item" data-screen="relationship">
+            <svg class="icon" aria-hidden="true"><use href="#i-users" /></svg>空间
+          </button>
+          <button type="button" class="nav-item" data-screen="privacy">
+            <svg class="icon" aria-hidden="true"><use href="#i-shield" /></svg>隐私与授权
+          </button>
+        </nav>
+
+        <nav class="nav" data-nav="org" aria-label="组织导航" hidden>
+          <span class="nav-label">组织控制台</span>
+          <button type="button" class="nav-item" data-screen="inbox">
+            <svg class="icon" aria-hidden="true"><use href="#i-inbox" /></svg>收件箱
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>当前为设计原型，使用脱敏中文样例；不代表真实组织、认证或业务功能。</p>
+          <button type="button" class="btn btn-ghost" data-action="privacy">
+            <svg class="icon" aria-hidden="true"><use href="#i-shield" /></svg>查看隐私与授权
+          </button>
+        </div>
+      </aside>
+
+      <main class="main" id="main" data-state="default">
+        <header class="topbar">
+          <div>
+            <p class="crumb" id="crumb">个人 / 今日</p>
+            <h1 class="page-title" id="page-title">今日</h1>
+          </div>
+          <div class="topbar-tools">
+            <label class="sr-only" for="state-select">预览页面状态</label>
+            <select class="select" id="state-select">
+              <option value="default">默认状态</option>
+              <option value="loading">加载中</option>
+              <option value="empty">空状态</option>
+              <option value="error">错误</option>
+              <option value="denied">无权限</option>
+              <option value="disabled">不可用</option>
+            </select>
+            <button type="button" class="icon-button" id="theme-toggle" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="#i-moon" /></svg>
+              <span id="theme-label">深色</span>
+            </button>
+            <button type="button" class="icon-button desktop-only" data-action="org-inbox">
+              <svg class="icon" aria-hidden="true"><use href="#i-inbox" /></svg>组织收件箱
+            </button>
+            <button type="button" class="icon-button mobile-only" data-action="toggle-identity">
+              <svg class="icon" aria-hidden="true"><use href="#i-users" /></svg>
+              <span id="identity-toggle-label">组织身份</span>
+            </button>
+          </div>
+        </header>
+
+        <p class="prototype-note">
+          M1-07 设计原型 · 样例数据 · 非功能实现。所有组织、用户、机会与授权均为脱敏样例，不代表真实认证、匹配或业务完成。
+        </p>
+        <div class="state-banner" id="state-banner" role="status" aria-live="polite" hidden></div>
+
+        <section class="screen" id="screen-today" aria-labelledby="today-title">
+          <div class="screen-header">
+            <div>
+              <h2 id="today-title">今天需要你处理 2 件事</h2>
+              <p>先处理有明确下一步的事项；没有待办时再去发现机会。</p>
+            </div>
+            <span class="badge badge-accent">个人身份</span>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">待办</p>
+            <h3>组织查看了你的引荐</h3>
+            <p class="meta">西交大智能系统实验室 · 2026-11-11 14:02</p>
+            <p>对方尚未决定。你可以补充一份项目说明，或等待组织回复。</p>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" data-screen="referrals">查看进展</button>
+              <button type="button" class="btn btn-secondary" data-action="supplement">补充资料</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">有依据的机会</p>
+            <h3>具身智能机器人控制算法研究助理</h3>
+            <p class="meta">西交大智能系统实验室 · 本科 · 6–8 小时/周 · 截止 2026-11-28 23:59（Asia/Shanghai）</p>
+            <div class="evidence">
+              <h4>为什么看到这个</h4>
+              <ul>
+                <li>你允许匹配的项目经历：四足机器人步态控制（2025）。</li>
+                <li>机会要求：ROS 2、控制算法、C++/Python。</li>
+                <li>来源：个人资料 v3，确认于 2026-11-08。</li>
+              </ul>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" data-screen="opportunity">查看机会</button>
+              <button type="button" class="btn btn-secondary" data-action="dismiss">暂不感兴趣</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">个人 AI</p>
+            <h3>问我关于机会、资料或下一步的问题</h3>
+            <form class="ai-composer" id="ai-form">
+              <label class="sr-only" for="ai-input">输入问题</label>
+              <textarea class="textarea" id="ai-input" placeholder="例如：这个机会和我的项目经历具体哪里相关？"></textarea>
+              <div class="form-row">
+                <span class="meta">原型不调用模型；实现时需绑定用途、来源与确认。</span>
+                <button class="btn btn-primary" type="submit">发送</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="screen has-states" id="screen-discover" aria-labelledby="discover-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="discover-title">发现机会</h2>
+              <p>按学校、领域、阶段与截止时间筛选；推荐理由只使用你允许匹配的资料。</p>
+            </div>
+            <span class="badge badge-neutral">3 个结果</span>
+          </div>
+
+          <div class="default-content">
+            <form class="form-row" id="search-form">
+              <label class="sr-only" for="search-input">搜索机会</label>
+              <input class="input" id="search-input" placeholder="搜索机会、组织或技能" />
+              <button class="btn btn-secondary" type="submit">搜索</button>
+            </form>
+            <div class="chip-row" style="margin: 12px 0 16px" aria-label="筛选条件">
+              <button type="button" class="chip is-active">机器人</button>
+              <button type="button" class="chip">控制算法</button>
+              <button type="button" class="chip">本科</button>
+              <button type="button" class="chip">本月截止</button>
+            </div>
+            <p class="result-count">按相关性与截止时间排序 · 游标分页</p>
+            <ul class="list">
+              <li class="list-item">
+                <div class="chip-row">
+                  <span class="badge badge-accent">已确认资料推荐</span>
+                  <span class="badge badge-neutral">未认证组织</span>
+                </div>
+                <h3>具身智能机器人控制算法研究助理</h3>
+                <p class="meta">西交大智能系统实验室 · 本科 · 6–8 小时/周</p>
+                <p>参与四足机器人步态控制与仿真验证，使用 ROS 2 与 C++。</p>
+                <p class="meta">截止 2026-11-28 23:59（Asia/Shanghai）</p>
+                <div class="actions">
+                  <button type="button" class="btn btn-primary" data-screen="opportunity">查看机会</button>
+                </div>
+              </li>
+              <li class="list-item">
+                <div class="chip-row">
+                  <span class="badge badge-neutral">按搜索条件找到</span>
+                </div>
+                <h3>多模态感知与边缘推理科研助理</h3>
+                <p class="meta">西交大视觉计算小组（开发样例） · 硕士优先 · 8 小时/周</p>
+                <p>负责传感器同步、数据管线与边缘设备推理评测。</p>
+                <p class="meta">截止 2026-12-05 18:00（Asia/Shanghai）</p>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-action="demo-only">查看机会</button>
+                </div>
+              </li>
+              <li class="list-item">
+                <div class="chip-row">
+                  <span class="badge badge-warning">资料不足，未生成个性化理由</span>
+                </div>
+                <h3>校园开放创新项目：低碳校园数据可视化</h3>
+                <p class="meta">西交大开放创新社团（开发样例） · 不限年级 · 4 小时/周</p>
+                <p>整理校园能耗数据并设计可解释的可视化叙事。</p>
+                <p class="meta">截止 2026-11-30 23:59（Asia/Shanghai）</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="state-block state-loading" aria-label="加载中">
+            <div class="skeleton-list">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </div>
+          </div>
+          <div class="state-block state-empty empty-state">
+            <h3>没有符合条件的机会</h3>
+            <p>可以放宽领域或截止时间；也可以先补充已确认的项目经历，再获取有依据的推荐。</p>
+            <div class="actions" style="justify-content: center">
+              <button type="button" class="btn btn-secondary" data-action="reset-filters">放宽筛选</button>
+            </div>
+          </div>
+          <div class="state-block state-error error-state">
+            <h3>暂时无法加载机会</h3>
+            <p>网络请求失败。请重试；已保存的筛选条件不会丢失。</p>
+            <div class="actions" style="justify-content: center">
+              <button type="button" class="btn btn-secondary" data-action="retry">重试</button>
+            </div>
+          </div>
+          <div class="state-block state-denied denied-state">
+            <h3>需要校园认证才能查看</h3>
+            <p>该机会仅对已验证的校园成员开放。你的校园成员状态为“待验证”，不会自动获得访问权限。</p>
+          </div>
+          <div class="state-block state-disabled disabled-state">
+            <h3>筛选条件过严</h3>
+            <p>当前组合没有结果。移除“本月截止”或“本科”后再试。</p>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-opportunity" aria-labelledby="opportunity-title" hidden>
+          <button type="button" class="back-button" data-screen="discover">
+            <svg class="icon" aria-hidden="true"><use href="#i-arrow-left" /></svg>返回发现
+          </button>
+          <div class="screen-header">
+            <div>
+              <p class="eyebrow">机会详情</p>
+              <h2 id="opportunity-title">具身智能机器人控制算法研究助理</h2>
+              <p>参与四足机器人步态控制与仿真验证，和实验室现有控制方向一起推进原型。</p>
+            </div>
+            <span class="badge badge-warning">组织未认证</span>
+          </div>
+
+          <div class="split">
+            <div>
+              <div class="card">
+                <p class="eyebrow">组织</p>
+                <h3>西交大智能系统实验室（开发样例）</h3>
+                <p class="meta">组织类型：实验室 · 校园：西安交通大学（开发样例） · 认证状态：未认证</p>
+                <p>组织公开资料只展示可公开信息；未认证不代表官方背书。组织成员与代表权限由组织控制台单独管理。</p>
+              </div>
+
+              <div class="card">
+                <p class="eyebrow">项目内容</p>
+                <p>协助搭建四足机器人步态控制实验，维护 ROS 2 节点与仿真环境，记录控制参数与失败案例。</p>
+                <h3 style="margin-top: 16px">要求</h3>
+                <ul>
+                  <li>熟悉 C++ 或 Python，了解基础控制理论。</li>
+                  <li>使用过 ROS 2、Gazebo 或类似仿真工具。</li>
+                  <li>每周投入 6–8 小时，持续至少 12 周。</li>
+                </ul>
+                <h3 style="margin-top: 16px">支持与资源</h3>
+                <p>实验室提供机器人平台、仿真工作站与每周一次的方向讨论；不承诺发表、报酬或转正。</p>
+              </div>
+
+              <div class="card">
+                <p class="eyebrow">时间与地点</p>
+                <div class="meta-row">
+                  <span>阶段：本科</span>
+                  <span>投入：6–8 小时/周</span>
+                  <span>地点：兴庆校区（开发样例）</span>
+                  <span>截止：2026-11-28 23:59（Asia/Shanghai）</span>
+                </div>
+              </div>
+
+              <div class="evidence" style="margin-top: 16px">
+                <h4>为什么看到这个</h4>
+                <ul>
+                  <li>你允许匹配的项目经历：四足机器人步态控制（2025）。</li>
+                  <li>机会要求：ROS 2、控制算法、C++/Python。</li>
+                  <li>来源：个人资料 v3，确认于 2026-11-08；组织只能看到你本次确认的引荐快照。</li>
+                </ul>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-action="evidence">查看我的匹配资料</button>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button type="button" class="btn btn-primary" data-screen="consent">申请引荐</button>
+                <button type="button" class="btn btn-secondary" data-action="save">保存稍后查看</button>
+              </div>
+            </div>
+
+            <aside class="card" aria-label="机会摘要">
+              <p class="eyebrow">摘要</p>
+              <dl>
+                <dt>组织</dt>
+                <dd>西交大智能系统实验室（开发样例）</dd>
+                <dt>状态</dt>
+                <dd><span class="badge badge-success">开放</span></dd>
+                <dt>截止</dt>
+                <dd>2026-11-28 23:59<br /><span class="meta">Asia/Shanghai</span></dd>
+                <dt>推荐依据</dt>
+                <dd>已确认项目经历与机会要求相关；无匹配分数。</dd>
+              </dl>
+            </aside>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-consent" aria-labelledby="consent-title" hidden>
+          <button type="button" class="back-button" data-screen="opportunity">
+            <svg class="icon" aria-hidden="true"><use href="#i-arrow-left" /></svg>返回机会
+          </button>
+          <div class="screen-header">
+            <div>
+              <p class="eyebrow">授权预览</p>
+              <h2 id="consent-title">确认本次共享</h2>
+              <p>组织只读取本次勾选的字段快照；未勾选内容不会发送。字段、接收方、用途或来源变化后需要重新预览。</p>
+            </div>
+            <span class="badge badge-accent">预览 v2</span>
+          </div>
+
+          <div class="split">
+            <div>
+              <div class="card">
+                <p class="eyebrow">接收方与用途</p>
+                <div class="field-row">
+                  <div>
+                    <strong>西交大智能系统实验室（开发样例）</strong>
+                    <span>组织中当前有代表权限的成员可读；不是仅当前管理员一人。</span>
+                  </div>
+                  <span class="badge badge-warning">未认证</span>
+                </div>
+                <div class="checkbox-row">
+                  <input id="purpose-referral" type="checkbox" checked disabled />
+                  <label for="purpose-referral">
+                    引荐用途
+                    <small>用于本次机会申请与组织决定；必需。</small>
+                  </label>
+                </div>
+                <div class="checkbox-row">
+                  <input id="relationship-purpose" type="checkbox" />
+                  <label for="relationship-purpose">
+                    关系用途
+                    <small>接受后允许关系空间读取选定的关系资料；默认不勾选。仅确认引荐也可发送。</small>
+                  </label>
+                </div>
+                <div id="relationship-fields" hidden>
+                  <p class="inline-note">关系用途需要单独确认字段与期限；接受后若未确认，关系空间的共享上下文为空。</p>
+                </div>
+              </div>
+
+              <div class="card">
+                <p class="eyebrow">共享字段（实际快照）</p>
+                <div class="field-row">
+                  <div>
+                    <strong>姓名</strong>
+                    <span>张雨</span>
+                  </div>
+                  <label class="checkbox-row" style="min-height: auto; padding: 0">
+                    <input type="checkbox" data-consent-field data-label="姓名" checked />
+                    <span class="sr-only">共享姓名</span>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>专业与年级</strong>
+                    <span>自动化 · 大三</span>
+                  </div>
+                  <label class="checkbox-row" style="min-height: auto; padding: 0">
+                    <input type="checkbox" data-consent-field data-label="专业与年级" checked />
+                    <span class="sr-only">共享专业与年级</span>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>项目经历</strong>
+                    <span>四足机器人步态控制（2025）</span>
+                  </div>
+                  <label class="checkbox-row" style="min-height: auto; padding: 0">
+                    <input type="checkbox" data-consent-field data-label="项目经历" checked />
+                    <span class="sr-only">共享项目经历</span>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>技能</strong>
+                    <span>ROS 2 · C++ · Python</span>
+                  </div>
+                  <label class="checkbox-row" style="min-height: auto; padding: 0">
+                    <input type="checkbox" data-consent-field data-label="技能" checked />
+                    <span class="sr-only">共享技能</span>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>联系方式</strong>
+                    <span>zhang.yu@example.test</span>
+                  </div>
+                  <label class="checkbox-row" style="min-height: auto; padding: 0">
+                    <input type="checkbox" data-consent-field data-label="联系方式" checked />
+                    <span class="sr-only">共享联系方式</span>
+                  </label>
+                </div>
+                <p class="meta" style="margin-top: 12px">字段值来自个人资料 v3；预览绑定实际值、来源版本、接收方与期限。</p>
+              </div>
+
+              <div class="card">
+                <p class="eyebrow">不会共享</p>
+                <ul class="not-shared">
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-lock" /></svg>私人记忆正文、未确认候选与其他组织上下文。</li>
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-lock" /></svg>未勾选的字段与草稿；不会用“个人资料”合并标签隐藏具体字段。</li>
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-lock" /></svg>关系用途资料；除非你在此单独勾选并确认。</li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <p class="eyebrow">期限</p>
+                <p>引荐用途：14 天，至 2026-11-25 23:59（Asia/Shanghai）。到期后新读取被拒绝；已送达内容或系统外副本无法收回。</p>
+                <p class="meta">撤销提交后，系统拒绝新的授权读取；不承诺删除对方截图或截断已发出的网络字节。</p>
+              </div>
+
+              <div class="actions">
+                <button type="button" class="btn btn-primary" data-action="send">确认并发送</button>
+                <button type="button" class="btn btn-secondary" data-screen="opportunity">返回修改</button>
+              </div>
+            </div>
+
+            <aside class="card" aria-label="本次共享摘要">
+              <p class="eyebrow">本次共享摘要</p>
+              <dl>
+                <dt>接收方</dt>
+                <dd>西交大智能系统实验室（开发样例）</dd>
+                <dt>用途</dt>
+                <dd>引荐<span id="summary-relationship">；关系用途未勾选</span></dd>
+                <dt>字段</dt>
+                <dd class="consent-summary-fields">姓名、专业与年级、项目经历、技能、联系方式</dd>
+                <dt>期限</dt>
+                <dd>14 天（至 2026-11-25 23:59）</dd>
+                <dt>发送结果</dt>
+                <dd>网络超时后先用同一幂等键确认结果，不直接重发新请求。</dd>
+              </dl>
+            </aside>
+          </div>
+        </section>
+
+        <section class="screen has-states" id="screen-referrals" aria-labelledby="referrals-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="referrals-title">我的引荐</h2>
+              <p>查看状态、对方响应与可用操作；撤回、过期与再次申请分别说明。</p>
+            </div>
+            <span class="badge badge-neutral">1 条进行中</span>
+          </div>
+
+          <div class="default-content">
+            <article class="card" id="referral-card">
+              <div class="screen-header" style="margin-bottom: 8px">
+                <div>
+                  <p class="eyebrow">进行中</p>
+                  <h3>具身智能机器人控制算法研究助理</h3>
+                  <p class="meta">西交大智能系统实验室（开发样例） · 内容版本 v2</p>
+                </div>
+                <span class="badge badge-accent" id="referral-status">等待组织决定</span>
+              </div>
+              <ol class="timeline">
+                <li>
+                  <strong>已发送</strong>
+                  <time>2026-11-11 10:24</time>
+                  <span class="meta">仅发送本次确认的引荐快照。</span>
+                </li>
+                <li>
+                  <strong>组织已查看</strong>
+                  <time>2026-11-11 14:02</time>
+                  <span class="meta">组织代表读取了获授权字段；未读取私人记忆。</span>
+                </li>
+                <li>
+                  <strong>等待组织决定</strong>
+                  <time>当前</time>
+                  <span class="meta">接受后将建立关系空间；关系资料仍需独立授权。</span>
+                </li>
+              </ol>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" data-action="supplement">补充资料</button>
+                <button type="button" class="btn btn-ghost" data-action="withdraw">撤回引荐</button>
+              </div>
+            </article>
+          </div>
+
+          <div class="state-block state-loading" aria-label="加载中">
+            <div class="skeleton-list">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </div>
+          </div>
+          <div class="state-block state-empty empty-state">
+            <h3>还没有引荐</h3>
+            <p>从发现机会开始；只有你确认发送后，组织才会看到本次共享快照。</p>
+            <div class="actions" style="justify-content: center">
+              <button type="button" class="btn btn-primary" data-screen="discover">发现机会</button>
+            </div>
+          </div>
+          <div class="state-block state-error error-state">
+            <h3>暂时无法加载引荐</h3>
+            <p>网络请求失败。重试不会重复发送引荐。</p>
+          </div>
+          <div class="state-block state-denied denied-state">
+            <h3>无法查看</h3>
+            <p>你已不是该引荐的申请人。敏感错误不会透露其他主体的信息。</p>
+          </div>
+          <div class="state-block state-disabled disabled-state">
+            <h3>引荐已撤回</h3>
+            <p>撤回后不能继续补充资料；如需再次申请，需要重新预览并确认新的授权。</p>
+          </div>
+        </section>
+
+        <section class="screen has-states" id="screen-inbox" aria-labelledby="inbox-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="inbox-title">组织收件箱</h2>
+              <p>只显示已发送的引荐；未发送候选不会出现在这里。组织身份与代表权限在页面顶部明确显示。</p>
+            </div>
+            <span class="badge badge-accent">组织身份</span>
+          </div>
+
+          <div class="default-content">
+            <div class="master-detail">
+              <div class="inbox-list" role="list" aria-label="待处理引荐">
+                <button type="button" class="inbox-item" aria-current="true">
+                  <strong>张雨 · 机器人控制</strong>
+                  <span>具身智能机器人控制算法研究助理</span>
+                  <span>2026-11-11 10:24 · 待决定</span>
+                </button>
+                <button type="button" class="inbox-item">
+                  <strong>李晨 · 多模态感知</strong>
+                  <span>多模态感知与边缘推理科研助理</span>
+                  <span>2026-11-10 16:40 · 请求补充资料</span>
+                </button>
+              </div>
+
+              <article class="card">
+                <div class="screen-header" style="margin-bottom: 8px">
+                  <div>
+                    <p class="eyebrow">引荐详情</p>
+                    <h3>张雨 · 具身智能机器人控制算法研究助理</h3>
+                    <p class="meta">内容版本 v2 · 授权至 2026-11-25 23:59 · 用途：引荐</p>
+                  </div>
+                  <span class="badge badge-warning">待决定</span>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>姓名</strong>
+                    <span>张雨</span>
+                  </div>
+                  <span class="badge badge-neutral">已授权</span>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>专业与年级</strong>
+                    <span>自动化 · 大三</span>
+                  </div>
+                  <span class="badge badge-neutral">已授权</span>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>项目经历</strong>
+                    <span>四足机器人步态控制（2025）</span>
+                  </div>
+                  <span class="badge badge-neutral">已授权</span>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>技能</strong>
+                    <span>ROS 2 · C++ · Python</span>
+                  </div>
+                  <span class="badge badge-neutral">已授权</span>
+                </div>
+                <div class="field-row">
+                  <div>
+                    <strong>联系方式</strong>
+                    <span>zhang.yu@example.test</span>
+                  </div>
+                  <span class="badge badge-neutral">已授权</span>
+                </div>
+                <p class="meta" style="margin-top: 12px">组织只读取本次引荐快照；不能沿推荐依据跳转到申请人的私人记忆。</p>
+                <div class="actions">
+                  <button type="button" class="btn btn-primary" data-action="accept">接受并建立关系</button>
+                  <button type="button" class="btn btn-secondary" data-action="request-info">请求补充资料</button>
+                  <button type="button" class="btn btn-danger" data-action="decline">拒绝</button>
+                </div>
+                <p class="meta" style="margin-top: 12px">接受前会重新校验机会、成员代表权、双方决定与授权；内容版本变化时要求重新阅读。</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="state-block state-loading" aria-label="加载中">
+            <div class="skeleton-list">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </div>
+          </div>
+          <div class="state-block state-empty empty-state">
+            <h3>没有待处理引荐</h3>
+            <p>新的已发送引荐会出现在这里；候选与未发送内容不会提前出现。</p>
+          </div>
+          <div class="state-block state-error error-state">
+            <h3>暂时无法加载收件箱</h3>
+            <p>网络请求失败。重试不会改变引荐状态。</p>
+          </div>
+          <div class="state-block state-denied denied-state">
+            <h3>没有代表权限</h3>
+            <p>你当前不是该组织的活跃代表，不能读取引荐快照或做出决定。</p>
+          </div>
+          <div class="state-block state-disabled disabled-state">
+            <h3>该引荐已由其他代表处理</h3>
+            <p>并发处理返回同一关系；不会重复建立空间。请刷新查看最新状态。</p>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-relationship" aria-labelledby="relationship-title" hidden>
+          <div class="screen-header">
+            <div>
+              <p class="eyebrow">关系空间</p>
+              <h2 id="relationship-title">张雨 × 西交大智能系统实验室</h2>
+              <p>关系已建立。共享上下文为空；关系资料需要独立授权。</p>
+            </div>
+            <span class="badge badge-success">进行中</span>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">参与者与状态</p>
+            <div class="meta-row">
+              <span>个人：张雨</span>
+              <span>组织：西交大智能系统实验室（开发样例）</span>
+              <span>建立于 2026-11-11</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">共同目标</p>
+            <h3>评估机器人控制方向的合作</h3>
+            <p>先进行 30 分钟初步交流，确认项目范围、时间投入与双方预期；不自动承诺发表、报酬或长期合作。</p>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">下一步</p>
+            <h3>安排初步交流</h3>
+            <p>选择一个双方都方便的时间；日程协调尚未在原型中实现。</p>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" data-action="demo-only">提议时间</button>
+              <button type="button" class="btn btn-secondary" data-action="demo-only">发送消息</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">共享上下文</p>
+            <div class="empty-state" style="padding: 24px">
+              <svg class="icon" aria-hidden="true" style="width: 28px; height: 28px"><use href="#i-lock" /></svg>
+              <h3>尚未共享关系资料</h3>
+              <p>引荐授权不会自动升级为关系用途。你可以单独选择字段、接收方与期限。</p>
+              <div class="actions" style="justify-content: center">
+                <button type="button" class="btn btn-secondary" data-action="relationship-consent">独立授权关系资料</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">会话</p>
+            <p class="meta">消息功能不在 M1-07 原型范围；实现前不显示可发送的假输入框。</p>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-privacy" aria-labelledby="privacy-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="privacy-title">隐私与授权</h2>
+              <p>检查正在被使用和共享的内容；撤销一个授权不等于撤销全部共享。</p>
+            </div>
+            <span class="badge badge-neutral">2 条有效授权</span>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">有效授权</p>
+            <div class="field-row">
+              <div>
+                <strong>引荐 · 西交大智能系统实验室（开发样例）</strong>
+                <span>字段：姓名、专业与年级、项目经历、技能、联系方式</span>
+                <span>期限：至 2026-11-25 23:59（Asia/Shanghai）</span>
+              </div>
+              <div class="actions" style="margin: 0">
+                <button type="button" class="btn btn-secondary" data-action="revoke">撤销</button>
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <strong>匹配 · 个人 AI</strong>
+                <span>用途：使用已确认资料生成有依据的推荐；不向组织披露。</span>
+                <span>期限：长期，可随时关闭</span>
+              </div>
+              <div class="actions" style="margin: 0">
+                <button type="button" class="btn btn-secondary" data-action="revoke">撤销</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">未授予</p>
+            <div class="field-row">
+              <div>
+                <strong>关系用途 · 西交大智能系统实验室</strong>
+                <span>未确认。关系空间当前不读取任何关系资料。</span>
+              </div>
+              <span class="badge badge-neutral">未授予</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">历史</p>
+            <ul class="timeline">
+              <li>
+                <strong>引荐授权创建</strong>
+                <time>2026-11-11 10:24</time>
+                <span class="meta">来源：个人资料 v3；预览 v2。</span>
+              </li>
+              <li>
+                <strong>匹配用途确认</strong>
+                <time>2026-11-08 09:10</time>
+                <span class="meta">仅用于个人推荐，不向组织披露。</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="card danger-zone">
+            <h3>撤销边界</h3>
+            <p>撤销提交后，系统拒绝新的授权读取；已送达内容或系统外副本无法收回。其他独立授权可能仍然有效。</p>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-org-opportunities" aria-labelledby="org-opportunities-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="org-opportunities-title">组织机会</h2>
+              <p>此页不在 M1-07 首轮原型范围；实现前不提供可点击的假发布流程。</p>
+            </div>
+            <span class="badge badge-neutral">未展开</span>
+          </div>
+          <div class="empty-state">
+            <h3>机会管理尚未展开</h3>
+            <p>首轮只评审发现、授权、收件箱、关系与撤销。组织发布流程在 M4 设计。</p>
+            <div class="actions" style="justify-content: center">
+              <button type="button" class="btn btn-secondary" data-screen="inbox">返回收件箱</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-org-members" aria-labelledby="org-members-title" hidden>
+          <div class="screen-header">
+            <div>
+              <h2 id="org-members-title">组织成员</h2>
+              <p>此页不在 M1-07 首轮原型范围；成员邀请、角色与代表权在 M2 设计。</p>
+            </div>
+            <span class="badge badge-neutral">未展开</span>
+          </div>
+          <div class="empty-state">
+            <h3>成员管理尚未展开</h3>
+            <p>组织身份切换、代表权与最后管理员保护需要独立评审。</p>
+            <div class="actions" style="justify-content: center">
+              <button type="button" class="btn btn-secondary" data-screen="inbox">返回收件箱</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="context" id="context" aria-label="上下文说明">
+        <div id="context-body"></div>
+      </aside>
+
+      <nav class="bottom-nav" id="bottom-nav" aria-label="移动端导航"></nav>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="dialog-backdrop" id="dialog-backdrop" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <h2 id="dialog-title"></h2>
+        <div id="dialog-body"></div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-secondary" id="dialog-cancel">取消</button>
+          <button type="button" class="btn btn-primary" id="dialog-confirm">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const app = document.getElementById('app');
+      const main = document.getElementById('main');
+      const pageTitle = document.getElementById('page-title');
+      const crumb = document.getElementById('crumb');
+      const contextBody = document.getElementById('context-body');
+      const bottomNav = document.getElementById('bottom-nav');
+      const stateSelect = document.getElementById('state-select');
+      const stateBanner = document.getElementById('state-banner');
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeLabel = document.getElementById('theme-label');
+      const toast = document.getElementById('toast');
+      const dialogBackdrop = document.getElementById('dialog-backdrop');
+      const dialogTitle = document.getElementById('dialog-title');
+      const dialogBody = document.getElementById('dialog-body');
+      const dialogConfirm = document.getElementById('dialog-confirm');
+      const dialogCancel = document.getElementById('dialog-cancel');
+
+      const screens = {
+        today: { title: '今日', crumb: '个人 / 今日', identity: 'personal' },
+        discover: { title: '发现机会', crumb: '个人 / 发现', identity: 'personal' },
+        opportunity: { title: '机会详情', crumb: '个人 / 发现 / 机会', identity: 'personal' },
+        consent: { title: '授权预览', crumb: '个人 / 发现 / 授权预览', identity: 'personal' },
+        referrals: { title: '我的引荐', crumb: '个人 / 我的引荐', identity: 'personal' },
+        relationship: { title: '关系空间', crumb: '个人 / 空间', identity: 'personal' },
+        privacy: { title: '隐私与授权', crumb: '个人 / 隐私与授权', identity: 'personal' },
+        inbox: { title: '组织收件箱', crumb: '组织 / 收件箱', identity: 'org' },
+        'org-opportunities': {
+          title: '组织机会',
+          crumb: '组织 / 机会',
+          identity: 'org',
+        },
+        'org-members': { title: '组织成员', crumb: '组织 / 成员', identity: 'org' },
+      };
+
+      const context = {
+        today:
+          '<h2>当前身份</h2><p>你正在以个人身份查看待办与机会。切换到组织身份时，个人记忆不会进入组织上下文。</p><p>推荐理由只使用你允许匹配且已确认的资料；没有证据时不显示个性化理由。</p>',
+        discover:
+          '<h2>筛选与依据</h2><p>结果按相关性与截止时间排序，不使用无解释的匹配分数。</p><p>“已确认资料推荐”与“按搜索条件找到”分开标识；资料不足时明确说明。</p>',
+        opportunity:
+          '<h2>推荐依据</h2><p>你允许匹配的项目经历与机会要求相关；组织只能看到本次引荐确认的快照。</p><p>组织认证状态为“未认证”，不构成官方背书。</p>',
+        consent:
+          '<h2>本次共享摘要</h2><dl><dt>接收方</dt><dd>西交大智能系统实验室（开发样例）</dd><dt>用途</dt><dd>引荐；关系用途未勾选</dd><dt>字段</dt><dd class="consent-summary-fields">姓名、专业与年级、项目经历、技能、联系方式</dd><dt>期限</dt><dd>14 天（至 2026-11-25 23:59）</dd></dl><p>字段、接收方、用途或来源变化后必须重新预览。</p>',
+        referrals:
+          '<h2>状态说明</h2><p>“已发送”只表示请求已发出；“组织已查看”不表示接受。接受后建立关系空间，但关系资料仍需独立授权。</p><p>网络超时先用同一幂等键确认结果，不直接重发新请求。</p>',
+        inbox:
+          '<h2>组织上下文</h2><p>当前组织：西交大智能系统实验室（开发样例）。只有活跃且有代表权限的成员可读取引荐快照并做出决定。</p><p>未发送候选不会出现在收件箱；组织不能沿推荐依据读取申请人的私人记忆。</p>',
+        relationship:
+          '<h2>共享上下文</h2><p>关系已建立，但关系用途未授权，因此共享上下文为空。</p><p>引荐授权不会自动升级为关系用途；需要单独确认字段、接收方与期限。</p>',
+        privacy:
+          '<h2>撤销边界</h2><p>撤销一个授权不等于撤销全部共享。其他独立授权可能仍然有效。</p><p>撤销提交后拒绝新的授权读取；已送达内容或系统外副本无法收回。</p>',
+        'org-opportunities':
+          '<h2>范围说明</h2><p>组织发布机会不在 M1-07 首轮原型范围；M4 单独设计。</p>',
+        'org-members':
+          '<h2>范围说明</h2><p>成员邀请、角色与代表权不在 M1-07 首轮原型范围；M2 单独设计。</p>',
+      };
+
+      const stateMessages = {
+        default: '',
+        loading: '正在加载；保留页面结构，不用空白屏幕替代。',
+        empty: '当前没有内容；提供真实下一步，不制造假数据。',
+        error: '加载失败；提供重试，不泄露内部错误或堆栈。',
+        denied: '没有权限；不透露无权知晓的主体或字段。',
+        disabled: '当前不可用；说明原因与可恢复动作。',
+      };
+
+      let currentScreen = 'today';
+      let currentIdentity = 'personal';
+      let lastFocus = null;
+      let dialogAction = null;
+
+      function renderBottomNav() {
+        const items =
+          currentIdentity === 'personal'
+            ? [
+                ['today', '今日', 'i-home'],
+                ['discover', '发现', 'i-compass'],
+                ['referrals', '引荐', 'i-send'],
+                ['relationship', '空间', 'i-users'],
+                ['privacy', '隐私', 'i-shield'],
+              ]
+            : [
+                ['inbox', '收件箱', 'i-inbox'],
+                ['privacy', '隐私', 'i-shield'],
+              ];
+        bottomNav.innerHTML = items
+          .map(
+            ([screen, label, icon]) =>
+              `<button type="button" data-screen="${screen}" ${
+                screen === currentScreen ? 'aria-current="page"' : ''
+              }><svg class="icon" aria-hidden="true"><use href="#${icon}" /></svg>${label}</button>`,
+          )
+          .join('');
+      }
+
+      function showScreen(id) {
+        const meta = screens[id];
+        if (!meta) return;
+        if (meta.identity !== currentIdentity) setIdentity(meta.identity, id);
+        currentScreen = id;
+        document.querySelectorAll('.screen').forEach((screen) => {
+          screen.hidden = screen.id !== `screen-${id}`;
+        });
+        document.querySelectorAll('[data-screen]').forEach((button) => {
+          if (button.classList.contains('nav-item')) {
+            if (button.dataset.screen === id) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+          }
+        });
+        pageTitle.textContent = meta.title;
+        crumb.textContent = meta.crumb;
+        contextBody.innerHTML = context[id] || '';
+        renderBottomNav();
+        setState('default');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      function setIdentity(identity, nextScreen) {
+        currentIdentity = identity;
+        app.dataset.identity = identity;
+        document.querySelectorAll('button[data-identity]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.identity === identity));
+        });
+        document.querySelector('[data-nav="personal"]').hidden = identity !== 'personal';
+        document.querySelector('[data-nav="org"]').hidden = identity !== 'org';
+        const identityToggleLabel = document.getElementById('identity-toggle-label');
+        if (identityToggleLabel) {
+          identityToggleLabel.textContent = identity === 'personal' ? '组织身份' : '个人身份';
+        }
+        const target =
+          nextScreen ||
+          (identity === 'personal'
+            ? screens[currentScreen]?.identity === 'personal'
+              ? currentScreen
+              : 'today'
+            : screens[currentScreen]?.identity === 'org'
+              ? currentScreen
+              : 'inbox');
+        if (target !== currentScreen) showScreen(target);
+        else {
+          renderBottomNav();
+          contextBody.innerHTML = context[currentScreen] || '';
+        }
+      }
+
+      function setState(state) {
+        main.dataset.state = state;
+        stateSelect.value = state;
+        stateBanner.hidden = state === 'default';
+        const screen = document.getElementById(`screen-${currentScreen}`);
+        stateBanner.textContent =
+          state !== 'default' && !screen?.classList.contains('has-states')
+            ? '此页状态变体见评审矩阵；原型仅演示默认状态。'
+            : stateMessages[state] || '';
+      }
+
+      function setTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        themeToggle.setAttribute('aria-pressed', String(theme === 'dark'));
+        themeLabel.textContent = theme === 'dark' ? '浅色' : '深色';
+        themeToggle.querySelector('use').setAttribute(
+          'href',
+          theme === 'dark' ? '#i-sun' : '#i-moon',
+        );
+      }
+
+      let toastTimer;
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 4200);
+      }
+
+      function openDialog({ title, body, confirmLabel, danger = false, onConfirm }) {
+        lastFocus = document.activeElement;
+        dialogTitle.textContent = title;
+        dialogBody.innerHTML = body;
+        dialogConfirm.textContent = confirmLabel;
+        dialogConfirm.className = danger ? 'btn btn-danger' : 'btn btn-primary';
+        dialogAction = onConfirm;
+        dialogBackdrop.hidden = false;
+        dialogConfirm.focus();
+      }
+
+      function closeDialog() {
+        dialogBackdrop.hidden = true;
+        dialogAction = null;
+        if (lastFocus instanceof HTMLElement) lastFocus.focus();
+      }
+
+      function updateConsentSummary() {
+        const selected = [...document.querySelectorAll('[data-consent-field]')]
+          .filter((input) => input.checked)
+          .map((input) => input.dataset.label);
+        document.querySelectorAll('.consent-summary-fields').forEach((element) => {
+          element.textContent = selected.length ? selected.join('、') : '未选择任何字段';
+        });
+        const relationship = document.getElementById('relationship-purpose');
+        const summary = document.getElementById('summary-relationship');
+        if (relationship && summary) {
+          summary.textContent = relationship.checked ? '；关系用途已勾选' : '；关系用途未勾选';
+        }
+      }
+
+      document.addEventListener('click', (event) => {
+        const screenButton = event.target.closest('[data-screen]');
+        if (screenButton) {
+          showScreen(screenButton.dataset.screen);
+          return;
+        }
+        const identityButton = event.target.closest('button[data-identity]');
+        if (identityButton) {
+          setIdentity(identityButton.dataset.identity);
+          return;
+        }
+        const actionButton = event.target.closest('[data-action]');
+        if (!actionButton) return;
+        const action = actionButton.dataset.action;
+        if (action === 'privacy') showScreen('privacy');
+        if (action === 'toggle-identity') {
+          setIdentity(currentIdentity === 'personal' ? 'org' : 'personal');
+        }
+        if (action === 'org-inbox') {
+          setIdentity('org', 'inbox');
+        }
+        if (action === 'dismiss') showToast('已从本轮推荐中移除；不会通知组织。');
+        if (action === 'save') showToast('已保存到“稍后查看”（原型不持久化）。');
+        if (action === 'demo-only') showToast('此操作不在 M1-07 原型范围，未执行任何业务动作。');
+        if (action === 'evidence')
+          showToast('原型不展示私人记忆正文；实现时只显示允许匹配的来源与版本。');
+        if (action === 'reset-filters') {
+          setState('default');
+          showToast('已放宽筛选条件（原型示意）。');
+        }
+        if (action === 'retry') {
+          setState('loading');
+          setTimeout(() => setState('default'), 600);
+        }
+        if (action === 'supplement') {
+          showScreen('consent');
+          showToast('补充资料需要重新预览并确认共享字段。');
+        }
+        if (action === 'withdraw') {
+          openDialog({
+            title: '撤回这条引荐？',
+            body: '<p>撤回后组织不能继续读取本次引荐快照；已送达内容或系统外副本无法收回。</p><p>其他独立授权可能仍然有效。</p>',
+            confirmLabel: '撤回引荐',
+            danger: true,
+            onConfirm: () => {
+              setState('disabled');
+              showToast('引荐已撤回；新的读取将被拒绝。');
+            },
+          });
+        }
+        if (action === 'send') {
+          showToast('引荐已发送。组织只读取本次确认的快照；关系用途未授权。');
+          showScreen('referrals');
+          const status = document.getElementById('referral-status');
+          if (status) status.textContent = '已发送，等待组织查看';
+        }
+        if (action === 'accept') {
+          openDialog({
+            title: '接受并建立关系？',
+            body: '<p>接受后将建立唯一关系空间，并重新校验机会、成员代表权、双方决定与授权。</p><p>关系用途尚未授权，因此共享上下文为空；不会自动继承引荐资料。</p>',
+            confirmLabel: '接受并建立关系',
+            onConfirm: () => {
+              showToast('关系已建立；共享上下文为空，需独立授权。');
+              showScreen('relationship');
+            },
+          });
+        }
+        if (action === 'request-info') {
+          showToast('已请求补充资料；对方会看到需要补充的字段，不会自动扩大授权范围。');
+        }
+        if (action === 'decline') {
+          openDialog({
+            title: '拒绝这次引荐？',
+            body: '<p>拒绝不会建立关系空间；已送达的引荐快照不会因拒绝而变成可继续读取的共享上下文。</p><p>对方会看到决定结果，但不会看到组织内部备注。</p>',
+            confirmLabel: '拒绝',
+            danger: true,
+            onConfirm: () => showToast('已拒绝本次引荐；不会建立关系。'),
+          });
+        }
+        if (action === 'revoke') {
+          openDialog({
+            title: '撤销这个授权？',
+            body: '<p>此授权涉及：接收方“西交大智能系统实验室（开发样例）”、用途“引荐”、字段“姓名、专业与年级、项目经历、技能、联系方式”。</p><p><strong>撤销后，系统将拒绝新的授权读取；已送达内容或系统外副本无法收回。</strong></p><p>其他独立授权可能仍然有效；关系用途当前未授予。</p>',
+            confirmLabel: '确认撤销',
+            danger: true,
+            onConfirm: () => {
+              showToast('此授权已撤销，系统将拒绝新的授权读取；已送达内容无法收回。');
+            },
+          });
+        }
+        if (action === 'relationship-consent') {
+          showToast('关系资料需要独立预览与确认；原型不自动勾选或延长引荐授权。');
+        }
+      });
+
+      document.getElementById('search-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        showToast('原型不执行搜索；实现时使用服务端过滤与游标分页。');
+      });
+      document.getElementById('ai-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        showToast('设计原型不调用模型；实现时需绑定用途、来源与确认。');
+      });
+      document.getElementById('relationship-purpose').addEventListener('change', (event) => {
+        document.getElementById('relationship-fields').hidden = !event.target.checked;
+        updateConsentSummary();
+      });
+      document.querySelectorAll('[data-consent-field]').forEach((input) => {
+        input.addEventListener('change', updateConsentSummary);
+      });
+      stateSelect.addEventListener('change', (event) => setState(event.target.value));
+      themeToggle.addEventListener('click', () => {
+        setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      });
+      dialogCancel.addEventListener('click', closeDialog);
+      dialogConfirm.addEventListener('click', () => {
+        const action = dialogAction;
+        closeDialog();
+        if (action) action();
+      });
+      dialogBackdrop.addEventListener('click', (event) => {
+        if (event.target === dialogBackdrop) closeDialog();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !dialogBackdrop.hidden) closeDialog();
+        if (event.key !== 'Tab' || dialogBackdrop.hidden) return;
+        const focusable = dialogBackdrop.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+
+      setIdentity('personal', 'today');
+      setState('default');
+      setTheme('light');
+      updateConsentSummary();
+    </script>
+  </body>
+</html>
