@@ -2,6 +2,8 @@
 
 日期：2026-11-10。依据：工作区 `Origin Plan.md`（Development Specification 1.0）。
 
+> 注：本文环境信息是 2026-11-10 的首次评估记录。后续复检发现 Node、pnpm、Docker 和 Redis 状态已有变化，最新结果以 [README](../../README.md) 和 [开发计划第 2 节](DEVELOPMENT_PLAN.md#2-当前基线与执行方式) 为准。
+
 本文是待实施的启动建议，不代表功能已经实现，也不替代原始规格的 MVP 验收要求。
 
 后续执行以 [详细开发计划](DEVELOPMENT_PLAN.md) 为准。原始规格保留 PAN 代号，新仓库与工程文档统一使用 AVEN。

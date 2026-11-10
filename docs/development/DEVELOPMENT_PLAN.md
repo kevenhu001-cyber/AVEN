@@ -39,12 +39,12 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 ## 2. 当前基线与执行方式
 
 - 应用代码、依赖清单、数据库迁移和 CI 均尚未建立。
-- 已有原始规格、启动建议和本计划；README 说明当前状态。
-- 本机检测到 Git、Node v26.13.0、pnpm 12.16.1；尚未验证与目标框架兼容性。
-- 未找到 Docker 命令；需检查可用容器环境或配置等效数据库服务，不默认本机已具备运行条件。
+- 已有原始规格、启动建议、本计划和 M0-01 文档集；README 说明当前状态。
+- 2026-11-10 复检：Node v24.19.0、npm 11.17.0、pnpm 未安装（corepack 0.35.0 可用）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、Redis 未安装、无 Android SDK/adb；尚未验证与目标框架兼容性。
+- Docker 已可用；Redis 和 PostgreSQL 扩展计划通过 Compose 提供，不默认本机已具备全部运行条件。
 - 仓库与后续工程文档使用 AVEN，原始规格中的 PAN 代号保留。
 
-每项工作分为 `TODO → IN_PROGRESS → REVIEW → DONE`；遇到外部阻塞记录原因和下一步，不将阻塞视为完成。本文初始所有实施任务均为 TODO。
+每项工作分为 `TODO → IN_PROGRESS → REVIEW → DONE`；遇到外部阻塞记录原因和下一步，不将阻塞视为完成。本文初始所有实施任务均为 TODO；实际执行状态记录在第 19 节，只有交付并验证后才更新。
 
 任务编号保持稳定，可用于分支、提交和后续 issue。任务实施者负责代码及验证，验收按本文标准执行；具体人员在实际开始任务时记录，不预设不存在的团队配置。
 
@@ -339,8 +339,23 @@ POST SSE 通过支持请求体与鉴权的流式客户端消费；定义事件 I
 
 存在可复现的越权读取/写入、私人信息泄露、重复外部操作或数据迁移损坏时，暂停该功能发布，修复并补充回归验证后继续。
 
-## 18. 本轮交付与下一步
+## 18. 规划轮交付与下一步
 
-本轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
+规划轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
 
-下一项明确任务是 **M0-01：建立最小产品与工程文档**。输出 PRD、DESIGN_SYSTEM、TDD、SCHEMA、AGENTS 和更新后的 README，随后开展运行时与 Monorepo 初始化。
+M0-01 已完成，交付见第 19 节。下一项明确任务是 **M0-02：依赖与运行时**，完成 ADR-001 验证、锁定版本、建立 workspace 与 strict TypeScript/lint，随后 M0-03 建立应用骨架。
+
+## 19. 执行记录
+
+| 任务 | 状态 | 日期 | 交付/证据 | 说明 |
+|---|---|---|---|---|
+| M0-01 | DONE | 2026-11-10 | `AGENTS.md`、`docs/product/PRD.md`、`docs/design/DESIGN_SYSTEM.md`、`docs/architecture/TDD.md`、`docs/database/SCHEMA.md`、`docs/api/README.md`、`docs/architecture/decisions/ADR-001..006`、更新后的 `README.md` | 仅文档交付；未安装依赖、未初始化应用、未执行迁移或应用测试 |
+| M0-02 | TODO | — | — | 依赖与运行时；ADR-001 验证 |
+| M0-03 | TODO | — | — | Web/API/Worker/Expo 最小骨架 |
+| M0-04 | TODO | — | — | Compose、PostgreSQL、Redis、扩展、角色 |
+| M0-05 | TODO | — | — | 迁移流程与开发 seed |
+| M0-06 | TODO | — | — | 存活/就绪检查与 Web/Mobile 健康调用 |
+| M0-07 | TODO | — | — | Outbox/队列重试与幂等样例 |
+| M0-08 | TODO | — | — | CI 与启动文档 |
+
+M0-01 的完成不代表 M0 验收通过。M0 仍需新环境按文档启动、四应用可用、空库迁移、依赖故障就绪失败和 CI 证据。
