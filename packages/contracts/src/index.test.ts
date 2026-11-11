@@ -11,6 +11,7 @@ import {
   LivenessResponseSchema,
   LoginRequestSchema,
   MemoryItemSchema,
+  MemoryEventSchema,
   OrganizationDetailSchema,
   PasswordSchema,
   ReadinessResponseSchema,
@@ -273,5 +274,31 @@ describe('public engineering contracts', () => {
       }).success,
     ).toBe(false);
     expect(RejectMemoryRequestSchema.safeParse({ expectedVersion: 0 }).success).toBe(false);
+  });
+  it('validates metadata-only memory lifecycle events', () => {
+    expect(
+      MemoryEventSchema.parse({
+        id: requestId,
+        eventType: 'expired',
+        actorType: 'system',
+        fromStatus: 'confirmed',
+        toStatus: 'expired',
+        version: 2,
+        metadata: { reason: 'valid_until_elapsed' },
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).eventType,
+    ).toBe('expired');
+    expect(
+      MemoryEventSchema.safeParse({
+        id: requestId,
+        eventType: 'unknown',
+        actorType: 'system',
+        fromStatus: null,
+        toStatus: null,
+        version: 1,
+        metadata: {},
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
 });

@@ -10,6 +10,8 @@ import {
   MemoryCandidateListResponseSchema,
   MemoryCandidateSchema,
   MemoryDetailSchema,
+  MemoryEventListResponseSchema,
+  MemoryEventSchema,
   MemoryItemSchema,
   MemoryListResponseSchema,
   MemorySourceSchema,
@@ -22,6 +24,8 @@ import {
   type MemoryCandidate,
   type MemoryCandidateListResponse,
   type MemoryDetail,
+  type MemoryEvent,
+  type MemoryEventListResponse,
   type MemoryItem,
   type MemoryListResponse,
   type MemorySource,
@@ -69,6 +73,17 @@ type SourceRow = {
   source_id: string | null;
   source_version: string | null;
   excerpt: string | null;
+  created_at: Date;
+};
+
+type EventRow = {
+  id: string;
+  event_type: MemoryEvent['eventType'];
+  actor_type: MemoryEvent['actorType'];
+  from_status: MemoryEvent['fromStatus'];
+  to_status: MemoryEvent['toStatus'];
+  version: number;
+  metadata: Record<string, unknown>;
   created_at: Date;
 };
 
@@ -124,7 +139,20 @@ function mapCandidate(row: CandidateRow): MemoryCandidate {
   return MemoryCandidateSchema.parse({ ...mapMemory(row), source });
 }
 
-function encodeCursor(item: MemoryItem): string {
+function mapEvent(row: EventRow): MemoryEvent {
+  return MemoryEventSchema.parse({
+    id: row.id,
+    eventType: row.event_type,
+    actorType: row.actor_type,
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    version: row.version,
+    metadata: row.metadata,
+    createdAt: row.created_at.toISOString(),
+  });
+}
+
+function encodeCursor(item: { createdAt: string; id: string }): string {
   return Buffer.from(JSON.stringify({ createdAt: item.createdAt, id: item.id })).toString(
     'base64url',
   );
@@ -358,6 +386,29 @@ export class MemoryService implements OnModuleDestroy {
     const data = rows.map(mapMemory);
     const hasMore = result.rows.length > options.limit;
     return MemoryListResponseSchema.parse({
+      data,
+      nextCursor: hasMore && data.length ? encodeCursor(data[data.length - 1]!) : null,
+    });
+  }
+
+  async listEvents(
+    auth: AuthContext,
+    id: string,
+    options: { limit: number; cursor?: string },
+  ): Promise<MemoryEventListResponse> {
+    const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+    const result = await withRequestContext(this.getPool(), this.context(auth), async (client) =>
+      client.query<EventRow>(`SELECT * FROM app.list_memory_events($1, $2, $3, $4)`, [
+        id,
+        options.limit,
+        cursor?.createdAt ?? null,
+        cursor?.id ?? null,
+      ]),
+    );
+    const rows = result.rows.slice(0, options.limit);
+    const data = rows.map(mapEvent);
+    const hasMore = result.rows.length > options.limit;
+    return MemoryEventListResponseSchema.parse({
       data,
       nextCursor: hasMore && data.length ? encodeCursor(data[data.length - 1]!) : null,
     });

@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twelve migrations are recorded', migrations.rows[0]?.count === '12');
+    check('fourteen migrations are recorded', migrations.rows[0]?.count === '14');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -102,13 +102,13 @@ async function main(): Promise<void> {
          'campus_memberships','organizations','organization_memberships',
          'organization_invitations','platform_role_assignments',
          'outbox_events','job_receipts','memory_items','memory_sources',
-         'context_field_policies'
+         'context_field_policies','memory_events'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '21');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '22');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -313,13 +313,15 @@ async function main(): Promise<void> {
            'create_memory_item','update_memory_item','delete_memory_item',
            'list_my_memory_items','get_memory_item','list_memory_sources',
            'create_memory_candidate','confirm_memory_item','reject_memory_item',
-           'list_memory_candidates','list_memory_for_use'
+           'list_memory_candidates','list_memory_for_use',
+           'audit_memory_item','list_memory_events','expire_due_memories',
+           'purge_deleted_memories','purge_memory_events'
          )
          AND p.proowner = 'aven_function_owner'::regrole`,
     );
     check(
-      'eleven memory functions are owned by the function owner',
-      memoryFunctions.rows[0]?.count === '11',
+      'sixteen memory functions are owned by the function owner',
+      memoryFunctions.rows[0]?.count === '16',
     );
     check(
       'app cannot create memory without context',
@@ -554,6 +556,168 @@ async function main(): Promise<void> {
       check('another user sees no candidates', otherCandidateList.rows.length === 0);
     } finally {
       await app.query('ROLLBACK');
+    }
+
+    const memoryEventsTable = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relname = 'memory_events'
+         AND c.relrowsecurity AND c.relforcerowsecurity`,
+    );
+    check('memory events table exists with forced RLS', memoryEventsTable.rows[0]?.count === '1');
+    check(
+      'app cannot insert memory events directly',
+      await appError(
+        `INSERT INTO public.memory_events (memory_item_id, owner_principal_id, event_type, version)
+         VALUES ('00000000-0000-4000-8000-000000000000', '${seedIds.userOne}', 'created', 1)`,
+      ),
+    );
+    check(
+      'app cannot update memory events',
+      await appError("UPDATE public.memory_events SET metadata = '{}'::jsonb"),
+    );
+    check('app cannot delete memory events', await appError('DELETE FROM public.memory_events'));
+    let metadataRejected = false;
+    try {
+      await migrator.query(
+        `INSERT INTO public.memory_events
+           (memory_item_id, owner_principal_id, event_type, version, metadata)
+         VALUES ('00000000-0000-4000-8000-000000000000', $1, 'created', 1, '{"content":"private"}'::jsonb)`,
+        [seedIds.userOne],
+      );
+    } catch {
+      metadataRejected = true;
+    }
+    check('memory event metadata rejects private content keys', metadataRejected);
+
+    await migrator.query('BEGIN');
+    try {
+      await migrator.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await migrator.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const lifecycleMemory = await migrator.query<{ id: string }>(
+        "SELECT app.create_memory_item('skill', '生命周期技能', '生命周期内容', null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, null) AS id",
+      );
+      const lifecycleId = lifecycleMemory.rows[0]?.id;
+      check('lifecycle memory creation returns an id', Boolean(lifecycleId));
+      const createdEvents = await migrator.query(
+        `SELECT event_type FROM app.list_memory_events('${lifecycleId}', 20, null, null)`,
+      );
+      check(
+        'memory creation records a created event',
+        createdEvents.rows.some((row) => row.event_type === 'created'),
+      );
+      await migrator.query(
+        `SELECT app.update_memory_item('${lifecycleId}', 1, '生命周期技能更新', '生命周期内容更新', null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, null)`,
+      );
+      const updatedEvents = await migrator.query(
+        `SELECT event_type FROM app.list_memory_events('${lifecycleId}', 20, null, null)`,
+      );
+      check(
+        'memory update records an updated event',
+        updatedEvents.rows.some((row) => row.event_type === 'updated'),
+      );
+      await migrator.query(`SELECT app.delete_memory_item('${lifecycleId}', 2)`);
+      const deletedEvents = await migrator.query(
+        `SELECT event_type, actor_type, from_status, to_status
+         FROM app.list_memory_events('${lifecycleId}', 20, null, null)`,
+      );
+      check(
+        'memory deletion records a user deleted event',
+        deletedEvents.rows.some(
+          (row) =>
+            row.event_type === 'deleted' &&
+            row.actor_type === 'user' &&
+            row.from_status === 'confirmed' &&
+            row.to_status === 'deleted',
+        ),
+      );
+
+      const expiringMemory = await migrator.query<{ id: string }>(
+        "SELECT app.create_memory_item('goal', '到期目标', '到期内容', null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, now() + interval '1 second') AS id",
+      );
+      const expiringId = expiringMemory.rows[0]?.id;
+      await migrator.query("SELECT set_config('app.user_id', '', true)");
+      await migrator.query("SELECT set_config('app.principal_id', '', true)");
+      await migrator.query('SELECT pg_sleep(1.2)');
+      const expired = await migrator.query<{ count: number }>(
+        'SELECT app.expire_due_memories(100) AS count',
+      );
+      check('due memories expire', (expired.rows[0]?.count ?? 0) >= 1);
+      await migrator.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await migrator.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const expiredDetail = await migrator.query(
+        `SELECT status, version FROM app.get_memory_item('${expiringId}')`,
+      );
+      check(
+        'expired memory status and version are updated',
+        expiredDetail.rows[0]?.status === 'expired' && expiredDetail.rows[0]?.version === 2,
+      );
+      const expiredEvents = await migrator.query(
+        `SELECT event_type, actor_type, from_status, to_status
+         FROM app.list_memory_events('${expiringId}', 20, null, null)`,
+      );
+      check(
+        'expiry records a system event',
+        expiredEvents.rows.some(
+          (row) =>
+            row.event_type === 'expired' &&
+            row.actor_type === 'system' &&
+            row.from_status === 'confirmed' &&
+            row.to_status === 'expired',
+        ),
+      );
+      const expiredUsable = await migrator.query(
+        "SELECT * FROM app.list_memory_for_use('self_ai', 20, null, null)",
+      );
+      check(
+        'expired memory is excluded from the retrieval scope',
+        !expiredUsable.rows.some((row) => row.id === expiringId),
+      );
+
+      await migrator.query("SELECT set_config('app.user_id', '', true)");
+      await migrator.query("SELECT set_config('app.principal_id', '', true)");
+      const purged = await migrator.query<{ count: number }>(
+        'SELECT app.purge_deleted_memories(0) AS count',
+      );
+      check('deleted memory content is purged', (purged.rows[0]?.count ?? 0) >= 1);
+      await migrator.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await migrator.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const purgedMemory = await migrator.query(
+        `SELECT * FROM app.get_memory_item('${lifecycleId}')`,
+      );
+      check('purged memory content is gone', purgedMemory.rows.length === 0);
+      const purgedEvents = await migrator.query(
+        `SELECT event_type, actor_type, from_status, to_status
+         FROM app.list_memory_events('${lifecycleId}', 20, null, null)`,
+      );
+      check(
+        'purge keeps an audit event after content removal',
+        purgedEvents.rows.some(
+          (row) =>
+            row.event_type === 'purged' &&
+            row.actor_type === 'system' &&
+            row.from_status === 'deleted' &&
+            row.to_status === null,
+        ),
+      );
+
+      await migrator.query(
+        "UPDATE public.memory_events SET created_at = now() - interval '400 days' WHERE memory_item_id = $1",
+        [lifecycleId],
+      );
+      const purgedEventsCount = await migrator.query<{ count: number }>(
+        'SELECT app.purge_memory_events(365) AS count',
+      );
+      check(
+        'old audit events are purged by retention',
+        (purgedEventsCount.rows[0]?.count ?? 0) >= 1,
+      );
+      const eventsAfterRetention = await migrator.query(
+        `SELECT * FROM app.list_memory_events('${lifecycleId}', 20, null, null)`,
+      );
+      check('audit retention removes old events', eventsAfterRetention.rows.length === 0);
+    } finally {
+      await migrator.query('ROLLBACK');
     }
 
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));

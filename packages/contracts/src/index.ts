@@ -558,6 +558,39 @@ export const RejectMemoryRequestSchema = z
   })
   .strict();
 
+export const MemoryEventTypeSchema = z.enum([
+  'created',
+  'candidate_created',
+  'confirmed',
+  'rejected',
+  'updated',
+  'expired',
+  'deleted',
+  'purged',
+]);
+
+export const MemoryEventActorTypeSchema = z.enum(['user', 'system']);
+
+export const MemoryEventSchema = z
+  .object({
+    id: z.uuid(),
+    eventType: MemoryEventTypeSchema,
+    actorType: MemoryEventActorTypeSchema,
+    fromStatus: MemoryStatusSchema.nullable(),
+    toStatus: MemoryStatusSchema.nullable(),
+    version: z.number().int().positive(),
+    metadata: z.record(z.string(), z.unknown()),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const MemoryEventListResponseSchema = z
+  .object({
+    data: z.array(MemoryEventSchema),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -625,3 +658,7 @@ export type ExtractMemoryRequest = z.infer<typeof ExtractMemoryRequestSchema>;
 export type ExtractMemoryResponse = z.infer<typeof ExtractMemoryResponseSchema>;
 export type ConfirmMemoryRequest = z.infer<typeof ConfirmMemoryRequestSchema>;
 export type RejectMemoryRequest = z.infer<typeof RejectMemoryRequestSchema>;
+export type MemoryEventType = z.infer<typeof MemoryEventTypeSchema>;
+export type MemoryEventActorType = z.infer<typeof MemoryEventActorTypeSchema>;
+export type MemoryEvent = z.infer<typeof MemoryEventSchema>;
+export type MemoryEventListResponse = z.infer<typeof MemoryEventListResponseSchema>;

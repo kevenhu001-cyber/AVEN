@@ -37,6 +37,7 @@
     "organization:verify": "pnpm build && tsx scripts/organization-verify.ts",
     "isolation:verify": "pnpm build && tsx scripts/isolation-verify.ts",
     "memory:verify": "pnpm build && tsx scripts/memory-verify.ts",
+    "memory:maintain": "pnpm build:packages && tsx scripts/memory-maintenance.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

@@ -20,6 +20,7 @@ import {
   ExtractMemoryResponseSchema,
   MemoryCandidateListResponseSchema,
   MemoryDetailSchema,
+  MemoryEventListResponseSchema,
   MemoryKindSchema,
   MemoryListResponseSchema,
   RejectMemoryRequestSchema,
@@ -134,6 +135,21 @@ export class MemoryController {
   async reject(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(RejectMemoryRequestSchema, body);
     return MemoryDetailSchema.parse(await this.memories.reject(auth, parseId(id), input));
+  }
+
+  @Get(':id/events')
+  async listEvents(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id') id: string,
+    @Query('limit') limit: string | undefined,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    return MemoryEventListResponseSchema.parse(
+      await this.memories.listEvents(auth, parseId(id), {
+        limit: parseLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      }),
+    );
   }
 
   @Get(':id')

@@ -361,7 +361,7 @@ erDiagram
 - 个人记忆仅本人直接读写；组织成员读取 confirmed 内容，owner/admin 另可读本组织待确认候选并确认/写入；组织上下文不能读取成员的个人记忆。
 - `idx_memory_valid_until`：部分索引 `WHERE status='confirmed' AND valid_until IS NOT NULL`。
 - GIN：`structured_value`（后续按查询需要）。
-- 状态机：`pending_confirmation --confirm--> confirmed`、`pending_confirmation --reject--> rejected`、任一非删除状态 `--delete--> deleted`；`rejected`/`expired` 不可编辑。
+- 状态机：`pending_confirmation --confirm--> confirmed`、`pending_confirmation --reject--> rejected`、`confirmed --expire--> expired`、任一非删除状态 `--delete--> deleted`；`rejected`/`expired` 不可编辑。
 - 检索门：`app.list_memory_for_use(use)` 只返回 `confirmed`、未删除、未过期且 `context_field_policies.allowed_uses` 包含该用途的记忆；候选、拒绝、过期与空用途不进入检索范围。
 
 ### 6.1.1 `context_field_policies`
@@ -393,6 +393,23 @@ erDiagram
 | `created_at` | `timestamptz` | 非空 |
 
 索引：`idx_memory_sources_memory`；`idx_memory_sources_source`。
+
+### 6.2.1 `memory_events`
+
+| 列 | 类型 | 说明 |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `memory_item_id` | `uuid` | 非空；不设 FK，正文物理清理后事件仍保留 |
+| `owner_principal_id` | `uuid` | FK principals，`ON DELETE CASCADE` |
+| `event_type` | `memory_event_type` | created/candidate_created/confirmed/rejected/updated/expired/deleted/purged |
+| `actor_type` | `text` | user/system |
+| `actor_principal_id` | `uuid` | 可空；系统事件为空 |
+| `from_status` / `to_status` | `memory_status` | 可空；状态转换 |
+| `version` | `integer` | 非空，>=1；对应记忆版本 |
+| `metadata` | `jsonb` | 非空，默认 `{}`；只允许 reason/sourceType/allowedUses/displayAudience/changedFields/retentionDays |
+| `created_at` | `timestamptz` | 非空 |
+
+索引：`(memory_item_id, created_at DESC)`、`(owner_principal_id, created_at DESC)`、`created_at`。只追加；普通池只有本人 SELECT，无 INSERT/UPDATE/DELETE。审计触发器在 `memory_items` INSERT/UPDATE/DELETE 后记录事件；metadata 触发器拒绝未允许键，防止标题/正文/来源片段进入审计。保留期独立于正文，默认 365 天。
 
 ### 6.3 `memory_embeddings`
 
@@ -916,6 +933,7 @@ $$;
 | `organization_invitations` | 组织管理员；被邀请人按邮箱 | 组织管理员；被邀请人接受 |
 | `memory_items` / `memory_sources` | 个人所有者；组织 confirmed 内容按成员范围 | 个人所有者/组织管理员；失效传播受控 |
 | `context_field_policies` | 所有者；公开发现只走字段投影函数 | 所有者/组织管理员；校验来源所有权 |
+| `memory_events` | 本人只读；平台审计仅元数据 | 受控追加触发器；普通池无写权限；保留清理仅维护函数 |
 | `memory_embeddings` | 本人、worker | 本人/worker |
 | `match_profiles` | 本人、worker | 本人/worker |
 | `intents` | 本人、worker（匹配用途） | 本人 |
@@ -1205,6 +1223,7 @@ GRANT EXECUTE ON FUNCTION app.auth_lookup(text) TO aven_auth;
 | 会话 | 过期后 30 天 | 定时清理 |
 | 邮箱/重置 token | 过期后 7 天 | 定时清理 |
 | 已删除记忆 | 软删除 30 天 | 硬删除 + 清理 embedding；授权项立即 stale |
+| 记忆事件 | 365 天（可配置） | 只保留元数据，不含正文；独立于正文保留期 |
 | 预览凭据 | 过期后 24 小时 | 清理，不含长期正文 |
 | 失效快照正文 | 失效后 30 天（真实数据前确认） | 受控清除 value_snapshot、记录 purged_at；不影响必要元数据 |
 | Run 事件 | 24 小时 | 事件正文清理；来源绑定另覆盖派生消息/行动存续期 |

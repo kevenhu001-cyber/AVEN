@@ -165,6 +165,7 @@ async function main(): Promise<void> {
   const baseUrl = await app.getUrl();
   const migrator = createPool('aven_migrator', { max: 2 });
   const appPool = createApplicationPool({ max: 1 });
+  const workerPool = createPool('aven_worker', { max: 1 });
   const userIds: string[] = [];
   const stamp = Date.now();
   const password = 'Correct Horse Battery Staple 42!';
@@ -776,6 +777,198 @@ async function main(): Promise<void> {
       body: { expectedVersion: 2 },
     });
     check('memory confirmation without CSRF returns 403', missingCsrfConfirm.status === 403);
+
+    // M3-03: lifecycle audit, expiry, and retention.
+    const deletedEvents = await clientA.call(`/api/v1/memories/${String(memoryId)}/events`);
+    const deletedEventData = Array.isArray(nested(deletedEvents.body, ['data']))
+      ? (nested(deletedEvents.body, ['data']) as unknown[])
+      : [];
+    const deletedEventTypes = deletedEventData.map((item) => String(nested(item, ['eventType'])));
+    check(
+      'memory events are readable for a soft-deleted memory',
+      deletedEvents.status === 200 &&
+        deletedEventTypes.includes('created') &&
+        deletedEventTypes.includes('updated') &&
+        deletedEventTypes.includes('deleted'),
+    );
+    check(
+      'memory events record the user actor',
+      deletedEventData.length > 0 &&
+        deletedEventData.every((item) => nested(item, ['actorType']) === 'user'),
+    );
+    check(
+      'memory events do not contain private content',
+      deletedEventData.every((item) => {
+        const keys = Object.keys(record(nested(item, ['metadata'])));
+        return (
+          !keys.includes('content') &&
+          !keys.includes('title') &&
+          !keys.includes('excerpt') &&
+          !keys.includes('structuredValue')
+        );
+      }),
+    );
+    const firstEventPage = await clientA.call(
+      `/api/v1/memories/${String(memoryId)}/events?limit=1`,
+    );
+    const firstEventPageData = Array.isArray(nested(firstEventPage.body, ['data']))
+      ? (nested(firstEventPage.body, ['data']) as unknown[])
+      : [];
+    const eventCursor = nested(firstEventPage.body, ['nextCursor']);
+    check(
+      'memory events paginate with a cursor',
+      firstEventPage.status === 200 &&
+        firstEventPageData.length === 1 &&
+        typeof eventCursor === 'string',
+    );
+    const secondEventPage = await clientA.call(
+      `/api/v1/memories/${String(memoryId)}/events?limit=1&cursor=${encodeURIComponent(String(eventCursor))}`,
+    );
+    check(
+      'memory event cursor returns the next event',
+      secondEventPage.status === 200 &&
+        Array.isArray(nested(secondEventPage.body, ['data'])) &&
+        (nested(secondEventPage.body, ['data']) as unknown[]).length === 1,
+    );
+
+    const interestEvents = await clientA.call(`/api/v1/memories/${String(interestId)}/events`);
+    const interestEventData = Array.isArray(nested(interestEvents.body, ['data']))
+      ? (nested(interestEvents.body, ['data']) as unknown[])
+      : [];
+    const interestEventTypes = interestEventData.map((item) => String(nested(item, ['eventType'])));
+    check(
+      'confirmed memory records candidate and confirmation events',
+      interestEventTypes.includes('candidate_created') && interestEventTypes.includes('confirmed'),
+    );
+    const confirmedEvent = interestEventData.find(
+      (item) => nested(item, ['eventType']) === 'confirmed',
+    );
+    check(
+      'confirmation event records the status transition',
+      nested(confirmedEvent, ['fromStatus']) === 'pending_confirmation' &&
+        nested(confirmedEvent, ['toStatus']) === 'confirmed',
+    );
+    const rejectedEvents = await clientA.call(`/api/v1/memories/${String(skillId)}/events`);
+    const rejectedEventData = Array.isArray(nested(rejectedEvents.body, ['data']))
+      ? (nested(rejectedEvents.body, ['data']) as unknown[])
+      : [];
+    const rejectedEventTypes = rejectedEventData.map((item) => String(nested(item, ['eventType'])));
+    check(
+      'rejected candidate records the rejection event',
+      rejectedEventTypes.includes('candidate_created') && rejectedEventTypes.includes('rejected'),
+    );
+    const otherEvents = await clientB.call(`/api/v1/memories/${String(memoryId)}/events`);
+    check(
+      'another user sees no memory events',
+      otherEvents.status === 200 &&
+        Array.isArray(nested(otherEvents.body, ['data'])) &&
+        (nested(otherEvents.body, ['data']) as unknown[]).length === 0,
+    );
+
+    const expiring = await clientA.call('/api/v1/memories', {
+      method: 'POST',
+      body: {
+        kind: 'goal',
+        title: '短期目标',
+        content: '两秒后失效的目标',
+        allowedUses: ['self_ai'],
+        validUntil: new Date(Date.now() + 2000).toISOString(),
+      },
+    });
+    check('expiring memory creation returns 201', expiring.status === 201);
+    const expiringId = String(nested(expiring.body, ['id']));
+    const usableBeforeExpiry = await clientA.call('/api/v1/memories/usable?use=self_ai');
+    const usableBeforeExpiryIds = Array.isArray(nested(usableBeforeExpiry.body, ['data']))
+      ? (nested(usableBeforeExpiry.body, ['data']) as unknown[]).map((item) =>
+          String(nested(item, ['id'])),
+        )
+      : [];
+    check('confirmed memory is usable before expiry', usableBeforeExpiryIds.includes(expiringId));
+    await new Promise((resolve) => setTimeout(resolve, 2200));
+    const expiredResult = await workerPool.query<{ count: number }>(
+      'SELECT app.expire_due_memories(100) AS count',
+    );
+    check('maintenance expires due memories', (expiredResult.rows[0]?.count ?? 0) >= 1);
+    const expiredDetail = await clientA.call(`/api/v1/memories/${expiringId}`);
+    check(
+      'expired memory status is visible to the owner',
+      expiredDetail.status === 200 && nested(expiredDetail.body, ['status']) === 'expired',
+    );
+    check(
+      'expired memory clears policy uses and discovery',
+      Array.isArray(nested(expiredDetail.body, ['policy', 'allowedUses'])) &&
+        (nested(expiredDetail.body, ['policy', 'allowedUses']) as unknown[]).length === 0 &&
+        nested(expiredDetail.body, ['policy', 'discoverable']) === false,
+    );
+    const usableAfterExpiry = await clientA.call('/api/v1/memories/usable?use=self_ai');
+    const usableAfterExpiryIds = Array.isArray(nested(usableAfterExpiry.body, ['data']))
+      ? (nested(usableAfterExpiry.body, ['data']) as unknown[]).map((item) =>
+          String(nested(item, ['id'])),
+        )
+      : [];
+    check('expired memory leaves the retrieval scope', !usableAfterExpiryIds.includes(expiringId));
+    const confirmedAfterExpiry = await clientA.call('/api/v1/memories');
+    const confirmedAfterExpiryIds = Array.isArray(nested(confirmedAfterExpiry.body, ['data']))
+      ? (nested(confirmedAfterExpiry.body, ['data']) as unknown[]).map((item) =>
+          String(nested(item, ['id'])),
+        )
+      : [];
+    check(
+      'expired memory leaves the confirmed list',
+      !confirmedAfterExpiryIds.includes(expiringId),
+    );
+    const expiryEvents = await clientA.call(`/api/v1/memories/${expiringId}/events`);
+    const expiryEventData = Array.isArray(nested(expiryEvents.body, ['data']))
+      ? (nested(expiryEvents.body, ['data']) as unknown[])
+      : [];
+    const expiredEvent = expiryEventData.find((item) => nested(item, ['eventType']) === 'expired');
+    check(
+      'expiry records a system event',
+      nested(expiredEvent, ['actorType']) === 'system' &&
+        nested(expiredEvent, ['fromStatus']) === 'confirmed' &&
+        nested(expiredEvent, ['toStatus']) === 'expired',
+    );
+
+    const purgedResult = await workerPool.query<{ count: number }>(
+      'SELECT app.purge_deleted_memories(0) AS count',
+    );
+    check(
+      'maintenance purges deleted memories after retention',
+      (purgedResult.rows[0]?.count ?? 0) >= 1,
+    );
+    const purgedRead = await clientA.call(`/api/v1/memories/${String(memoryId)}`);
+    check('purged memory content is no longer readable', purgedRead.status === 404);
+    const purgedEvents = await clientA.call(`/api/v1/memories/${String(memoryId)}/events`);
+    const purgedEventData = Array.isArray(nested(purgedEvents.body, ['data']))
+      ? (nested(purgedEvents.body, ['data']) as unknown[])
+      : [];
+    const purgedEvent = purgedEventData.find((item) => nested(item, ['eventType']) === 'purged');
+    check(
+      'purge records an audit event after content removal',
+      nested(purgedEvent, ['actorType']) === 'system' &&
+        nested(purgedEvent, ['fromStatus']) === 'deleted' &&
+        nested(purgedEvent, ['toStatus']) === null,
+    );
+    check(
+      'purge metadata records retention',
+      nested(purgedEvent, ['metadata', 'reason']) === 'retention_elapsed',
+    );
+
+    await migrator.query(
+      "UPDATE public.memory_events SET created_at = now() - interval '400 days' WHERE memory_item_id = $1",
+      [memoryId],
+    );
+    const purgedEventCount = await workerPool.query<{ count: number }>(
+      'SELECT app.purge_memory_events(365) AS count',
+    );
+    check('maintenance purges expired audit events', (purgedEventCount.rows[0]?.count ?? 0) >= 1);
+    const eventsAfterRetention = await clientA.call(`/api/v1/memories/${String(memoryId)}/events`);
+    check(
+      'audit retention removes old events without affecting current memories',
+      eventsAfterRetention.status === 200 &&
+        Array.isArray(nested(eventsAfterRetention.body, ['data'])) &&
+        (nested(eventsAfterRetention.body, ['data']) as unknown[]).length === 0,
+    );
   } finally {
     if (userIds.length) {
       await migrator
@@ -794,6 +987,7 @@ async function main(): Promise<void> {
         .catch(() => undefined);
     }
     await appPool.end().catch(() => undefined);
+    await workerPool.end().catch(() => undefined);
     await migrator.end().catch(() => undefined);
     await app.close();
   }
