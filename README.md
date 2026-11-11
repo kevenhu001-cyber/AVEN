@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目处于 **M3 个人上下文与 AI**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01–M2-05：身份、组织与强制 RLS**、**M3-01：已确认个人上下文**、**M3-02：记忆复核**、**M3-03：记忆生命周期**、**M3-04：Provider 与工具**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。机会/引荐、真实 AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+项目处于 **M3 个人上下文与 AI**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01–M2-05：身份、组织与强制 RLS**、**M3-01：已确认个人上下文**、**M3-02：记忆复核**、**M3-03：记忆生命周期**、**M3-04：Provider 与工具**、**M3-05：运行时与流式**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。机会/引荐、真实 AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -43,6 +43,8 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [M3-02 记忆复核交付](docs/development/M3-02_MEMORY_REVIEW.md) | 候选提取、确认/修改/拒绝、用途检索门与验证记录 |
 | [M3-03 记忆生命周期交付](docs/development/M3-03_MEMORY_LIFECYCLE.md) | 事件审计、到期失效、软删除保留与审计保留清理 |
 | [M3-04 Provider 与工具交付](docs/development/M3-04_AI_CORE.md) | Provider 抽象、Mock、工具权限/超时/重试/审计与验证记录 |
+| [M3-05 运行时与流式交付](docs/development/M3-05_AGENT_RUNTIME.md) | Agent turn、持久事件、SSE 重放、取消、来源复核与 24 小时清理 |
+| [Agent 运行时 API](docs/api/AGENT.md) | turn 创建、run 状态、SSE 事件流、取消与保留契约 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -70,9 +72,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项是 **M3-05：运行时与流式**，实现 POST 创建 run + GET SSE、持久事件/来源依赖、游标、取消、重放鉴权与真实代理/原生流验证；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
+下一项是 **M3-06：行动预览与确认**，实现草稿绑定内容版本、有效期、一次性执行标识与重复确认幂等；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
 
-认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)，组织契约见 [组织成员与邀请 API](docs/api/ORGANIZATIONS.md)，记忆契约见 [个人记忆 API](docs/api/MEMORIES.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
+认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)，组织契约见 [组织成员与邀请 API](docs/api/ORGANIZATIONS.md)，记忆契约见 [个人记忆 API](docs/api/MEMORIES.md)，Agent 契约见 [Agent 运行时 API](docs/api/AGENT.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
 ## 环境现状
 
@@ -89,7 +91,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 103 项；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、强制 RLS/隔离 63 项数据库检查与 21 项隔离检查、个人记忆 97 项真实检查、AI Provider/工具 28 项检查通过，数据库层 110 项检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 104 项；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、强制 RLS/隔离 63 项数据库检查与 21 项隔离检查、个人记忆 97 项真实检查、AI Provider/工具 28 项检查、Agent 运行时 45 项检查通过，数据库层 121 项检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
 
 ## 开发命令
 
@@ -113,6 +115,8 @@ corepack pnpm isolation:verify  # 跨账号/跨组织与连接池隔离检查
 corepack pnpm memory:verify     # 个人记忆 M3-01/M3-02/M3-03 创建/复核/审计/失效/保留检查
 corepack pnpm memory:maintain   # 到期失效、正文保留清理与审计事件保留清理
 corepack pnpm ai:verify         # Mock/OpenAI-compatible Provider 与工具权限/超时/重试/审计检查
+corepack pnpm agent:verify      # Agent turn/SSE 重放/取消/来源复核/过期清理检查
+corepack pnpm agent:maintain    # Agent 事件 24 小时保留清理
 ```
 
 开发启动脚本已建立；认证、资料/校园、组织、记忆与记忆生命周期 API 已实现，机会/引荐/真实 AI 与核心产品页面尚未实现：
@@ -145,7 +149,7 @@ corepack pnpm db:verify        # 重建 aven_test，验证空库迁移/升级/se
 corepack pnpm db:verify:current
 ```
 
-`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织、异步样例、个人记忆/复核/生命周期表；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox/样例消费者。认证、资料/校园、组织成员、记忆、记忆复核与生命周期事件 API 已实现；AI Provider/工具契约已建立但未接入运行时；机会、引荐、真实 AI 与核心产品页面尚未实现。完整启动、故障处理与 CI 说明见 [开发环境启动](docs/development/SETUP.md)。
+`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织、异步样例、个人记忆/复核/生命周期与 Agent 运行时表；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox、样例与 Agent 消费者。认证、资料/校园、组织成员、记忆、记忆复核、生命周期事件与 Agent turn/SSE API 已实现；机会、引荐、真实 AI 与核心产品页面尚未实现。完整启动、故障处理与 CI 说明见 [开发环境启动](docs/development/SETUP.md)。
 
 ## 协作方式
 

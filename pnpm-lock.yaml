@@ -211,6 +211,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@aven/ai-core':
+        specifier: workspace:*
+        version: link:../../packages/ai-core
       '@aven/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -388,6 +391,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@aven/ai-core':
+        specifier: workspace:*
+        version: link:../../packages/ai-core
       '@aven/config':
         specifier: workspace:*
         version: link:../../packages/config

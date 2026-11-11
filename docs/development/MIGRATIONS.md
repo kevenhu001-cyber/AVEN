@@ -1,6 +1,6 @@
 # M0-05 迁移与开发数据
 
-日期：2026-11-11 · 状态：迁移流程、D1 表、异步样例表、读策略、开发 seed、M2 写路径、FORCE RLS、M3-02 记忆复核与 M3-03 生命周期已实现；定时调度、语义索引与生产迁移流程未实现
+日期：2026-11-11 · 状态：迁移流程、D1 表、异步样例表、读策略、开发 seed、M2 写路径、FORCE RLS、M3-02 记忆复核、M3-03 生命周期与 M3-05 Agent 运行时已实现；真实 Provider、定时调度、语义索引与生产迁移流程未实现
 
 ## 范围
 
@@ -24,6 +24,7 @@
 | `packages/database/migrations/0012_memory_review.sql` | 候选唯一索引、来源片段约束、主列表 confirmed 过滤、可编辑状态限制、5 个复核函数与授权 |
 | `packages/database/migrations/0013_memory_lifecycle.sql` | `memory_events` 审计表、metadata 触发器、审计触发器、事件列表/到期/正文清理/事件清理函数与授权 |
 | `packages/database/migrations/0014_memory_clock.sql` | 到期与用途检索门改用 `clock_timestamp()` |
+| `packages/database/migrations/0015_agent_runtime.sql` | 会话/消息/Agent run/事件/来源/幂等表、状态与事件枚举、FORCE RLS、15 个 Agent 函数与授权 |
 | `packages/database/src/migrate.ts` | 事务化 runner、SHA-256 校验和、`--to` 升级路径、`--status` |
 | `packages/database/src/seed.ts` | 可重复执行的开发 seed |
 | `packages/database/src/verify.ts` | 表/约束/RLS/函数/seed 验证 |
@@ -36,8 +37,8 @@
 
 | 命令 | 结果 |
 |---|---|
-| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；110 项数据库检查通过 |
-| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 110 项检查 |
+| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；121 项数据库检查通过 |
+| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 121 项检查 |
 | 修改已应用迁移后运行 `db:migrate` | 按预期拒绝：`changed after it was applied. Add a new migration instead of editing history.` |
 | `corepack pnpm infra:verify` | 通过；角色隔离、Redis 认证与持久化检查 |
 
@@ -51,6 +52,7 @@
 - 6 个记忆函数存在且由 `aven_function_owner` 持有；记忆 owner 必须为当前用户；来源/策略所有权触发器生效；跨用户读取/更新拒绝；软删除后不可读。
 - 11 个记忆函数存在且由 `aven_function_owner` 持有；候选创建为 pending、主列表只返回 confirmed、候选队列带来源、确认/拒绝状态转换、用途检索门、默认拒绝与跨用户拒绝均通过。
 - 16 个记忆函数存在且由 `aven_function_owner` 持有；`memory_events` 强制 RLS、只追加、metadata 拒绝正文键；创建/更新/删除/到期/清理事件、系统 actor、正文清理后事件保留、审计保留清理均通过。
+- 15 个 Agent 函数存在且由 `aven_function_owner` 持有；Agent 表强制 RLS；普通池不能直接写 Agent 表或执行 Worker-only 函数；Worker 可执行 start/purge 等函数；终止事件/幂等/派生消息唯一索引存在。
 - `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`、`outbox_events.payload`，不能插入/更新/删除 `principals`。
 - 无上下文时看不到用户主体、校园、成员关系；公开组织资料可见。
 - 用户只能看本人主体、私有邮箱和会话；同组织成员关系按组织隔离。
@@ -103,5 +105,7 @@ corepack pnpm db:verify
 - `0012_memory_review.sql` 的 pending 唯一索引要求升级前不存在重复 pending 候选；若存在，迁移会失败并回滚，需要先人工合并。来源片段约束会校验既有行，生产大表应改为 `NOT VALID` + 分批 `VALIDATE`。
 - `0013_memory_lifecycle.sql` 的审计触发器会为所有 `memory_items` 写入记录事件；升级前若已有大量记忆，首次写入/清理会产生相应事件。生产应评估事件量与保留策略。
 - `0014_memory_clock.sql` 只替换函数体，不改变签名或授权。
+- `0015_agent_runtime.sql` 新增 7 张 FORCE RLS 表与 15 个函数；`conversations.relationship_id` 暂不设 FK，待 M5 relationships 表接入；事件与幂等键默认 24 小时保留，需外部调度 `agent:maintain`。
+- Agent Worker 崩溃后 `running` run 的租约/恢复未实现；当前依赖 BullMQ 重试与终态幂等，生产需补 stale run 清理。
 - 未验证 RLS 查询计划/索引性能、生产备份恢复、迁移回滚或高并发多实例。
 - `aven_test` 由 `db:verify` 重建；不要在其中保存需要保留的数据。

@@ -20,6 +20,17 @@ export class RateLimitedException extends HttpException {
   }
 }
 
+export class ApiCodeException extends HttpException {
+  constructor(
+    public readonly code: ApiErrorCode,
+    status: number,
+    message: string,
+    public readonly retryable = false,
+  ) {
+    super(message, status);
+  }
+}
+
 export function responseRequestId(response: Response): string {
   const id = RequestIdSchema.safeParse(response.getHeader('X-Request-Id'));
   return id.success ? id.data : randomUUID();
@@ -64,8 +75,17 @@ export function formatException(
     },
     '22023': { status: 422, code: 'VALIDATION_ERROR', message: 'The request is invalid.' },
     P0002: { status: 404, code: 'NOT_FOUND', message: 'Resource not found.' },
+    P0003: {
+      status: 409,
+      code: 'IDEMPOTENCY_CONFLICT',
+      message: 'The idempotency key was reused with a different request.',
+    },
   };
-  if (error instanceof ServiceNotReadyException) {
+  if (error instanceof ApiCodeException) {
+    code = error.code;
+    message = error.message;
+    retryable = error.retryable;
+  } else if (error instanceof ServiceNotReadyException) {
     code = 'SERVICE_NOT_READY';
     message = 'Foundation dependencies and consumers are not configured.';
     retryable = error.retryable;

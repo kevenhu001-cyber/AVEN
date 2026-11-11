@@ -39,6 +39,8 @@
     "memory:verify": "pnpm build && tsx scripts/memory-verify.ts",
     "memory:maintain": "pnpm build:packages && tsx scripts/memory-maintenance.ts",
     "ai:verify": "pnpm build:packages && tsx scripts/ai-verify.ts",
+    "agent:verify": "pnpm build && tsx scripts/agent-verify.ts",
+    "agent:maintain": "pnpm build:packages && tsx scripts/agent-maintenance.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

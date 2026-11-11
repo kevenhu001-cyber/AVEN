@@ -23,6 +23,7 @@ export const ApiErrorCodeSchema = z.enum([
   'PREVIEW_STALE',
   'EVENT_HISTORY_EXPIRED',
   'INVALID_EVENT_CURSOR',
+  'SOURCE_INVALIDATED',
   'RELATIONSHIP_EXISTS',
   'RATE_LIMITED',
   'PROVIDER_UNAVAILABLE',
@@ -596,6 +597,79 @@ export const MemoryEventListResponseSchema = z
   })
   .strict();
 
+export const AgentRunStatusSchema = z.enum([
+  'queued',
+  'running',
+  'cancelling',
+  'completed',
+  'failed',
+  'cancelled',
+]);
+
+export const AgentRunEventTypeSchema = z.enum([
+  'turn.started',
+  'message.delta',
+  'tool.started',
+  'tool.progress',
+  'tool.completed',
+  'action.proposed',
+  'turn.completed',
+  'turn.failed',
+  'turn.cancelled',
+]);
+
+export const AgentTurnRequestSchema = z
+  .object({
+    conversationId: z.uuid().optional(),
+    input: z.string().trim().min(1).max(8000),
+  })
+  .strict();
+
+export const AgentTurnResponseSchema = z
+  .object({
+    runId: z.uuid(),
+    conversationId: z.uuid(),
+    status: AgentRunStatusSchema,
+    streamUrl: z.string().min(1).max(500),
+  })
+  .strict();
+
+export const AgentRunSchema = z
+  .object({
+    id: z.uuid(),
+    conversationId: z.uuid(),
+    status: AgentRunStatusSchema,
+    provider: z.string().min(1).max(120),
+    model: z.string().min(1).max(120),
+    inputSummary: z.string().min(1).max(500),
+    outputSummary: z.string().max(500).nullable(),
+    errorCode: z.string().max(120).nullable(),
+    cancelRequestedAt: z.iso.datetime().nullable(),
+    startedAt: z.iso.datetime().nullable(),
+    completedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const AgentRunEventSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    runId: z.uuid(),
+    sequence: z.number().int().positive(),
+    eventType: AgentRunEventTypeSchema,
+    payload: z.record(z.string(), z.unknown()),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const AgentCancelResponseSchema = z
+  .object({
+    runId: z.uuid(),
+    status: AgentRunStatusSchema,
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -668,3 +742,10 @@ export type MemoryEventActorType = z.infer<typeof MemoryEventActorTypeSchema>;
 export type MemoryEvent = z.infer<typeof MemoryEventSchema>;
 export type MemoryEventListResponse = z.infer<typeof MemoryEventListResponseSchema>;
 export type ToolPermission = z.infer<typeof ToolPermissionSchema>;
+export type AgentRunStatus = z.infer<typeof AgentRunStatusSchema>;
+export type AgentRunEventType = z.infer<typeof AgentRunEventTypeSchema>;
+export type AgentTurnRequest = z.infer<typeof AgentTurnRequestSchema>;
+export type AgentTurnResponse = z.infer<typeof AgentTurnResponseSchema>;
+export type AgentRun = z.infer<typeof AgentRunSchema>;
+export type AgentRunEvent = z.infer<typeof AgentRunEventSchema>;
+export type AgentCancelResponse = z.infer<typeof AgentCancelResponseSchema>;

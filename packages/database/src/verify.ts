@@ -12,9 +12,11 @@ async function main(): Promise<void> {
   const migrator = new Client({ connectionString: migrationDatabaseUrl() });
   const app = new Client({ connectionString: databaseUrlFor('aven_app') });
   const auth = new Client({ connectionString: databaseUrlFor('aven_auth') });
+  const worker = new Client({ connectionString: databaseUrlFor('aven_worker') });
   await migrator.connect();
   await app.connect();
   await auth.connect();
+  await worker.connect();
 
   async function appQuery(
     sql: string,
@@ -55,6 +57,17 @@ async function main(): Promise<void> {
     }
   }
 
+  async function queryErrorCode(client: Client, sql: string): Promise<string | undefined> {
+    try {
+      await client.query(sql);
+      return undefined;
+    } catch (error) {
+      return typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code?: unknown }).code)
+        : 'UNKNOWN';
+    }
+  }
+
   async function scalar(sql: string, context: { principalId?: string; userId?: string } = {}) {
     const result = await appQuery(sql, context);
     return String(result.rows[0]?.value ?? result.rows[0]?.count ?? '');
@@ -64,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('fourteen migrations are recorded', migrations.rows[0]?.count === '14');
+    check('fifteen migrations are recorded', migrations.rows[0]?.count === '15');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -102,13 +115,15 @@ async function main(): Promise<void> {
          'campus_memberships','organizations','organization_memberships',
          'organization_invitations','platform_role_assignments',
          'outbox_events','job_receipts','memory_items','memory_sources',
-         'context_field_policies','memory_events'
+         'context_field_policies','memory_events','conversations',
+         'conversation_members','messages','agent_runs','agent_run_events',
+         'agent_run_sources','idempotency_keys'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '22');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '29');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -720,6 +735,88 @@ async function main(): Promise<void> {
       await migrator.query('ROLLBACK');
     }
 
+    const agentFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'insert_agent_run_event','create_agent_turn','get_agent_run',
+           'get_agent_run_stream_context','list_agent_run_events','cancel_agent_run',
+           'get_agent_run_for_worker','start_agent_run','append_agent_run_event',
+           'bind_agent_run_source','list_memory_for_use_for_worker',
+           'append_agent_message','finish_agent_run','is_agent_run_cancel_requested',
+           'purge_agent_run_events'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'fifteen agent functions are owned by the function owner',
+      agentFunctions.rows[0]?.count === '15',
+    );
+    check(
+      'app cannot create an agent turn without context',
+      await appError(
+        "SELECT * FROM app.create_agent_turn('probe', 'POST', '/probe', 'hash', null, 'probe', 'mock', 'mock')",
+      ),
+    );
+    check(
+      'app cannot execute worker-only agent start',
+      (await queryErrorCode(
+        app,
+        "SELECT * FROM app.start_agent_run('00000000-0000-4000-8000-000000000000')",
+      )) === '42501',
+    );
+    check(
+      'worker cannot create an agent turn',
+      (await queryErrorCode(
+        worker,
+        "SELECT * FROM app.create_agent_turn('probe', 'POST', '/probe', 'hash', null, 'probe', 'mock', 'mock')",
+      )) === '42501',
+    );
+    check(
+      'worker can execute agent start for a missing run',
+      (await queryErrorCode(
+        worker,
+        "SELECT * FROM app.start_agent_run('00000000-0000-4000-8000-000000000000')",
+      )) === 'P0002',
+    );
+    check(
+      'app cannot insert agent runs directly',
+      await appError(
+        "INSERT INTO public.agent_runs (principal_id, initiated_by_user_id, conversation_id, input_message_id, provider, model) VALUES ('00000000-0000-4000-8000-000000000000', '00000000-0000-4000-8000-000000000000', '00000000-0000-4000-8000-000000000000', '00000000-0000-4000-8000-000000000000', 'mock', 'mock')",
+      ),
+    );
+    check(
+      'app cannot insert agent events directly',
+      await appError(
+        "INSERT INTO public.agent_run_events (run_id, sequence, event_type) VALUES ('00000000-0000-4000-8000-000000000000', 1, 'turn.started')",
+      ),
+    );
+    check(
+      'worker cannot insert agent events directly',
+      (await queryErrorCode(
+        worker,
+        "INSERT INTO public.agent_run_events (run_id, sequence, event_type) VALUES ('00000000-0000-4000-8000-000000000000', 1, 'turn.started')",
+      )) === '42501',
+    );
+    check(
+      'app cannot execute agent event purge',
+      (await queryErrorCode(app, 'SELECT app.purge_agent_run_events(24)')) === '42501',
+    );
+    const workerPurge = await worker.query<{ count: number }>(
+      'SELECT app.purge_agent_run_events(24) AS count',
+    );
+    check('worker can execute agent event purge', workerPurge.rows[0]?.count === 0);
+    const agentIndexes = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_indexes
+       WHERE schemaname = 'public'
+         AND indexname IN (
+           'uq_agent_run_terminal_event','uq_idempotency_scope','uq_messages_derived_from_run'
+         )`,
+    );
+    check('agent integrity indexes exist', agentIndexes.rows[0]?.count === '3');
+
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));
     check(
       'app cannot read session token hashes',
@@ -929,6 +1026,7 @@ async function main(): Promise<void> {
       await migrator.query('ROLLBACK');
     }
   } finally {
+    await worker.end();
     await auth.end();
     await app.end();
     await migrator.end();

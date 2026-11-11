@@ -2,6 +2,7 @@ import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { redisUrl } from '@aven/config/env';
 import type { LogWriter } from '@aven/config/logger';
+import { createAIProvider, parseAIProviderConfig } from '@aven/ai-core';
 import { createPool } from '@aven/database';
 import {
   markReceiptDead,
@@ -10,12 +11,19 @@ import {
   type SampleTaskResult,
 } from '@aven/domain';
 import { createWorkerReadinessRuntime, type ReadinessRuntime } from '@aven/service-health';
+import { processAgentRun, type AgentRunProcessResult } from './agent.js';
 import { OutboxDispatcher } from './outbox.js';
+
+export type AgentRunJob = {
+  runId: string;
+};
 
 export type WorkerRuntime = {
   readiness: ReadinessRuntime;
   dispatcher: OutboxDispatcher;
+  agentDispatcher: OutboxDispatcher;
   queue: Queue<SampleTaskEvent, SampleTaskResult>;
+  agentQueue: Queue<AgentRunJob, AgentRunProcessResult>;
   pool: ReturnType<typeof createPool>;
   start(): Promise<void>;
   close(): Promise<void>;
@@ -31,7 +39,10 @@ function createConnection(log: LogWriter, maxRetriesPerRequest: number | null): 
 export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
   const queueConnection = createConnection(log, 1);
   const workerConnection = createConnection(log, null);
+  const agentWorkerConnection = createConnection(log, null);
   const pool = createPool('aven_worker', { max: 5 });
+  const provider = createAIProvider(parseAIProviderConfig(process.env));
+
   const queue = new Queue<SampleTaskEvent, SampleTaskResult>('aven-sample', {
     connection: queueConnection,
   });
@@ -65,29 +76,84 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
   });
   worker.on('error', () => log({ level: 'error', event: 'worker.queue_error' }));
 
+  const agentQueue = new Queue<AgentRunJob, AgentRunProcessResult>('aven-agent', {
+    connection: queueConnection,
+  });
+  const agentWorker = new Worker<AgentRunJob, AgentRunProcessResult>(
+    'aven-agent',
+    async (job) => processAgentRun(pool, job.data.runId, provider, log),
+    { connection: agentWorkerConnection, concurrency: 1 },
+  );
+  agentWorker.on('completed', (job) => {
+    log({
+      level: 'info',
+      event: 'agent.job_completed',
+      run_id: job.data.runId,
+      ...(job.id ? { job_id: job.id } : {}),
+    });
+  });
+  agentWorker.on('failed', (job, error) => {
+    log({
+      level: 'error',
+      event: 'agent.job_failed',
+      ...(job?.data.runId ? { run_id: job.data.runId } : {}),
+      ...(job?.id ? { job_id: job.id } : {}),
+      error_code: error.name,
+    });
+  });
+  agentWorker.on('error', () => log({ level: 'error', event: 'agent.queue_error' }));
+
   const dispatcher = new OutboxDispatcher(pool, queue, log);
-  const readiness = createWorkerReadinessRuntime({ consumers: () => worker.isRunning() });
+  const agentDispatcher = new OutboxDispatcher(pool, undefined, log, {
+    eventType: 'agent.run.requested',
+    enqueue: async (row) => {
+      const payload = row.payload as { runId?: unknown };
+      if (typeof payload.runId !== 'string') throw new Error('INVALID_AGENT_EVENT');
+      await agentQueue.add(
+        'agent-run',
+        { runId: payload.runId },
+        {
+          jobId: row.id,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 500 },
+          removeOnComplete: { age: 3600, count: 1000 },
+          removeOnFail: false,
+        },
+      );
+    },
+  });
+  const readiness = createWorkerReadinessRuntime({
+    consumers: () => worker.isRunning() && agentWorker.isRunning(),
+  });
 
   return {
     readiness,
     dispatcher,
+    agentDispatcher,
     queue,
+    agentQueue,
     pool,
     async start() {
       dispatcher.start();
+      agentDispatcher.start();
       await worker.waitUntilReady();
+      await agentWorker.waitUntilReady();
     },
     async close() {
       await dispatcher.stop();
+      await agentDispatcher.stop();
       await worker.close();
+      await agentWorker.close();
       await queue.close();
+      await agentQueue.close();
       queueConnection.disconnect();
       workerConnection.disconnect();
+      agentWorkerConnection.disconnect();
       await pool.end().catch(() => undefined);
       await readiness.close();
     },
     isConsumerRunning() {
-      return worker.isRunning();
+      return worker.isRunning() && agentWorker.isRunning();
     },
   };
 }

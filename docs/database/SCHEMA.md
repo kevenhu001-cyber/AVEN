@@ -727,13 +727,15 @@ erDiagram
 
 `agent_profiles`：`id`、`principal_id`（用户或组织，唯一）、`settings`（JSONB：主动推荐频率、确认偏好、AI 自主权级别）、`created_at`、`updated_at`；唯一 `principal_id`。RLS：本人/组织管理员可读写。
 
-`agent_runs`：`id`、`principal_id`（用户/组织）、`initiated_by_user_id`、`conversation_id`、`input_message_id`（FK messages，必须属于同一会话）、`status`、`provider`、`model`、`input_summary`、`output_summary`（只保存必要元数据）、`error_code`、`started_at`、`completed_at`、`created_at`、`updated_at`。
+`agent_runs`：`id`、`principal_id`（用户/组织）、`initiated_by_user_id`、`conversation_id`、`input_message_id`（FK messages，必须属于同一会话）、`status`、`provider`、`model`、`input_summary`、`output_summary`（只保存必要元数据）、`error_code`、`cancel_requested_at`、`started_at`、`completed_at`、`created_at`、`updated_at`。状态枚举：`queued`、`running`、`cancelling`、`completed`、`failed`、`cancelled`；终态必须有 `completed_at`，非终态不能有。
 
 索引 principal/创建时间、status；当前交互 run 必须绑定输入消息。创建时同事务持久化用户消息、run、幂等结果和启动 Outbox（只含 ID），Worker 不从“最新消息”猜测原始输入。默认只有发起用户且仍具相应组织权限可订阅/取消，平台仅走独立元数据投影。
 
-`agent_run_events`：`run_id`（FK runs）、`sequence bigint`、`schema_version`、`event_type`、`payload`、`created_at`、`expires_at`；PK `(run_id,sequence)`，expiry 索引。先持久化再发送；正文受限、24 小时清理，不进日志/Outbox。每 run 序号原子递增，最多一个终止事件，终态与事件同事务提交。
+`agent_run_events`：`run_id`（FK runs）、`sequence bigint`、`schema_version`、`event_type`、`payload`、`created_at`、`expires_at`；PK `(run_id,sequence)`，expiry 索引。事件类型：`turn.started`、`message.delta`、`tool.started`、`tool.progress`、`tool.completed`、`action.proposed`、`turn.completed`、`turn.failed`、`turn.cancelled`。先持久化再发送；正文受限、24 小时清理，不进日志/Outbox。每 run 序号原子递增，最多一个终止事件（部分唯一索引），终态与事件同事务提交。
 
-`agent_run_sources`：`id`、`run_id`、`source_type`（包括 message 与上下文来源，使用专用允许列表）、`source_id`、`source_version`、`policy_version`、`consent_grant_item_id`（使用他方快照时必填）、`created_at`；来源/授权项 FK 或受约束多态校验，索引 run/source。来源绑定保留期覆盖事件窗口及派生消息/行动的存续期，不能事件到期就删掉仍被正文依赖的授权链。检索到的新来源须先鉴权并绑定，再送入 Provider；输出、重放与派生消息读取复核依赖，任一不可用则拒绝相关正文，不能只检查 run 所有者。
+`agent_run_sources`：`id`、`run_id`、`source_type`（`message`/`memory_item`/`profile`/`custom`）、`source_id`、`source_version`、`policy_version`、`consent_grant_item_id`（使用他方快照时必填）、`created_at`；来源/授权项 FK 或受约束多态校验，索引 run/source。来源绑定保留期覆盖事件窗口及派生消息/行动的存续期，不能事件到期就删掉仍被正文依赖的授权链。检索到的新来源须先鉴权并绑定，再送入 Provider；输出、重放与派生消息读取复核依赖，任一不可用则拒绝相关正文，不能只检查 run 所有者。
+
+`conversations`/`conversation_members`/`messages`：M3-05 启用个人会话（`owner_user_id`）；关系/组织会话在 M4/M5 接入。`messages.derived_from_run_id` 唯一绑定一个 AI 派生消息，删除 run 时级联删除派生消息。
 
 ### 9.2 `agent_steps`
 
@@ -827,6 +829,8 @@ erDiagram
 | `response_body` | `jsonb` | 仅最小非敏感响应，禁止 token/快照/私人正文；重放重新鉴权并组装 |
 | `created_at` | `timestamptz` | 非空 |
 | `expires_at` | `timestamptz` | 非空 |
+
+唯一 `(principal_id, key, method, path)`；索引 `expires_at`。M3-05 用于 Agent turn/cancel，默认 24 小时；重放重新鉴权并返回稳定 run 引用，不返回私人正文。
 
 唯一 `(principal_id,key)`；索引 expires_at。组织上下文计入 request_hash；原子占位防并发执行。认证响应不缓存原始 token；业务幂等与凭据交付分开处理，不为重放长期保存可用凭据。
 

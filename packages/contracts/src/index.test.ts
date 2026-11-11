@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AgentRunEventSchema,
+  AgentTurnRequestSchema,
+  AgentTurnResponseSchema,
   ApiErrorResponseSchema,
   AuthResponseSchema,
   CampusMembershipSchema,
@@ -308,5 +311,38 @@ describe('public engineering contracts', () => {
     expect(TOOL_PERMISSIONS.memoryWriteSelf).toBe('memory:write:self');
     expect(ToolPermissionSchema.safeParse('memory:read:self').success).toBe(true);
     expect(ToolPermissionSchema.safeParse('memory:delete:any').success).toBe(false);
+  });
+  it('validates agent turns and persisted events', () => {
+    expect(AgentTurnRequestSchema.parse({ input: '你好' }).input).toBe('你好');
+    expect(AgentTurnRequestSchema.safeParse({ input: '' }).success).toBe(false);
+    expect(AgentTurnRequestSchema.safeParse({ input: '你好', extra: true }).success).toBe(false);
+    expect(
+      AgentTurnResponseSchema.parse({
+        runId: requestId,
+        conversationId: requestId,
+        status: 'queued',
+        streamUrl: '/api/v1/agent/runs/x/events',
+      }).status,
+    ).toBe('queued');
+    expect(
+      AgentRunEventSchema.parse({
+        schemaVersion: 1,
+        runId: requestId,
+        sequence: 1,
+        eventType: 'turn.started',
+        payload: {},
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).eventType,
+    ).toBe('turn.started');
+    expect(
+      AgentRunEventSchema.safeParse({
+        schemaVersion: 2,
+        runId: requestId,
+        sequence: 1,
+        eventType: 'turn.started',
+        payload: {},
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
 });

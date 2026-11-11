@@ -16,7 +16,8 @@ export type AIErrorCode =
   | 'TOOL_CANCELLED'
   | 'TOOL_EXECUTION_FAILED'
   | 'TOOL_RESULT_INVALID'
-  | 'TOOL_AUDIT_FAILED';
+  | 'TOOL_AUDIT_FAILED'
+  | 'RUNTIME_FAILED';
 
 const retryableCodes = new Set<AIErrorCode>([
   'PROVIDER_UNAVAILABLE',

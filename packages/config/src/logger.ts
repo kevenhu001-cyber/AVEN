@@ -9,6 +9,9 @@ export type LogEntry = {
   count?: number;
   error_code?: string;
   job_id?: string;
+  run_id?: string;
+  tool_name?: string;
+  attempt?: number;
 };
 export type LogWriter = (entry: LogEntry) => void;
 

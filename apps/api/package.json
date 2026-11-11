@@ -9,6 +9,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@aven/ai-core": "workspace:*",
     "@aven/config": "workspace:*",
     "@aven/contracts": "workspace:*",
     "@aven/database": "workspace:*",

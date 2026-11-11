@@ -356,7 +356,7 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 规划轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
 
-M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M1-07 已交付可点击原型与自检记录，正式双端评审待完成；M2-01–M2-05 已实现认证、资料/校园、组织成员、强制 RLS 与隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02 已实现候选提取、确认/修改/拒绝与用途检索门；M3-03 已实现事件审计、到期失效、软删除保留与审计保留清理；M3-04 已实现 Provider 抽象、Mock、OpenAI-compatible 适配器契约与工具权限/超时/重试/审计。下一项是 **M3-05：运行时与流式**；M1-07 正式评审、M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭对应验收。
+M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M1-07 已交付可点击原型与自检记录，正式双端评审待完成；M2-01–M2-05 已实现认证、资料/校园、组织成员、强制 RLS 与隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02 已实现候选提取、确认/修改/拒绝与用途检索门；M3-03 已实现事件审计、到期失效、软删除保留与审计保留清理；M3-04 已实现 Provider 抽象、Mock、OpenAI-compatible 适配器契约与工具权限/超时/重试/审计；M3-05 已实现 Agent turn 创建、持久事件、SSE 重放、取消、来源复核与 24 小时清理。下一项是 **M3-06：行动预览与确认**；M1-07 正式评审、M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭对应验收。
 
 ## 19. 执行记录
 
@@ -382,5 +382,6 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M3-02 | DONE | 2026-11-11 | `0012_memory_review.sql`、候选/提取/确认/拒绝 contracts、`memory-extractor.ts`、候选/确认/拒绝/用途门 API、`scripts/memory-verify.ts` 扩展、`M3-02_MEMORY_REVIEW.md`；74 项真实 HTTP/数据库检查、71 项单测、92 项数据库检查通过 | 候选提取为确定性 Mock；批量复核、生命周期清理、真实 Provider、组织记忆、向量、共享与页面未实现 |
 | M3-03 | DONE | 2026-11-11 | `0013_memory_lifecycle.sql`、`0014_memory_clock.sql`、事件 contracts、`GET /memories/:id/events`、`scripts/memory-maintenance.ts`、`M3-03_MEMORY_LIFECYCLE.md`；97 项真实 HTTP/数据库检查、72 项单测、110 项数据库检查通过 | 事件审计/到期/保留已验证；定时调度、语义索引清理、ConsentGrant 失效传播、组织记忆、共享与页面未实现 |
 | M3-04 | DONE | 2026-11-11 | `packages/ai-core`、Provider/Mock/OpenAI-compatible 适配器、工具注册/执行/权限/超时/重试/审计、`scripts/ai-verify.ts`、`M3-04_AI_CORE.md`；28 项 AI 检查、103 项单测、19 项 typecheck 通过 | Provider/工具契约与 Mock 已验证；真实 Provider 网络、运行时 SSE、数据库审计落库与评估集未实现 |
+| M3-05 | DONE | 2026-11-11 | `0015_agent_runtime.sql`、Agent contracts、`apps/api/src/agent/*`、`apps/worker/src/agent.ts`、Agent Outbox/队列、`scripts/agent-verify.ts`、`AGENT.md`、`M3-05_AGENT_RUNTIME.md`；45 项 Agent 检查、104 项单测、121 项数据库检查、29 项异步检查通过 | Mock Agent 运行时/SSE/取消/来源复核已验证；真实 Provider、代理/原生流、Worker 崩溃恢复、行动确认与页面未实现 |
 
-M0-02/M0-04/M0-05/M0-06/M0-07/M0-08、M1-01、M2-01–M2-05、M3-01/M3-02/M3-03/M3-04 的完成不代表 M0 验收、设计评审或生产系统通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑，M1-07 正式评审未完成。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M3 仍需运行时/流式、行动确认与评估。
+M0-02/M0-04/M0-05/M0-06/M0-07/M0-08、M1-01、M2-01–M2-05、M3-01/M3-02/M3-03/M3-04/M3-05 的完成不代表 M0 验收、设计评审或生产系统通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑，M1-07 正式评审未完成。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M3 仍需行动确认、真实 Provider 与评估。
