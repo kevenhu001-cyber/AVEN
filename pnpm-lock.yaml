@@ -223,6 +223,9 @@ importers:
       '@aven/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@aven/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@aven/service-health':
         specifier: workspace:*
         version: link:../../packages/service-health

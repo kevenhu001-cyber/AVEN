@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twenty-four migrations are recorded', migrations.rows[0]?.count === '24');
+    check('twenty-six migrations are recorded', migrations.rows[0]?.count === '26');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -120,13 +120,14 @@ async function main(): Promise<void> {
          'agent_run_sources','idempotency_keys','actions','opportunities',
          'intents','match_candidates','consent_previews','referrals',
          'referral_decisions','consent_grants','consent_grant_items',
-         'consent_events','relationships','relationship_members','shared_context_items'
+         'consent_events','relationships','relationship_members','shared_context_items',
+         'calendar_connections','availability_blocks','events','event_proposals','event_participants'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '42');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '47');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -1088,6 +1089,98 @@ async function main(): Promise<void> {
         'shared context immediately empty after consent revocation',
         Object.keys(revokedContext.rows[0]?.get_relationship_shared_context ?? {}).length === 0,
       );
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    // M6: Calendar, Availability, Events, and Multi-party Confirmation
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+
+      // 1. Availability Blocks
+      const availRes = await app.query<{ id: string }>(
+        `SELECT id FROM app.upsert_availability_block(
+          now() + interval '10 hours',
+          now() + interval '12 hours',
+          'Asia/Shanghai',
+          'busy',
+          'manual'
+        )`,
+      );
+      const blockId = availRes.rows[0]?.id;
+      check('availability block upsert returns an id', Boolean(blockId));
+
+      const myBlocks = await app.query<{ id: string }>(
+        `SELECT id FROM app.list_my_availability_blocks(now(), now() + interval '2 days')`,
+      );
+      check('user one sees own availability block', myBlocks.rows.some((b) => b.id === blockId));
+
+      // 2. Query availability window (privacy-preserving)
+      const windowRes = await app.query<{ principal_id: string; status: string }>(
+        `SELECT principal_id, status FROM app.query_availability_window(
+          ARRAY['${seedIds.userOne}']::uuid[],
+          now(),
+          now() + interval '2 days'
+        )`,
+      );
+      check(
+        'availability window returns busy status without private event details',
+        windowRes.rows.some((r) => r.principal_id === seedIds.userOne && r.status === 'busy'),
+      );
+
+      // 3. Create Event Draft
+      const eventRes = await app.query<{ id: string; status: string }>(
+        `SELECT id, status FROM app.create_event_draft(
+          '开题答辩研讨会',
+          '讨论具身智能论文大纲与实验安排',
+          '主楼A座会议室',
+          now() + interval '1 day',
+          now() + interval '1 day 2 hours',
+          'Asia/Shanghai',
+          NULL,
+          NULL,
+          ARRAY['${seedIds.userTwo}']::uuid[]
+        )`,
+      );
+      const eventId = eventRes.rows[0]?.id;
+      check('event draft creation returns an id with draft status', eventRes.rows[0]?.status === 'draft');
+
+      // 4. Propose Event Time
+      const propRes = await app.query<{ event_id: string; new_status: string; new_version: number }>(
+        `SELECT event_id, new_status, new_version FROM app.propose_event_time(
+          '${eventId}',
+          now() + interval '1 day 3 hours',
+          now() + interval '1 day 5 hours',
+          'Asia/Shanghai',
+          1
+        )`,
+      );
+      check(
+        'propose event time advances status to pending_confirmation',
+        propRes.rows[0]?.new_status === 'pending_confirmation',
+      );
+
+      // 5. User Two responds: accepts proposal
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userTwo]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userTwo]);
+
+      const respondRes = await app.query<{ all_accepted: boolean; status: string }>(
+        `SELECT all_accepted, status FROM app.respond_event_participant(
+          '${eventId}',
+          'accepted',
+          2
+        )`,
+      );
+      check('event participant accept leads to all_accepted', respondRes.rows[0]?.all_accepted === true);
+      check('event auto-confirms when all accepted', respondRes.rows[0]?.status === 'confirmed');
+
+      // 6. Cancel event
+      const cancelRes = await app.query<{ cancel_event: boolean }>(
+        `SELECT app.cancel_event('${eventId}', '导师出国参会，顺延择期举办')`,
+      );
+      check('event cancellation succeeds', cancelRes.rows[0]?.cancel_event === true);
     } finally {
       await app.query('ROLLBACK');
     }

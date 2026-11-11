@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ActionModule } from './action/action.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { AvailabilityModule } from './availability/availability.module.js';
+import { EventModule } from './event/event.module.js';
 import { HealthController } from './health.controller';
 import { IntentModule } from './intent/intent.module.js';
 import { MemoryModule } from './memory/memory.module.js';
@@ -23,6 +25,8 @@ import { RelationshipModule } from './relationship/relationship.module.js';
     IntentModule,
     ReferralModule,
     RelationshipModule,
+    AvailabilityModule,
+    EventModule,
   ],
   controllers: [HealthController],
 })

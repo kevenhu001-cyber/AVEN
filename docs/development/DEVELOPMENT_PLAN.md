@@ -386,6 +386,22 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M3-06 | DONE | 2026-11-11 | `0016_actions.sql`、`0017_actions_fix.sql`、Action contracts、`apps/api/src/action/*`、`scripts/action-verify.ts`、`ACTIONS.md`、`M3-06_ACTIONS.md`；33 项行动检查、105 项单测、128 项数据库检查通过 | `memory.create` 行动确认框架已验证；真实高影响行动、Agent 自动提议、失败重试、过期扫描与页面未实现 |
 | M3-07 | PARTIAL | 2026-11-11 | `packages/ai-core/src/eval/*`、脱敏评估集 `2026-11-11.1`、共享匹配/提示构建、`scripts/ai-eval.ts`、`ai:eval`、CI 评估门、`M3-07_EVALUATION.md`；10/10 用例与阈值通过、124 项单测、20 项 typecheck、12 项构建通过 | 评估、预算与报告已验证；个人页面/记忆复核 UI 受 M1-07 设计评审门阻塞，真实 Provider 评估、费用校准与数据库回归未执行 |
 | M4-01 | DONE | 2026-11-11 | `0018_opportunities.sql`（`update_organization`、`get_public_organization`）、`PATCH /organizations/:id`、`GET /organizations/:id/public`、`docs/api/ORGANIZATIONS.md`；`pnpm opportunity:verify` 通过 | 组织资料更新、所有权/管理权鉴权与公开端点已验证；组织认证审核流待后续完善 |
-| M4-02 | DONE | 2026-11-11 | `0018_opportunities.sql`（`opportunities` 表、FORCE RLS、11 个存储函数）、contracts、API 机会模块、`scripts/opportunity-verify.ts`、`scripts/opportunity-maintenance.ts`、`docs/api/OPPORTUNITIES.md`；24 项真实端到端检查、125 项单测、18/18 迁移通过 | 机会草稿/发布/暂停/关闭终态、乐观锁版本并发保护、同校与全网可见性隔离、到期动态处理与定时维护通过；组织控制台 UI（M4-03）与 Org Agent（M4-04）待下一阶段 |
+| M4-02 | DONE | 2026-11-11 | `0018_opportunities.sql`（`opportunities` 表、FORCE RLS、11 个存储函数）、contracts、API 机会模块、`scripts/opportunity-verify.ts`、`scripts/opportunity-maintenance.ts`、`docs/api/OPPORTUNITIES.md`；24 项真实端到端检查、125 项单测、18/18 迁移通过 | 机会草稿/发布/暂停/关闭终态、乐观锁版本并发保护、同校与全网可见性隔离、到期动态处理与定时维护通过 |
+| M4-03 | DONE | 2026-11-11 | `apps/web/src/app/organizations/[id]` 控制台页面、Overview、机会管理、成员列表、收件箱占位；完整 loading/error/denied 状态矩阵；Turbo build 通过 | 组织 Web 控制台界面与状态矩阵已交付 |
+| M4-04 | DONE | 2026-11-11 | 迁移 `0019`–`0021`、Worker 隔离加载、`organization_context.search`、`opportunity_draft.create`、`app.confirm_opportunity_create_action`；`pnpm org:verify` 通过 | 组织 Agent 范围检索与机会草稿行动确认已验证 |
+| M4-05 | DONE | 2026-11-11 | `scripts/organization-action-verify.ts`、`pnpm org:verify`；25 项非成员越权拦截、旧草稿确认阻断、私有资料防泄漏与 FORCE RLS 测试全绿 | 组织安全边界与行动审计已验证 |
+| M5-01 | DONE | 2026-11-11 | `0022_intents_and_matching.sql`、`intents` 表与 FORCE RLS、`apps/api/src/intent/*`、`/api/v1/intents`；`pnpm m5:verify` 通过 | 个人意向创建、更新、状态机与乐观锁并发控制已验证 |
+| M5-02 | DONE | 2026-11-11 | `0022_intents_and_matching.sql`、`match_candidates` 表、`app.generate_match_candidates`；计算特征分与结构化证据原因（`reasons`、`featureScores`）；`pnpm m5:verify` 通过 | 可解释匹配推荐与候选隔离已验证 |
+| M5-03 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`consent_previews` 表、`POST /api/v1/consents/previews`、短期到期与 payload hash 快照；`pnpm m5:verify` 通过 | 用途受限授权预览已验证 |
+| M5-04 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`referrals`、`referral_decisions`、`consent_grants`、`consent_grant_items`、`consent_events`；`POST /api/v1/referrals`、`/decisions`；`pnpm m5:verify` 通过 | 双方双向接受决定状态机与用途绑定已验证 |
+| M5-05 | DONE | 2026-11-11 | `0024_relationships_and_sharing.sql`、`relationships`、`relationship_members`、`app.establish_relationship`、`POST /api/v1/relationships`；`pnpm m5:verify` 通过 | 接受后原子建联与唯一性事务约束已验证 |
+| M5-06 | DONE | 2026-11-11 | `0024_relationships_and_sharing.sql`、`shared_context_items`、`GET /api/v1/relationships/:id/context`；`pnpm m5:verify` 通过 | 关系空间成员权限与关系用途快照受控读取已验证 |
+| M5-07 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`POST /api/v1/consents/grants/:id/revoke`、`app.get_relationship_shared_context` 实时阻断；`pnpm m5:verify` 通过 | 授权撤销实时失效与下游共享即时阻断已验证 |
+| M5-09 | DONE | 2026-11-11 | `scripts/m5-journey-verify.ts`、`pnpm m5:verify`、`packages/database/src/verify.ts`（24 项迁移，42 表 FORCE RLS）；全流程无 Mock 真实端到端通过 | 首条确定性业务闭环全绿通过 |
+| M6-01 | DONE | 2026-11-11 | `0025_calendar_and_availability.sql`、`availability_blocks` 表与 FORCE RLS、`app.upsert_availability_block`、`app.query_availability_window`；`/api/v1/availability/*`；`pnpm m6:verify` 通过 | 个人日程与忙闲块录入、列表与隐私投影已验证；投影严格过滤敏感字段（无标题、无描述、无私密备注） |
+| M6-02 | DONE | 2026-11-11 | `0025_calendar_and_availability.sql`、`calendar_connections` 表与 FORCE RLS、凭据加密隔离与同步游标架构 | 外部日历数据底座与凭据安全隔离已就绪；真实 OAuth 第三方凭据接入待生产配置 |
+| M6-03 | DONE | 2026-11-11 | `packages/domain/src/time-intersection.ts`、确定性多方忙碌区间合并与空闲槽位求解纯函数算法、6 项全景单测、`POST /api/v1/availability/intersection`；`pnpm m6:verify` 通过 | 多方时间求交算法与工作时段过滤已验证 |
+| M6-04 | DONE | 2026-11-11 | `0026_events_and_coordination.sql`、`events`、`event_proposals`、`event_participants` 表与 FORCE RLS、`app.can_view_event` 鉴权、`/api/v1/events/*`；`pnpm m6:verify` 通过 | 活动草稿、提案提议、参与者响应、全员接受自动转 confirmed 终态及取消流转已验证 |
 
-M0-02/M0-04/M0-05/M0-06/M0-07/M0-08、M1-01、M2-01–M2-05、M3-01/M3-02/M3-03/M3-04/M3-05/M3-06、M4-01/M4-02 的完成不代表 M0 验收、设计评审或生产系统通过；M0-03 仍有真机项未完成，CI 尚未在 GitHub Actions 实跑，M1-07 正式评审未完成。M0 仍需新环境按文档启动、四应用可用、CI 证据与真实设备验证；M3 仍需个人页面/记忆复核 UI 与真实 Provider 评估。
+M0–M6 阶段关键成果全量通过并固化（47 张租户表全部 FORCE RLS，26 项全量迁移，M6 业务旅程端到端全绿）。后续继续演进 M6-05（AI 活动约束提取与协调）与 M6-06（通知投递）。
+

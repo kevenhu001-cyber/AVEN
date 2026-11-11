@@ -1296,3 +1296,206 @@ export type Relationship = z.infer<typeof RelationshipSchema>;
 export type RelationshipListResponse = z.infer<typeof RelationshipListResponseSchema>;
 export type RelationshipContextResponse = z.infer<typeof RelationshipContextResponseSchema>;
 
+// M6: Calendar, Availability, Events, and Coordination Schemas
+
+export const AvailabilityStatusSchema = z.enum(['busy', 'tentative', 'free']);
+export const EventStatusSchema = z.enum([
+  'draft',
+  'proposed',
+  'pending_confirmation',
+  'confirmed',
+  'cancelled',
+  'ended',
+]);
+export const EventProposalStatusSchema = z.enum(['proposed', 'accepted', 'superseded', 'rejected']);
+export const EventParticipantResponseSchema = z.enum(['pending', 'accepted', 'declined', 'tentative']);
+
+export const UpsertAvailabilityBlockRequestSchema = z
+  .object({
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    timezone: z.string().default('Asia/Shanghai'),
+    status: AvailabilityStatusSchema.default('busy'),
+    source: z.string().default('manual'),
+    blockId: z.uuid().optional(),
+  })
+  .strict();
+
+export const AvailabilityBlockSchema = z
+  .object({
+    id: z.uuid(),
+    principalId: z.uuid(),
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    timezone: z.string(),
+    status: AvailabilityStatusSchema,
+    source: z.string(),
+    version: z.number().int().positive(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const AvailabilityBlockListResponseSchema = z
+  .object({
+    data: z.array(AvailabilityBlockSchema),
+  })
+  .strict();
+
+export const QueryAvailabilityWindowRequestSchema = z
+  .object({
+    principalIds: z.array(z.uuid()),
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const AvailabilityWindowItemSchema = z
+  .object({
+    principalId: z.uuid(),
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    status: AvailabilityStatusSchema,
+  })
+  .strict();
+
+export const AvailabilityWindowResponseSchema = z
+  .object({
+    data: z.array(AvailabilityWindowItemSchema),
+  })
+  .strict();
+
+export const CreateEventDraftRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().max(10000).optional(),
+    location: z.string().trim().max(255).optional(),
+    startAt: z.iso.datetime().optional(),
+    endAt: z.iso.datetime().optional(),
+    timezone: z.string().default('Asia/Shanghai'),
+    relationshipId: z.uuid().optional(),
+    organizationId: z.uuid().optional(),
+    attendeePrincipalIds: z.array(z.uuid()).default([]),
+  })
+  .strict();
+
+export const ProposeEventTimeRequestSchema = z
+  .object({
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    timezone: z.string().default('Asia/Shanghai'),
+    expectedVersion: z.number().int().positive().default(1),
+  })
+  .strict();
+
+export const RespondEventParticipantRequestSchema = z
+  .object({
+    response: EventParticipantResponseSchema,
+    expectedVersion: z.number().int().positive().optional(),
+  })
+  .strict();
+
+export const CancelEventRequestSchema = z
+  .object({
+    reason: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
+export const EventParticipantSchema = z
+  .object({
+    id: z.uuid().optional(),
+    eventId: z.uuid().optional(),
+    principalId: z.uuid(),
+    role: z.string(),
+    response: EventParticipantResponseSchema,
+    respondedAt: z.iso.datetime().nullable().optional(),
+  })
+  .strict();
+
+export const EventProposalSchema = z
+  .object({
+    id: z.uuid(),
+    eventId: z.uuid(),
+    version: z.number().int().positive(),
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    timezone: z.string(),
+    status: EventProposalStatusSchema,
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const EventSchema = z
+  .object({
+    id: z.uuid(),
+    organizerPrincipalId: z.uuid(),
+    organizerName: z.string().optional(),
+    relationshipId: z.uuid().nullable().optional(),
+    organizationId: z.uuid().nullable().optional(),
+    title: z.string(),
+    description: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    timezone: z.string(),
+    status: EventStatusSchema,
+    version: z.number().int().positive(),
+    myResponse: EventParticipantResponseSchema.optional(),
+    participants: z.array(EventParticipantSchema).optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional(),
+  })
+  .strict();
+
+export const EventListResponseSchema = z
+  .object({
+    data: z.array(EventSchema),
+  })
+  .strict();
+
+export const TimeSlotSchema = z
+  .object({
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const TimeIntersectionRequestSchema = z
+  .object({
+    principalIds: z.array(z.uuid()).min(1),
+    windowStart: z.iso.datetime(),
+    windowEnd: z.iso.datetime(),
+    durationMinutes: z.number().int().positive().default(60),
+    workingHoursOnly: z.boolean().default(true),
+  })
+  .strict();
+
+export const TimeIntersectionResponseSchema = z
+  .object({
+    availableSlots: z.array(TimeSlotSchema),
+  })
+  .strict();
+
+export type AvailabilityStatus = z.infer<typeof AvailabilityStatusSchema>;
+export type EventStatus = z.infer<typeof EventStatusSchema>;
+export type EventProposalStatus = z.infer<typeof EventProposalStatusSchema>;
+export type EventParticipantResponse = z.infer<typeof EventParticipantResponseSchema>;
+export type UpsertAvailabilityBlockRequest = z.infer<typeof UpsertAvailabilityBlockRequestSchema>;
+export type AvailabilityBlock = z.infer<typeof AvailabilityBlockSchema>;
+export type AvailabilityBlockListResponse = z.infer<typeof AvailabilityBlockListResponseSchema>;
+export type QueryAvailabilityWindowRequest = z.infer<typeof QueryAvailabilityWindowRequestSchema>;
+export type AvailabilityWindowItem = z.infer<typeof AvailabilityWindowItemSchema>;
+export type AvailabilityWindowResponse = z.infer<typeof AvailabilityWindowResponseSchema>;
+export type CreateEventDraftRequest = z.infer<typeof CreateEventDraftRequestSchema>;
+export type ProposeEventTimeRequest = z.infer<typeof ProposeEventTimeRequestSchema>;
+export type RespondEventParticipantRequest = z.infer<typeof RespondEventParticipantRequestSchema>;
+export type CancelEventRequest = z.infer<typeof CancelEventRequestSchema>;
+export type EventParticipant = z.infer<typeof EventParticipantSchema>;
+export type EventProposal = z.infer<typeof EventProposalSchema>;
+export type Event = z.infer<typeof EventSchema>;
+export type EventListResponse = z.infer<typeof EventListResponseSchema>;
+export type TimeSlot = z.infer<typeof TimeSlotSchema>;
+export type TimeIntersectionRequest = z.infer<typeof TimeIntersectionRequestSchema>;
+export type TimeIntersectionResponse = z.infer<typeof TimeIntersectionResponseSchema>;
+
+

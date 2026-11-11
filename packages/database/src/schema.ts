@@ -718,3 +718,100 @@ export const sharedContextItems = pgTable('shared_context_items', {
   ...timestamps,
 });
 
+// M6: Calendar, Availability, Events, and Coordination
+export const availabilityStatus = pgEnum('availability_status', ['busy', 'tentative', 'free']);
+export const eventStatus = pgEnum('event_status', [
+  'draft',
+  'proposed',
+  'pending_confirmation',
+  'confirmed',
+  'cancelled',
+  'ended',
+]);
+export const eventProposalStatus = pgEnum('event_proposal_status', [
+  'proposed',
+  'accepted',
+  'superseded',
+  'rejected',
+]);
+export const eventParticipantResponse = pgEnum('event_participant_response', [
+  'pending',
+  'accepted',
+  'declined',
+  'tentative',
+]);
+
+export const calendarConnections = pgTable('calendar_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  principalId: uuid('principal_id')
+    .notNull()
+    .references(() => principals.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  credentialsCiphertext: text('credentials_ciphertext').notNull(),
+  keyVersion: integer('key_version').notNull().default(1),
+  syncCursor: text('sync_cursor'),
+  status: text('status').notNull().default('active'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  ...timestamps,
+});
+
+export const availabilityBlocks = pgTable('availability_blocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  principalId: uuid('principal_id')
+    .notNull()
+    .references(() => principals.id, { onDelete: 'cascade' }),
+  startAt: timestamp('start_at', { withTimezone: true }).notNull(),
+  endAt: timestamp('end_at', { withTimezone: true }).notNull(),
+  timezone: text('timezone').notNull().default('Asia/Shanghai'),
+  status: availabilityStatus('status').notNull().default('busy'),
+  source: text('source').notNull().default('manual'),
+  version: integer('version').notNull().default(1),
+  ...timestamps,
+});
+
+export const events = pgTable('events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizerPrincipalId: uuid('organizer_principal_id')
+    .notNull()
+    .references(() => principals.id),
+  relationshipId: uuid('relationship_id').references(() => relationships.id, { onDelete: 'set null' }),
+  organizationId: uuid('organization_id').references(() => principals.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  location: text('location'),
+  startAt: timestamp('start_at', { withTimezone: true }).notNull(),
+  endAt: timestamp('end_at', { withTimezone: true }).notNull(),
+  timezone: text('timezone').notNull().default('Asia/Shanghai'),
+  status: eventStatus('status').notNull().default('draft'),
+  version: integer('version').notNull().default(1),
+  ...timestamps,
+});
+
+export const eventProposals = pgTable('event_proposals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1),
+  startAt: timestamp('start_at', { withTimezone: true }).notNull(),
+  endAt: timestamp('end_at', { withTimezone: true }).notNull(),
+  timezone: text('timezone').notNull().default('Asia/Shanghai'),
+  status: eventProposalStatus('status').notNull().default('proposed'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const eventParticipants = pgTable('event_participants', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'cascade' }),
+  principalId: uuid('principal_id')
+    .notNull()
+    .references(() => principals.id),
+  role: text('role').notNull().default('attendee'),
+  response: eventParticipantResponse('response').notNull().default('pending'),
+  respondedAt: timestamp('responded_at', { withTimezone: true }),
+  ...timestamps,
+});
+
+

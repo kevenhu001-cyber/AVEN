@@ -80,8 +80,11 @@ function clearRateLimits(): void {
 class Client {
   private jar = new Map<string, string>();
   csrf: string | undefined;
+  private readonly baseUrl: string;
 
-  constructor(private readonly baseUrl: string) {}
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
   private cookieHeader(): string {
     return [...this.jar.entries()].map(([name, value]) => `${name}=${value}`).join('; ');
