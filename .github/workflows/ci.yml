@@ -68,5 +68,6 @@ jobs:
       - run: pnpm auth:verify
       - run: pnpm profile:verify
       - run: pnpm organization:verify
+      - run: pnpm isolation:verify
       - if: always()
         run: pnpm infra:down

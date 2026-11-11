@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('nine migrations are recorded', migrations.rows[0]?.count === '9');
+    check('ten migrations are recorded', migrations.rows[0]?.count === '10');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -93,6 +93,25 @@ async function main(): Promise<void> {
        )`,
     );
     check('RLS is enabled on all D1 tables', rls.rows[0]?.count === '13');
+    const forcedRls = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE ((n.nspname = 'public' AND c.relname IN (
+         'principals','users','user_private','credentials','sessions',
+         'email_verification_tokens','password_reset_tokens','campuses',
+         'campus_memberships','organizations','organization_memberships',
+         'organization_invitations','platform_role_assignments',
+         'outbox_events','job_receipts'
+       )) OR (n.nspname = 'app' AND c.relname IN (
+         'sample_tasks','sample_task_results','sample_external_effects'
+       )))
+         AND c.relrowsecurity AND c.relforcerowsecurity`,
+    );
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '18');
+    check(
+      'app cannot disable row security',
+      await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
+    );
 
     const asyncTables = await migrator.query<{ count: string }>(
       `SELECT count(*)::text AS count
