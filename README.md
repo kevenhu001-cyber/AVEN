@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目进入 **M2 身份与组织**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01：认证与会话**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。组织/机会/引荐、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+项目进入 **M2 身份与组织**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01：认证与会话**、**M2-02：主体与校园身份**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。组织/机会/引荐、AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -31,7 +31,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [M1-01 设计令牌](docs/development/M1-01_TOKENS.md) | 语义/状态色、排版、断点、减少动态与对比度验证 |
 | [M1-07 设计评审](docs/design/M1-07_REVIEW.md) | 核心旅程可点击原型、状态矩阵、自检证据与未决问题 |
 | [认证与会话 API](docs/api/AUTH.md) | 注册、登录、会话、CSRF、验证与密码重置契约 |
+| [个人资料与校园 API](docs/api/PROFILE.md) | 资料更新、校园列表与校园成员申请契约 |
 | [M2-01 认证交付](docs/development/M2-01_AUTH.md) | Argon2id、不透明会话、限流、数据库函数与验证记录 |
+| [M2-02 资料与校园交付](docs/development/M2-02_PROFILE.md) | 资料更新、校园成员申请、函数边界与验证记录 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -59,9 +61,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项是 **M2-02：主体与校园身份**，在认证基础上实现个人资料、校园成员与认证状态分离；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
+下一项是 **M2-03：组织成员**，实现组织创建、邀请/接受、owner/admin/member 与最后管理员保护；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
 
-认证契约见 [认证与会话 API](docs/api/AUTH.md)，实现记录见 [M2-01 认证交付](docs/development/M2-01_AUTH.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
+认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)。实现记录见 [M2-01 认证交付](docs/development/M2-01_AUTH.md) 与 [M2-02 资料与校园交付](docs/development/M2-02_PROFILE.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
 ## 环境现状
 
@@ -78,7 +80,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；设计令牌层已通过 52 项测试；认证与会话已通过 42 项真实 HTTP/数据库/Redis 检查。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；设计令牌层已通过 61 项测试；认证与会话已通过 42 项真实 HTTP/数据库/Redis 检查；资料与校园成员申请已通过 16 项真实 HTTP/数据库检查。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
 
 ## 开发命令
 
@@ -96,6 +98,7 @@ corepack pnpm test:e2e   # 本机缺少 Playwright headless shell 时加 PLAYWRI
 corepack pnpm check:readiness   # 需要 Compose 依赖与已构建 API/Worker
 corepack pnpm async:verify      # Outbox/BullMQ 故障注入，会短暂停止 Redis
 corepack pnpm auth:verify       # 认证/会话真实 HTTP 检查，需要 Compose 依赖
+corepack pnpm profile:verify    # 资料/校园成员真实 HTTP 检查
 ```
 
 开发启动脚本已建立，但依赖数据库/Redis 的业务尚未实现：

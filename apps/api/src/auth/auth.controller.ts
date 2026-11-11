@@ -30,27 +30,11 @@ import {
 import { API_ENVIRONMENT } from './auth.constants.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
-import type { AuthContext, RequestContext } from './auth.types.js';
+import type { AuthContext } from './auth.types.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import { CurrentAuth } from './current-auth.decorator.js';
 import { Public } from './public.decorator.js';
-
-type Parser<T> = {
-  safeParse(value: unknown): { success: true; data: T } | { success: false };
-};
-
-function parse<T>(schema: Parser<T>, value: unknown): T {
-  const result = schema.safeParse(value);
-  if (!result.success) throw new UnprocessableEntityException('Invalid request.');
-  return result.data;
-}
-
-function requestContext(request: Request): RequestContext {
-  return {
-    ip: request.ip ?? request.socket.remoteAddress ?? 'unknown',
-    userAgent: request.header('user-agent') ?? '',
-  };
-}
+import { parse, requestContext } from '../http-validation.js';
 
 @Controller('api/v1/auth')
 @UseGuards(AuthGuard)

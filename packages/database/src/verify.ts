@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('seven migrations are recorded', migrations.rows[0]?.count === '7');
+    check('eight migrations are recorded', migrations.rows[0]?.count === '8');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -162,6 +162,53 @@ async function main(): Promise<void> {
       'app can execute session lookup',
       (await app.query("SELECT * FROM app.session_lookup(repeat('a', 64))")).rows.length === 0,
     );
+
+    const profileFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'update_my_profile','list_active_campuses',
+           'list_my_campus_memberships','request_campus_membership'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'four profile/campus functions are owned by the function owner',
+      profileFunctions.rows[0]?.count === '4',
+    );
+    check(
+      'app can list active campuses',
+      (await app.query('SELECT * FROM app.list_active_campuses()')).rows.length === 1,
+    );
+    check(
+      'app cannot update a profile without context',
+      await appError("SELECT app.update_my_profile('probe', null, null)"),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const memberships = await app.query('SELECT * FROM app.list_my_campus_memberships()');
+      check('user context lists own campus memberships', memberships.rows.length === 1);
+      const requested = await app.query(
+        `SELECT * FROM app.request_campus_membership('${seedIds.campus}')`,
+      );
+      check(
+        'campus membership request is idempotent for an existing row',
+        requested.rows.length === 1 && requested.rows[0]?.status === 'pending',
+      );
+      await app.query("SELECT app.update_my_profile('验证资料更新', 'zh-CN', 'Asia/Shanghai')");
+      const updated = await app.query<{ display_name: string }>(
+        `SELECT display_name FROM public.principals WHERE id = '${seedIds.userOne}'`,
+      );
+      check(
+        'profile update changes the display name',
+        updated.rows[0]?.display_name === '验证资料更新',
+      );
+    } finally {
+      await app.query('ROLLBACK');
+    }
 
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));
     check(

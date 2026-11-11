@@ -33,6 +33,7 @@
     "check:readiness": "node scripts/check-readiness.mjs",
     "async:verify": "tsx scripts/async-verify.ts",
     "auth:verify": "pnpm build && tsx scripts/auth-verify.ts",
+    "profile:verify": "pnpm build && tsx scripts/profile-verify.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

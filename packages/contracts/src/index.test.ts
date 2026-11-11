@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   ApiErrorResponseSchema,
   AuthResponseSchema,
+  CampusMembershipSchema,
   LivenessResponseSchema,
   LoginRequestSchema,
   PasswordSchema,
   ReadinessResponseSchema,
   RegisterRequestSchema,
+  UpdateProfileRequestSchema,
 } from './index';
 
 const requestId = 'b434644d-d195-4978-b457-765c6d9b755e';
@@ -112,5 +114,39 @@ describe('public engineering contracts', () => {
     expect(AuthResponseSchema.safeParse({ ...base, csrfToken: 'token' }).success).toBe(true);
     expect(AuthResponseSchema.safeParse({ ...base, sessionToken: 'token' }).success).toBe(true);
     expect(AuthResponseSchema.safeParse({ ...base, secret: 'token' }).success).toBe(false);
+  });
+  it('requires at least one valid profile field', () => {
+    expect(UpdateProfileRequestSchema.parse({ displayName: '张雨' }).displayName).toBe('张雨');
+    expect(UpdateProfileRequestSchema.safeParse({}).success).toBe(false);
+    expect(UpdateProfileRequestSchema.safeParse({ timezone: 'Not/A_Timezone' }).success).toBe(
+      false,
+    );
+    expect(
+      UpdateProfileRequestSchema.safeParse({ locale: 'zh-CN', timezone: 'Asia/Shanghai' }).success,
+    ).toBe(true);
+  });
+  it('requires explicit campus membership states', () => {
+    expect(
+      CampusMembershipSchema.safeParse({
+        id: requestId,
+        campusId: requestId,
+        campusName: '西安交通大学（开发样例）',
+        status: 'pending',
+        verificationMethod: null,
+        verifiedAt: null,
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).success,
+    ).toBe(true);
+    expect(
+      CampusMembershipSchema.safeParse({
+        id: requestId,
+        campusId: requestId,
+        campusName: '西安交通大学（开发样例）',
+        status: 'self_verified',
+        verificationMethod: null,
+        verifiedAt: null,
+        createdAt: '2026-11-11T00:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
 });

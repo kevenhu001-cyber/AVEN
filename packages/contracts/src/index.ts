@@ -162,6 +162,80 @@ export const ChangePasswordSchema = z
 
 export const OkResponseSchema = z.object({ ok: z.literal(true) }).strict();
 
+function isValidTimezone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidLocale(value: string): boolean {
+  try {
+    Intl.getCanonicalLocales(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const TimezoneSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine(isValidTimezone, 'Invalid IANA timezone.');
+export const LocaleSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(35)
+  .refine(isValidLocale, 'Invalid locale.');
+
+export const UpdateProfileRequestSchema = z
+  .object({
+    displayName: DisplayNameSchema.optional(),
+    locale: LocaleSchema.optional(),
+    timezone: TimezoneSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.displayName !== undefined || value.locale !== undefined || value.timezone !== undefined,
+    'At least one profile field is required.',
+  );
+
+export const CampusSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string(),
+    city: z.string().nullable(),
+    country: z.string(),
+  })
+  .strict();
+
+export const CampusListResponseSchema = z.object({ data: z.array(CampusSchema) }).strict();
+
+export const CampusMembershipSchema = z
+  .object({
+    id: z.uuid(),
+    campusId: z.uuid(),
+    campusName: z.string(),
+    status: z.enum(['pending', 'verified', 'rejected', 'revoked']),
+    verificationMethod: z.enum(['email_domain', 'manual', 'student_id']).nullable(),
+    verifiedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const CampusMembershipListResponseSchema = z
+  .object({ data: z.array(CampusMembershipSchema) })
+  .strict();
+
+export const RequestCampusMembershipSchema = z.object({ campusId: z.uuid() }).strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -180,3 +254,9 @@ export type PasswordResetRequest = z.infer<typeof PasswordResetRequestSchema>;
 export type PasswordReset = z.infer<typeof PasswordResetSchema>;
 export type ChangePassword = z.infer<typeof ChangePasswordSchema>;
 export type OkResponse = z.infer<typeof OkResponseSchema>;
+export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequestSchema>;
+export type Campus = z.infer<typeof CampusSchema>;
+export type CampusListResponse = z.infer<typeof CampusListResponseSchema>;
+export type CampusMembership = z.infer<typeof CampusMembershipSchema>;
+export type CampusMembershipListResponse = z.infer<typeof CampusMembershipListResponseSchema>;
+export type RequestCampusMembership = z.infer<typeof RequestCampusMembershipSchema>;

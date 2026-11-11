@@ -24,5 +24,6 @@ import { AuthRateLimiter } from './rate-limit.js';
     AuthService,
     AuthGuard,
   ],
+  exports: [AuthService, AuthGuard, API_ENVIRONMENT],
 })
 export class AuthModule {}
