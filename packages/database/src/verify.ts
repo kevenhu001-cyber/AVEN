@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('eighteen migrations are recorded', migrations.rows[0]?.count === '18');
+    check('twenty-one migrations are recorded', migrations.rows[0]?.count === '21');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -934,6 +934,33 @@ async function main(): Promise<void> {
 
       const closed = await app.query(`SELECT * FROM app.close_opportunity('${oppId}', 3)`);
       check('closing opportunity sets status to closed', closed.rows[0]?.status === 'closed');
+
+      // M4-04: Organization action and opportunity creation action confirmation
+      const tokenHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      const orgActionRes = await app.query<{ id: string }>(
+        `SELECT id FROM app.create_organization_action(
+          '${seedIds.organizationOne}',
+          'opportunity.create',
+          '{"title":"AI提议助研","summary":"协助实验","description":"详细要求","headcount":1}'::jsonb,
+          null,
+          600,
+          '${tokenHash}'
+        )`,
+      );
+      const actionId = orgActionRes.rows[0]?.id;
+      check('organization action creation returns an id', Boolean(actionId));
+
+      const reqHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      const confirmedAction = await app.query<{ status: string; executed: boolean }>(
+        `SELECT status, executed FROM app.confirm_opportunity_create_action(
+          '${actionId}', 1, '${tokenHash}', 'test-idemp-opp', 'POST', '/api/v1/actions/confirm', '${reqHash}'
+        )`,
+      );
+      check(
+        'confirming opportunity action sets status succeeded and creates opportunity',
+        confirmedAction.rows[0]?.status === 'succeeded' &&
+          confirmedAction.rows[0]?.executed === true,
+      );
     } finally {
       await app.query('ROLLBACK');
     }

@@ -103,3 +103,55 @@ export function buildPersonalContextMessages(input: PersonalContextInput): AIMes
 export function countTagOccurrences(text: string, tag: string): number {
   return text.split(tag).length - 1;
 }
+
+export const ORGANIZATION_CONTEXT_INSTRUCTIONS =
+  'You are an AI assistant representing the organization. You operate strictly within the organization boundary and assist active members with organizational workflows such as drafting opportunities, recruiting collaborators, and managing organizational initiatives. Do NOT access or disclose any personal private memories or cross-organizational secrets.';
+
+export type OrganizationContextInput = {
+  userMessage: string;
+  organization: {
+    id: string;
+    name: string;
+    description: string | null;
+    websiteUrl?: string | null;
+    campusName?: string | null;
+    memberCount?: number;
+  };
+  opportunities?: readonly {
+    id: string;
+    title: string;
+    summary: string;
+    stage?: string;
+    status: string;
+  }[];
+  maxContextChars?: number;
+};
+
+export function buildOrganizationContextMessages(input: OrganizationContextInput): AIMessage[] {
+  const org = input.organization;
+  const opps = input.opportunities ?? [];
+  const oppsSummary =
+    opps.length > 0
+      ? opps.map((o) => `- [${o.status.toUpperCase()}] ${o.title}: ${o.summary}`).join('\n')
+      : '无公开/草稿机会';
+
+  const contextBlock = [
+    `组织名称: ${escapePersonalContext(org.name)}`,
+    org.description ? `组织介绍: ${escapePersonalContext(org.description)}` : null,
+    org.campusName ? `所属校区: ${escapePersonalContext(org.campusName)}` : null,
+    org.memberCount !== undefined ? `成员总数: ${org.memberCount}` : null,
+    `当前机会列表:\n${oppsSummary}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return [
+    { role: 'system', content: ORGANIZATION_CONTEXT_INSTRUCTIONS },
+    {
+      role: 'user',
+      name: 'organization_context',
+      content: `<organization_context>\n${contextBlock}\n</organization_context>`,
+    },
+    { role: 'user', content: input.userMessage },
+  ];
+}

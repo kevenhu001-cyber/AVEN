@@ -1,9 +1,9 @@
 # 行动预览与确认 API 契约
 
-版本：1.0 · 日期：2026-11-11 · 状态：M3-06 的行动草稿、预览、一次性确认、幂等执行与取消已实现并通过真实 HTTP/数据库验证
+版本：1.1 · 日期：2026-11-11 · 状态：M3-06 的记忆创建行动与 M4-04 / M4-05 的机会创建行动（草稿、预览、一次性确认、权限复核、幂等执行与取消）已实现并通过真实端到端/数据库验证
 相关：[API 规范](README.md) · [TDD](../architecture/TDD.md) · [SCHEMA](../database/SCHEMA.md)
 
-所有路径带 `/api/v1/actions`，需要有效会话。Web 写请求需要 `X-CSRF-Token`；确认与取消必须提供 `Idempotency-Key`。当前只启用 `memory.create` 行动类型；发布机会、发送引荐、共享资料等高影响行动在 M4/M5 接入。
+所有路径带 `/api/v1/actions`，需要有效会话。Web 写请求需要 `X-CSRF-Token`；确认与取消必须提供 `Idempotency-Key`。支持 `memory.create` 与 `opportunity.create` 行动类型；发送引荐、共享档案等高影响行动在 M5 接入。
 
 ## 数据模型
 
@@ -17,31 +17,37 @@
 
 - 认证：受保护；Web 需要 CSRF。
 - 请求 `ActionCreateRequest`：
-  - `actionType`：当前仅 `memory.create`。
-  - `payload`：`CreateMemoryRequest`（kind/title/content/structuredValue/sensitivity/displayAudience/discoverable/allowedUses/campusId/validUntil）。
-  - `runId` 可选；必须是当前用户发起的 Agent run。
+  - `actionType`：`memory.create` 或 `opportunity.create`。
+  - `organizationId`：当 `actionType === 'opportunity.create'` 时必填，标识所属组织。
+  - `payload`：
+    - 若 `memory.create`：`CreateMemoryRequest`（kind/title/content/structuredValue/sensitivity/displayAudience/discoverable/allowedUses/campusId/validUntil）。
+    - 若 `opportunity.create`：`CreateOpportunityDraftRequest`（title/summary/description/domains/requirements/stage/commitmentHoursPerWeek/location/remoteOk/headcount/deadline/visibility/contactUserId）。
+  - `runId` 可选；若填入则校验所属 agent run。
   - `expiresInSeconds` 1–3600，默认 600。
 - 成功 201 `ActionCreateResponse`：`Action` 字段 + `confirmationToken`（明文，仅此一次）。
 - 草稿包含 `preview`（即 `draft_payload`）、`draftVersion`、`expiresAt`、`runId`、`organizationId`。
-- 失败：`VALIDATION_ERROR` 422、`NOT_FOUND` 404（run 不属于当前用户）、`UNAUTHENTICATED` 401、`FORBIDDEN` 403（CSRF）。
+- 失败：`VALIDATION_ERROR` 422、`NOT_FOUND` 404（run 不属于当前主体）、`UNAUTHENTICATED` 401、`FORBIDDEN` 403（非组织成员或 CSRF 缺失）。
 - 草稿创建不执行任何高影响副作用；确认才执行。
 
 ## GET /actions/:id
 
-- 认证：受保护；仅发起用户。
+- 认证：受保护；仅发起用户或所属组织活跃成员。
 - 成功 200 `Action`：包含 `preview`、`status`、`draftVersion`、`expiresAt`、`result` 等。
 - 不返回 `confirmationToken`，也不返回 token 哈希。
-- 非所有者/不存在返回 404。
+- 非所有者/非组织成员/不存在返回 404。
 
 ## POST /actions/:id/confirm
 
 - 认证：受保护；Web 需要 CSRF；必须提供 `Idempotency-Key`。
 - 请求 `ActionConfirmRequest`：`{expectedDraftVersion, confirmationToken}`。
-- 校验：所有者、token 哈希、`draft_version`、`expires_at`、状态、幂等键与请求哈希。
-- 成功 200 `Action`：状态 `succeeded`，`confirmedAt`/`executedAt` 设置，`result` 为 `{memoryId}`；同一事务创建记忆、更新行动与幂等结果。
-- 重复确认：相同或不同幂等键都返回同一 `result.memoryId`，不重复创建记忆。
+- 权限校验（M4-04 / M4-05 实时安全复核）：
+  - 若为 `memory.create`：调用者必须为该行动所有者。
+  - 若为 `opportunity.create`：调用者**当前必须是该组织的活跃 Owner 或 Admin**；普通 Member 或已被移出组织的用户确认严格阻断，抛出 403 `FORBIDDEN`。
+- 成功 200 `Action`：状态 `succeeded`，`confirmedAt`/`executedAt` 设置，`result` 为 `{memoryId}` 或 `{opportunityId, organizationId, status: 'draft'}`；同一事务创建业务实体、更新行动与幂等结果。
+- 重复确认：相同或不同幂等键都返回同一 `result`，不重复创建机会或记忆。
 - 失败：
   - 403 `ACTION_TOKEN_INVALID`：token 不匹配。
+  - 403 `FORBIDDEN`：无权确认组织高影响行动（非 owner/admin 或已被移出组织）。
   - 409 `VERSION_CONFLICT`：`expectedDraftVersion` 过期。
   - 409 `ACTION_EXPIRED`：草稿已过期；状态置为 `expired`。
   - 409 `ACTION_NOT_CONFIRMABLE`：已取消/失败/已执行但不可确认。

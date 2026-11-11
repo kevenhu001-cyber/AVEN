@@ -358,7 +358,9 @@ describe('public engineering contracts', () => {
       payload: { kind: 'skill', title: '行动技能', content: '行动正文' },
     });
     expect(parsed.expiresInSeconds).toBe(600);
-    expect(parsed.payload.allowedUses).toEqual([]);
+    if ('allowedUses' in parsed.payload) {
+      expect(parsed.payload.allowedUses).toEqual([]);
+    }
     expect(
       ActionCreateRequestSchema.safeParse({
         actionType: 'memory.create',
@@ -372,6 +374,20 @@ describe('public engineering contracts', () => {
         expiresInSeconds: 0,
       }).success,
     ).toBe(false);
+
+    // Opportunity action draft
+    const oppAction = ActionCreateRequestSchema.parse({
+      actionType: 'opportunity.create',
+      organizationId: requestId,
+      payload: {
+        title: '机器人算法工程师',
+        summary: '参与下一代移动机器人 SLAM 算法研发',
+        description: '负责基于激光雷达与相机的多传感器融合里程计开发。',
+      },
+    });
+    expect(oppAction.actionType).toBe('opportunity.create');
+    expect(oppAction.organizationId).toBe(requestId);
+
     expect(ActionConfirmRequestSchema.safeParse({ expectedDraftVersion: 1 }).success).toBe(false);
     expect(
       ActionSchema.parse({
@@ -390,6 +406,13 @@ describe('public engineering contracts', () => {
         updatedAt: '2026-11-11T00:00:00.000Z',
       }).status,
     ).toBe('pending_confirmation');
+
+    // Organization AgentTurnRequest validation
+    const orgAgentTurn = AgentTurnRequestSchema.parse({
+      organizationId: requestId,
+      input: '请帮我们草拟一份机器人工程师招聘需求',
+    });
+    expect(orgAgentTurn.organizationId).toBe(requestId);
   });
 
   it('validates organization update and opportunity contracts', () => {

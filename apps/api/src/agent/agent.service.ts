@@ -172,25 +172,61 @@ export class AgentService implements OnModuleDestroy {
     idempotencyKey: string,
   ): Promise<AgentTurnResponse> {
     const requestHash = createHash('sha256')
-      .update(JSON.stringify({ conversationId: input.conversationId ?? null, input: input.input }))
+      .update(
+        JSON.stringify({
+          conversationId: input.conversationId ?? null,
+          organizationId: input.organizationId ?? null,
+          input: input.input,
+        }),
+      )
       .digest('hex');
     const row = await withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const result = await client.query<{
-        run_id: string;
-        conversation_id: string;
-        status: AgentRunStatus;
-        created: boolean;
-      }>(`SELECT * FROM app.create_agent_turn($1, $2, $3, $4, $5, $6, $7, $8)`, [
-        idempotencyKey,
-        'POST',
-        '/api/v1/agent/turns',
-        requestHash,
-        input.conversationId ?? null,
-        input.input,
-        this.provider,
-        this.model,
-      ]);
-      const turn = result.rows[0];
+      let turn:
+        | {
+            run_id: string;
+            conversation_id: string;
+            status: AgentRunStatus;
+            created: boolean;
+          }
+        | undefined;
+
+      if (input.organizationId) {
+        const result = await client.query<{
+          run_id: string;
+          conversation_id: string;
+          status: AgentRunStatus;
+          created: boolean;
+        }>(`SELECT * FROM app.create_organization_agent_turn($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [
+          input.organizationId,
+          input.conversationId ?? null,
+          input.input,
+          idempotencyKey,
+          'POST',
+          '/api/v1/agent/turns',
+          requestHash,
+          this.provider,
+          this.model,
+        ]);
+        turn = result.rows[0];
+      } else {
+        const result = await client.query<{
+          run_id: string;
+          conversation_id: string;
+          status: AgentRunStatus;
+          created: boolean;
+        }>(`SELECT * FROM app.create_agent_turn($1, $2, $3, $4, $5, $6, $7, $8)`, [
+          idempotencyKey,
+          'POST',
+          '/api/v1/agent/turns',
+          requestHash,
+          input.conversationId ?? null,
+          input.input,
+          this.provider,
+          this.model,
+        ]);
+        turn = result.rows[0];
+      }
+
       if (!turn) throw new Error('AGENT_TURN_CREATE_FAILED');
       if (turn.created) {
         await client.query(

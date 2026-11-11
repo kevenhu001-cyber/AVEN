@@ -70,15 +70,35 @@ export class ActionService implements OnModuleDestroy {
   async create(auth: AuthContext, input: ActionCreateRequest): Promise<ActionCreateResponse> {
     const token = randomToken();
     const tokenHash = sha256(token);
-    const result = await withRequestContext(this.getPool(), this.context(auth), async (client) =>
-      client.query<ActionRow>('SELECT * FROM app.create_action($1, $2, $3, $4, $5)', [
+    const result = await withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      if (input.actionType === 'opportunity.create') {
+        if (!input.organizationId) {
+          throw new ApiCodeException(
+            'VALIDATION_ERROR',
+            422,
+            'organizationId is required for opportunity actions.',
+          );
+        }
+        return client.query<ActionRow>(
+          'SELECT * FROM app.create_organization_action($1, $2, $3, $4, $5, $6)',
+          [
+            input.organizationId,
+            input.actionType,
+            input.payload,
+            input.runId ?? null,
+            input.expiresInSeconds,
+            tokenHash,
+          ],
+        );
+      }
+      return client.query<ActionRow>('SELECT * FROM app.create_action($1, $2, $3, $4, $5)', [
         input.actionType,
         input.payload,
         input.runId ?? null,
         input.expiresInSeconds,
         tokenHash,
-      ]),
-    );
+      ]);
+    });
     const row = result.rows[0];
     if (!row) throw new Error('ACTION_CREATE_FAILED');
     return ActionCreateResponseSchema.parse({
@@ -102,6 +122,7 @@ export class ActionService implements OnModuleDestroy {
     input: ActionConfirmRequest,
     idempotencyKey: string,
   ): Promise<ActionConfirmResponse> {
+    const currentAction = await this.get(auth, id);
     const tokenHash = sha256(input.confirmationToken);
     const requestHash = sha256(
       JSON.stringify({
@@ -110,19 +131,21 @@ export class ActionService implements OnModuleDestroy {
         tokenHash,
       }),
     );
+    const fnName =
+      currentAction.actionType === 'opportunity.create'
+        ? 'app.confirm_opportunity_create_action'
+        : 'app.confirm_memory_create_action';
+
     const result = await withRequestContext(this.getPool(), this.context(auth), async (client) =>
-      client.query<ActionConfirmRow>(
-        'SELECT * FROM app.confirm_memory_create_action($1, $2, $3, $4, $5, $6, $7)',
-        [
-          id,
-          input.expectedDraftVersion,
-          tokenHash,
-          idempotencyKey,
-          'POST',
-          `/api/v1/actions/${id}/confirm`,
-          requestHash,
-        ],
-      ),
+      client.query<ActionConfirmRow>(`SELECT * FROM ${fnName}($1, $2, $3, $4, $5, $6, $7)`, [
+        id,
+        input.expectedDraftVersion,
+        tokenHash,
+        idempotencyKey,
+        'POST',
+        `/api/v1/actions/${id}/confirm`,
+        requestHash,
+      ]),
     );
     const row = result.rows[0];
     if (!row) throw new NotFoundException();

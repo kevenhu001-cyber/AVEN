@@ -1,16 +1,28 @@
+import { createHash, randomBytes } from 'node:crypto';
 import {
   AIError,
   ToolExecutor,
   ToolRegistry,
   buildPersonalContextMessages,
+  buildOrganizationContextMessages,
   createMemorySearchTool,
+  createOpportunitySearchTool,
+  createOrganizationContextSearchTool,
+  createOpportunityDraftCreateTool,
   matchPersonalMemory,
+  type AIMessage,
   type AIProvider,
   type MemorySearchResult,
+  type OpportunitySearchResult,
+  type OrganizationContextSearchResult,
   type ToolActor,
   type ToolAuditSink,
 } from '@aven/ai-core';
-import { TOOL_PERMISSIONS, type AgentRunStatus } from '@aven/contracts';
+import {
+  TOOL_PERMISSIONS,
+  type AgentRunStatus,
+  type CreateOpportunityDraftRequest,
+} from '@aven/contracts';
 import type { LogWriter } from '@aven/config/logger';
 import type { DatabasePool } from '@aven/database';
 
@@ -33,6 +45,27 @@ type MemoryRow = {
   content: string;
   version: number;
   policy_version: number;
+};
+
+type OrgContextRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  website_url: string | null;
+  logo_url: string | null;
+  campus_name: string | null;
+  member_count: number;
+};
+
+type OrgOpportunityRow = {
+  id: string;
+  title: string;
+  summary: string;
+  stage: 'undergraduate' | 'master' | 'phd' | 'postdoc' | 'any';
+  status: 'draft' | 'open' | 'paused' | 'closed' | 'expired';
+  visibility: 'organization' | 'campus' | 'public';
+  headcount: number;
+  deadline: Date | null;
 };
 
 export type AgentRunProcessorOptions = {
@@ -161,6 +194,62 @@ function createMemoryService(pool: DatabasePool, runId: string, ownerId: string)
   };
 }
 
+async function getOrgContext(
+  pool: DatabasePool,
+  orgId: string,
+): Promise<OrgContextRow | undefined> {
+  const result = await pool.query<OrgContextRow>(
+    'SELECT * FROM app.get_organization_for_worker($1)',
+    [orgId],
+  );
+  return result.rows[0];
+}
+
+async function listOrgOpportunities(
+  pool: DatabasePool,
+  orgId: string,
+  limit: number,
+): Promise<OrgOpportunityRow[]> {
+  const result = await pool.query<OrgOpportunityRow>(
+    'SELECT * FROM app.list_organization_opportunities_for_worker($1, $2)',
+    [orgId, limit],
+  );
+  return result.rows;
+}
+
+async function createOrgActionDraft(
+  pool: DatabasePool,
+  orgId: string,
+  userId: string,
+  runId: string,
+  payload: CreateOpportunityDraftRequest,
+): Promise<{
+  id: string;
+  status: 'pending_confirmation';
+  action_type: 'opportunity.create';
+  draft_payload: Record<string, unknown>;
+}> {
+  const token = randomBytes(24).toString('base64url');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const result = await pool.query<{
+    id: string;
+    status: 'pending_confirmation';
+    action_type: 'opportunity.create';
+    draft_payload: Record<string, unknown>;
+  }>('SELECT * FROM app.create_organization_action_for_worker($1, $2, $3, $4, $5, $6, $7)', [
+    orgId,
+    userId,
+    runId,
+    'opportunity.create',
+    JSON.stringify(payload),
+    600,
+    tokenHash,
+  ]);
+  const row = result.rows[0];
+  if (!row) throw new Error('CREATE_ORG_ACTION_DRAFT_FAILED');
+  return row;
+}
+
 export async function processAgentRun(
   pool: DatabasePool,
   runId: string,
@@ -195,14 +284,27 @@ export async function processAgentRun(
     if (!run) throw new AIError('RUNTIME_FAILED', 'Agent run context is unavailable.');
 
     await appendEvent(pool, runId, 'turn.started', {});
-    await appendEvent(pool, runId, 'tool.started', { tool: 'memory.search' });
 
-    const actor: ToolActor = {
-      principalId: run.principal_id,
-      userId: run.initiated_by_user_id,
-      permissions: new Set([TOOL_PERMISSIONS.memoryReadSelf]),
-      allowedUses: new Set(['self_ai']),
-    };
+    const isOrgRun = run.principal_id !== run.initiated_by_user_id;
+
+    const actor: ToolActor = isOrgRun
+      ? {
+          principalId: run.principal_id,
+          userId: run.initiated_by_user_id,
+          permissions: new Set([
+            TOOL_PERMISSIONS.opportunityReadOrg,
+            TOOL_PERMISSIONS.opportunityWriteOrg,
+            TOOL_PERMISSIONS.organizationReadContext,
+          ]),
+          allowedUses: new Set([]),
+        }
+      : {
+          principalId: run.principal_id,
+          userId: run.initiated_by_user_id,
+          permissions: new Set([TOOL_PERMISSIONS.memoryReadSelf]),
+          allowedUses: new Set(['self_ai']),
+        };
+
     const audit: ToolAuditSink = {
       record: (event) => {
         log({
@@ -215,24 +317,118 @@ export async function processAgentRun(
         });
       },
     };
-    const registry = new ToolRegistry();
-    registry.register(createMemorySearchServiceTool(pool, runId, run.initiated_by_user_id));
-    const executor = new ToolExecutor(registry, { retryDelayMs: () => 0 });
-    const toolResult = await executor.execute<MemorySearchResult>(
-      'memory.search',
-      { query: run.input_body.slice(0, 500) },
-      { actor, requestId: `run:${runId}`, audit },
-    );
-    await appendEvent(pool, runId, 'tool.completed', {
-      tool: 'memory.search',
-      status: 'succeeded',
-      itemCount: toolResult.value.items.length,
-    });
 
-    const messages = buildPersonalContextMessages({
-      userMessage: run.input_body,
-      memories: toolResult.value.items,
-    });
+    const registry = new ToolRegistry();
+    if (isOrgRun) {
+      registry.register(
+        createOrganizationContextSearchTool({
+          async search(_input) {
+            const org = await getOrgContext(pool, run.principal_id);
+            if (!org) throw new AIError('TOOL_EXECUTION_FAILED', 'Organization not found.');
+            return {
+              id: org.id,
+              name: org.name,
+              description: org.description,
+              websiteUrl: org.website_url,
+              campusName: org.campus_name,
+              memberCount: org.member_count,
+              domains: [],
+            };
+          },
+        }),
+      );
+      registry.register(
+        createOpportunitySearchTool({
+          async search(input) {
+            const rows = await listOrgOpportunities(pool, run.principal_id, input.limit ?? 10);
+            return {
+              items: rows.map((r) => ({
+                id: r.id,
+                title: r.title,
+                summary: r.summary,
+                stage: r.stage,
+                status: r.status,
+                visibility: r.visibility,
+                headcount: r.headcount,
+                deadline: r.deadline ? r.deadline.toISOString() : null,
+              })),
+            };
+          },
+        }),
+      );
+      registry.register(
+        createOpportunityDraftCreateTool({
+          async createDraft(input) {
+            const row = await createOrgActionDraft(
+              pool,
+              run.principal_id,
+              run.initiated_by_user_id,
+              runId,
+              input,
+            );
+            return {
+              actionId: row.id,
+              status: 'pending_confirmation',
+              actionType: 'opportunity.create',
+              preview: row.draft_payload,
+            };
+          },
+        }),
+      );
+    } else {
+      registry.register(createMemorySearchServiceTool(pool, runId, run.initiated_by_user_id));
+    }
+
+    const executor = new ToolExecutor(registry, { retryDelayMs: () => 0 });
+
+    let messages: AIMessage[];
+    if (isOrgRun) {
+      await appendEvent(pool, runId, 'tool.started', { tool: 'organization_context.search' });
+      const orgContextResult = await executor.execute<OrganizationContextSearchResult>(
+        'organization_context.search',
+        { query: run.input_body.slice(0, 500) },
+        { actor, requestId: `run:${runId}`, audit },
+      );
+      await appendEvent(pool, runId, 'tool.completed', {
+        tool: 'organization_context.search',
+        status: 'succeeded',
+      });
+
+      await appendEvent(pool, runId, 'tool.started', { tool: 'opportunity.search' });
+      const oppResult = await executor.execute<OpportunitySearchResult>(
+        'opportunity.search',
+        { query: run.input_body.slice(0, 500), limit: 10 },
+        { actor, requestId: `run:${runId}`, audit },
+      );
+      await appendEvent(pool, runId, 'tool.completed', {
+        tool: 'opportunity.search',
+        status: 'succeeded',
+        itemCount: oppResult.value.items.length,
+      });
+
+      messages = buildOrganizationContextMessages({
+        userMessage: run.input_body,
+        organization: orgContextResult.value,
+        opportunities: oppResult.value.items,
+      });
+    } else {
+      await appendEvent(pool, runId, 'tool.started', { tool: 'memory.search' });
+      const toolResult = await executor.execute<MemorySearchResult>(
+        'memory.search',
+        { query: run.input_body.slice(0, 500) },
+        { actor, requestId: `run:${runId}`, audit },
+      );
+      await appendEvent(pool, runId, 'tool.completed', {
+        tool: 'memory.search',
+        status: 'succeeded',
+        itemCount: toolResult.value.items.length,
+      });
+
+      messages = buildPersonalContextMessages({
+        userMessage: run.input_body,
+        memories: toolResult.value.items,
+      });
+    }
 
     controller = new AbortController();
     poller = setInterval(() => {

@@ -503,10 +503,19 @@ export const MemoryKindSchema = z.enum([
 export const SensitivitySchema = z.enum(['low', 'normal', 'high']);
 export const DisplayAudienceSchema = z.enum(['owner', 'campus', 'public']);
 export const ContextUseSchema = z.enum(['self_ai', 'matching', 'sharing']);
-export const ToolPermissionSchema = z.enum(['memory:read:self', 'memory:write:self']);
+export const ToolPermissionSchema = z.enum([
+  'memory:read:self',
+  'memory:write:self',
+  'opportunity:read:org',
+  'opportunity:write:org',
+  'organization:read:context',
+]);
 export const TOOL_PERMISSIONS = {
   memoryReadSelf: 'memory:read:self',
   memoryWriteSelf: 'memory:write:self',
+  opportunityReadOrg: 'opportunity:read:org',
+  opportunityWriteOrg: 'opportunity:write:org',
+  organizationReadContext: 'organization:read:context',
 } as const satisfies Record<string, z.infer<typeof ToolPermissionSchema>>;
 export const MemoryStatusSchema = z.enum([
   'pending_confirmation',
@@ -759,6 +768,7 @@ export const AgentRunEventTypeSchema = z.enum([
 export const AgentTurnRequestSchema = z
   .object({
     conversationId: z.uuid().optional(),
+    organizationId: z.uuid().optional(),
     input: z.string().trim().min(1).max(8000),
   })
   .strict();
@@ -808,7 +818,7 @@ export const AgentCancelResponseSchema = z
   })
   .strict();
 
-export const ActionTypeSchema = z.enum(['memory.create']);
+export const ActionTypeSchema = z.enum(['memory.create', 'opportunity.create']);
 export const ActionStatusSchema = z.enum([
   'draft',
   'pending_confirmation',
@@ -822,7 +832,8 @@ export const ActionStatusSchema = z.enum([
 export const ActionCreateRequestSchema = z
   .object({
     actionType: ActionTypeSchema,
-    payload: CreateMemoryRequestSchema,
+    organizationId: z.uuid().optional(),
+    payload: z.union([CreateMemoryRequestSchema, CreateOpportunityDraftRequestSchema]),
     runId: z.uuid().optional(),
     expiresInSeconds: z.number().int().min(1).max(3600).default(600),
   })

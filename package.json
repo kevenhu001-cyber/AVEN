@@ -45,6 +45,7 @@
     "action:verify": "pnpm build && tsx scripts/action-verify.ts",
     "opportunity:verify": "pnpm build && tsx scripts/opportunity-verify.ts",
     "opportunity:maintain": "pnpm build:packages && tsx scripts/opportunity-maintenance.ts",
+    "org:verify": "pnpm build && tsx scripts/org-boundary-verify.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

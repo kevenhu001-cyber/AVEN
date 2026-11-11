@@ -18,6 +18,8 @@ export {
   PERSONAL_CONTEXT_OPEN,
   PERSONAL_CONTEXT_TAG,
   buildPersonalContextMessages,
+  buildOrganizationContextMessages,
+  ORGANIZATION_CONTEXT_INSTRUCTIONS,
   countTagOccurrences,
   escapePersonalContext,
   matchPersonalMemory,
@@ -26,6 +28,7 @@ export {
   type MemoryMatchInput,
   type PersonalContextInput,
   type PersonalMemoryCandidate,
+  type OrganizationContextInput,
 } from './pipeline.js';
 export {
   EvalMemoryCandidateSchema,

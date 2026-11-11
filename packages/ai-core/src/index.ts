@@ -68,6 +68,35 @@ export {
   type MemorySearchService,
 } from './tools/memory-search.js';
 export {
+  OpportunitySearchInputSchema,
+  OpportunitySearchResultItemSchema,
+  OpportunitySearchResultSchema,
+  createOpportunitySearchTool,
+  type OpportunitySearchContext,
+  type OpportunitySearchInput,
+  type OpportunitySearchResult,
+  type OpportunitySearchResultItem,
+  type OpportunitySearchService,
+} from './tools/opportunity-search.js';
+export {
+  OrganizationContextSearchInputSchema,
+  OrganizationContextSearchResultSchema,
+  createOrganizationContextSearchTool,
+  type OrganizationContextSearchContext,
+  type OrganizationContextSearchInput,
+  type OrganizationContextSearchResult,
+  type OrganizationContextSearchService,
+} from './tools/organization-context-search.js';
+export {
+  OpportunityDraftCreateInputSchema,
+  OpportunityDraftCreateResultSchema,
+  createOpportunityDraftCreateTool,
+  type OpportunityDraftCreateContext,
+  type OpportunityDraftCreateInput,
+  type OpportunityDraftCreateResult,
+  type OpportunityDraftCreateService,
+} from './tools/opportunity-draft-create.js';
+export {
   DEFAULT_EVAL_DATASET,
   DEFAULT_EVAL_THRESHOLDS,
   EvalCaseSchema,
@@ -83,6 +112,8 @@ export {
   PERSONAL_CONTEXT_OPEN,
   PERSONAL_CONTEXT_TAG,
   buildPersonalContextMessages,
+  buildOrganizationContextMessages,
+  ORGANIZATION_CONTEXT_INSTRUCTIONS,
   buildReport,
   countTagOccurrences,
   escapePersonalContext,
@@ -109,4 +140,5 @@ export {
   type MemoryMatchInput,
   type PersonalContextInput,
   type PersonalMemoryCandidate,
+  type OrganizationContextInput,
 } from './eval/index.js';
