@@ -2,13 +2,31 @@
 
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
+## 安全核对进展
+
+2026-11-11 核对发现，原忙闲投影允许已登录用户查询其他主体，缺少用途授权。修复分两步：迁移 `0027_availability_privacy` 先把查询收紧为仅本人（fail closed）；迁移 `0029_availability_sharing` 补上显式用途授权——忙闲所有者创建带期限（最长 90 天）的共享授权（用途 `event_coordination`），被授权方可读取忙闲投影，撤销后立即阻断。授权是单向的，不共享标题与备注等私人字段。决策见 [ADR-010](docs/architecture/decisions/0010-availability-authorization.md)。
+
+新迁移必须应用到对应数据库后才生效，未迁移的运行环境仍有风险。本机已应用 `0027`–`0029` 并复验：`m6:verify` 30/30、`db:verify` 184 项、`m5:verify` 21/21、`isolation:verify` 21/21 全部通过。
+
+M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、设备验收或 MVP 已完成。请同时查阅[开发计划](docs/development/DEVELOPMENT_PLAN.md)与 [M4](docs/development/M4_ORGANIZATION.md)、[M5](docs/development/M5_MATCHING_RELATIONSHIP.md)、[M6](docs/development/M6_CALENDAR_EVENT.md) 交付记录。
+
 ## AI 配置进展
 
 用户希望自行配置 AI 服务。当前已增加用户级模型配置管理 API，密钥加密保存、读取不返回密钥，支持按版本更新与删除；用户设置尚未接入 Worker，界面也未实现，因此不能用于用户自配模型对话。服务端使用显式 HTTPS 地址允许列表；调用前仍需连接时网络安全检查、发送范围确认和真实服务验证。流式适配器已修正提前断流误报成功及估算 token 总量的问题，相关验证使用本地模拟响应。
 
 ## 当前状态
 
-项目处于 **M3 个人上下文与 AI**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01–M2-05：身份、组织与强制 RLS**、**M3-01：已确认个人上下文**、**M3-02：记忆复核**、**M3-03：记忆生命周期**、**M3-04：Provider 与工具**、**M3-05：运行时与流式**、**M3-06：行动预览与确认**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）与 **M3-07 评估部分**（脱敏评估集、来源支持/越权阻断/注入/结构化输出/取消检查、延迟与 token/工具预算、阈值与报告）。**M3-07 的个人页面与记忆复核 UI 仍受 M1-07 设计评审门阻塞**。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。机会/引荐、真实 AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+后端业务闭环已推进到 **M6 日程与活动**。已实现并通过真实 HTTP/数据库验证：
+
+- **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**尚未在 GitHub Actions 实跑**）。
+- **M1 设计**：仅令牌层（M1-01）与可点击原型（M1-07，**正式双端评审未做**）；M1-02–M1-06 组件与页面状态层未编码。
+- **M2 身份与组织**：认证会话、资料/校园、组织成员与邀请、强制 RLS、跨账号/跨组织隔离。
+- **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 只有评估集与预算门，**个人页面 UI 仍受 M1-07 评审门阻塞**。
+- **M4 组织与机会**：组织资料、机会生命周期、组织控制台页面、组织 Agent 与边界测试。
+- **M5 匹配·引荐·关系**：意向与可解释候选、用途授权预览、引荐双向决定、原子建联、关系共享上下文、撤销即时阻断；**M5-02 的向量语义召回未实现**（当前为确定性特征打分），**M5-08 Android 主线未实现**。
+- **M6 日程与活动**：忙闲块、忙闲投影与用途授权共享、多方时间求交、活动状态机；**M6-05 AI 协调与 M6-06 通知投递未实现**，外部日历仅有数据底座（无 OAuth 连接器）。
+
+尚未完成：个人与移动端 UI（`apps/mobile` 仅有骨架）、M7 运行保障与试点、真实 Provider/邮件/日历的真实服务验证、原生真机验收、双端设计评审、语义向量召回、通知投递。M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -50,6 +68,13 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [M3-05 运行时与流式交付](docs/development/M3-05_AGENT_RUNTIME.md) | Agent turn、持久事件、SSE 重放、取消、来源复核与 24 小时清理 |
 | [M3-06 行动确认交付](docs/development/M3-06_ACTIONS.md) | 行动草稿、预览、一次性 token、幂等执行与取消 |
 | [M3-07 评估与预算门](docs/development/M3-07_EVALUATION.md) | 脱敏评估集、来源支持/越权阻断/注入/结构化输出/取消、延迟与 token/工具预算、阈值与报告 |
+| [M4 组织与机会交付](docs/development/M4_ORGANIZATION.md) | 组织资料、机会生命周期、组织控制台、组织 Agent 与边界测试 |
+| [M5 匹配与关系交付](docs/development/M5_MATCHING_RELATIONSHIP.md) | 意向、候选、授权预览、引荐双向决定、原子建联、共享上下文与撤销传播 |
+| [M6 日程与活动交付](docs/development/M6_CALENDAR_EVENT.md) | 忙闲块、忙闲投影与用途授权共享、多方求交、活动状态机 |
+| [匹配候选 API](docs/api/MATCHING.md) | 意向状态机、候选生成、可解释评分与权限边界 |
+| [引荐与授权 API](docs/api/REFERRALS.md) | 授权预览、引荐状态机、双向决定、共享快照与撤销 |
+| [关系空间 API](docs/api/RELATIONSHIPS.md) | 关系建立、共享上下文、关闭与唯一性 |
+| [日程与活动 API](docs/api/AVAILABILITY_EVENTS.md) | 忙闲块、忙闲投影、共享授权、多方求交与活动状态机 |
 | [Agent 运行时 API](docs/api/AGENT.md) | turn 创建、run 状态、SSE 事件流、取消与保留契约 |
 | [行动确认 API](docs/api/ACTIONS.md) | 草稿、预览、确认、取消、token 与幂等契约 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
@@ -79,9 +104,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项是 **M3-07 的个人页面与记忆复核 UI**（评估部分已交付），须先通过 **M1-07 正式双端设计评审**；页面需展示个人独立会话、记忆复核、Mock 明示、来源与失败状态。真实 Provider 评估、M1-02/M1-03 UI 编码与 M0-03 的 Expo Go 真机连接仍待环境。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
+下一项是 **M1-07 正式双端设计评审**，通过后才能进入个人页面与 M1-02/M1-03 组件层的 UI 编码；在此之前可以推进的工程项是 M6-06 通知投递、语义召回的 pgvector 迁移与真实 Provider 评估。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
 
-认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)，组织契约见 [组织成员与邀请 API](docs/api/ORGANIZATIONS.md)，记忆契约见 [个人记忆 API](docs/api/MEMORIES.md)，Agent 契约见 [Agent 运行时 API](docs/api/AGENT.md)，行动契约见 [行动确认 API](docs/api/ACTIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)、[M3-06](docs/development/M3-06_ACTIONS.md)、[M3-07](docs/development/M3-07_EVALUATION.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
+契约见 [认证与会话 API](docs/api/AUTH.md)、[个人资料与校园 API](docs/api/PROFILE.md)、[组织成员与邀请 API](docs/api/ORGANIZATIONS.md)、[个人记忆 API](docs/api/MEMORIES.md)、[组织机会 API](docs/api/OPPORTUNITIES.md)、[匹配候选 API](docs/api/MATCHING.md)、[引荐与授权 API](docs/api/REFERRALS.md)、[关系空间 API](docs/api/RELATIONSHIPS.md)、[日程与活动 API](docs/api/AVAILABILITY_EVENTS.md)、[Agent 运行时 API](docs/api/AGENT.md)、[行动确认 API](docs/api/ACTIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)、[M3-06](docs/development/M3-06_ACTIONS.md)、[M3-07](docs/development/M3-07_EVALUATION.md)、[M4](docs/development/M4_ORGANIZATION.md)、[M5](docs/development/M5_MATCHING_RELATIONSHIP.md)、[M6](docs/development/M6_CALENDAR_EVENT.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
 ## 环境现状
 
@@ -98,7 +123,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 124 项；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、强制 RLS/隔离 63 项数据库检查与 21 项隔离检查、个人记忆 97 项真实检查、AI Provider/工具 28 项检查、Agent 运行时 45 项检查、行动确认 33 项检查通过，数据库层 128 项检查通过；M3-07 评估 10/10 用例（含结构化输出与取消）、阈值与预算检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。本次会话未检测到 Docker CLI，因此数据库相关验证命令未重新执行。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 **140 项**（2026-11-11）；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、个人记忆 97 项真实检查、AI Provider/工具 28 项检查、Agent 运行时 45 项检查、行动确认 33 项检查通过；**机会 34 项、组织边界 25 项、首条闭环 21 项（M5）、日程与活动 30 项（M6）** 通过；**数据库层 184 项检查通过**（29 个迁移、45 张业务表，全部 FORCE RLS），强制 RLS/隔离 63 项数据库检查与 21 项隔离检查通过；M3-07 评估 10/10 用例（含结构化输出与取消）、阈值与预算检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
 
 ## 开发命令
 
@@ -126,9 +151,14 @@ corepack pnpm ai:eval           # 脱敏评估集、来源支持/越权阻断/�
 corepack pnpm agent:verify      # Agent turn/SSE 重放/取消/来源复核/过期清理检查
 corepack pnpm agent:maintain    # Agent 事件 24 小时保留清理
 corepack pnpm action:verify     # 行动草稿/预览/token/确认/幂等/取消/过期检查
+corepack pnpm opportunity:verify # 机会草稿/发布/暂停/关闭/可见性/过期检查
+corepack pnpm opportunity:maintain # 机会到期与状态维护任务
+corepack pnpm org:verify        # 组织边界、成员移除与旧草稿确认阻断检查
+corepack pnpm m5:verify         # 首条闭环：意向→候选→授权→引荐→建联→撤销阻断
+corepack pnpm m6:verify         # 忙闲、忙闲共享授权、多方求交与活动状态机
 ```
 
-开发启动脚本已建立；认证、资料/校园、组织、记忆与记忆生命周期 API 已实现，机会/引荐/真实 AI 与核心产品页面尚未实现：
+开发启动脚本已建立；认证、资料/校园、组织、记忆、Agent、行动确认、机会、意向/匹配、引荐/授权、关系、忙闲与活动 API 已实现；真实 AI Provider 与核心产品页面（个人与移动端）尚未实现：
 
 ```bash
 corepack pnpm dev:web
@@ -158,7 +188,7 @@ corepack pnpm db:verify        # 重建 aven_test，验证空库迁移/升级/se
 corepack pnpm db:verify:current
 ```
 
-`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织、异步样例、个人记忆/复核/生命周期、Agent 运行时与行动确认表；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox、样例与 Agent 消费者。认证、资料/校园、组织成员、记忆、记忆复核、生命周期事件、Agent turn/SSE 与行动确认 API 已实现；机会、引荐、真实 AI 与核心产品页面尚未实现。完整启动、故障处理与 CI 说明见 [开发环境启动](docs/development/SETUP.md)。
+`dev:web` 默认 127.0.0.1:3000，`dev:api` 默认 127.0.0.1:3001，Worker 管理探针默认 127.0.0.1:3002。Expo 需先设置设备可达的 `EXPO_PUBLIC_API_URL`，不能使用开发机 localhost。PostgreSQL 默认映射 127.0.0.1:55432（本机 5432 已被占用），Redis 默认 127.0.0.1:6379。当前迁移覆盖 D1 身份/组织、异步样例、个人记忆/复核/生命周期、Agent 运行时与行动确认表、机会/组织 Agent、意向与匹配、授权与引荐、关系与共享、日程/忙闲/活动、忙闲隐私与共享授权、用户级 AI Provider 配置；API 就绪检查数据库、Redis 与迁移版本，Worker 运行 Outbox、样例与 Agent 消费者。完整启动、故障处理与 CI 说明见 [开发环境启动](docs/development/SETUP.md)。
 
 ## 协作方式
 

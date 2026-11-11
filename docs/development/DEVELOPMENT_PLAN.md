@@ -38,7 +38,7 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 
 ## 2. 当前基线与执行方式
 
-- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M2-01 已实现 Argon2id、不透明会话、CSRF、限流、邮箱验证与密码重置；M2-02 已实现资料更新、校园列表与校园成员申请；M2-03 已实现组织创建、成员、邀请/接受、角色与最后 owner 保护；M2-04 已强制 21 张表 RLS；M2-05 已通过跨账号/跨组织隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除。
+- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M2-01 已实现 Argon2id、不透明会话、CSRF、限流、邮箱验证与密码重置；M2-02 已实现资料更新、校园列表与校园成员申请；M2-03 已实现组织创建、成员、邀请/接受、角色与最后 owner 保护；M2-04 已强制 21 张表 RLS；M2-05 已通过跨账号/跨组织隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02–M3-07 已实现候选复核、生命周期、Provider/工具、Agent 运行时与流式、行动确认与评估预算；M4 已实现组织资料、机会生命周期、组织控制台、组织 Agent 与边界验证；M5 已实现意向与可解释候选、用途授权、引荐双向决定、原子建联、共享上下文与撤销传播；M6 已实现忙闲、忙闲用途授权共享、多方求交与活动状态机。当前共 29 个迁移、45 张业务表（全部 FORCE RLS）。
 - 已有原始规格、启动建议、本计划、M0-01 文档集及 M0-02/03/04/05/06/07/08、M1-01、M1-07 原型、M2-01–M2-05、M3-01 交付记录；README 说明当前状态。
 - 2026-11-11 复检：Node v24.19.0、npm 11.17.0、pnpm 12.18.0（Corepack）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、无 Android SDK/adb；Next/Nest/Expo 最小构建已实际通过。
 - PostgreSQL 17.11 与 Redis 7.4.12 已通过 Compose 启动并验证角色隔离；D1 空库迁移、已有库升级、seed 幂等、RLS 读策略、API/Worker 就绪检查与 Outbox 故障恢复已实际验证。扩展按 ADR-008 启用门单独验证；CI 尚未在 GitHub Actions 实跑。
@@ -183,15 +183,15 @@ M0 不以空页面或能运行安装命令替代数据库、Worker 与移动端�
 
 | 编号 | 工作包 | 具体内容与交付 |
 |---|---|---|
-| M5-01 | 需求与过滤基线 | 个人创建需求；真实机会按学校、领域、阶段、期限、意愿和屏蔽关系过滤；保存版本及证据 |
-| M5-02 | 语义召回与排序 | 启用 pgvector/具体模型维度迁移；逐来源/策略版本的允许集合，特征排序/召回/解释评估；不足时明确空结果 |
-| M5-03 | 用途授权 | 字段策略、服务端短期预览、业务对象/用途绑定、不可变快照与复合外键；引荐/关系用途独立确认，关系可为空上下文 |
-| M5-04 | 引荐与双向决定 | 候选/正式引荐分表，/referrals 发送/补充/决定/撤回；终态重发保留历史，内容版本与行版本分开，禁止组织提前读候选 |
-| M5-05 | 关系建立事务 | 接受时重新校验机会、成员权限、双方决定与授权；锁/版本校验；唯一约束防重复空间；Outbox 同事务写入 |
-| M5-06 | 关系空间 | Overview、成员、共同目标、会话与共享上下文；参与者校验；共享快照绑定原授权与来源版本 |
-| M5-07 | 撤销传播 | 读取入口立即检查撤销；清理/失效缓存、索引和任务；共享链接无绕过；其他独立有效授权单独判断 |
-| M5-08 | Android 业务接通 | development build 真机完成主线；弱网幂等、结果未知、会话/授权失效、身份切换、深链和前后台恢复；不以 Expo Go 代替 |
-| M5-09 | 首条旅程验收 | 两个账号代表个人与组织走完整主线；并发接受、重复请求、过期草稿、拒绝与越权场景通过 |
+| M5-01 | 需求与过滤基线 | 个人创建需求；真实机会按学校、领域、阶段、期限、意愿和屏蔽关系过滤；保存版本及证据 | [x] DONE |
+| M5-02 | 语义召回与排序 | 启用 pgvector/具体模型维度迁移；逐来源/策略版本的允许集合，特征排序/召回/解释评估；不足时明确空结果 | [~] PARTIAL：仅确定性特征打分，无向量召回 |
+| M5-03 | 用途授权 | 字段策略、服务端短期预览、业务对象/用途绑定、不可变快照与复合外键；引荐/关系用途独立确认，关系可为空上下文 | [x] DONE |
+| M5-04 | 引荐与双向决定 | 候选/正式引荐分表，/referrals 发送/补充/决定/撤回；终态重发保留历史，内容版本与行版本分开，禁止组织提前读候选 | [x] DONE（补充资料接口未实现） |
+| M5-05 | 关系建立事务 | 接受时重新校验机会、成员权限、双方决定与授权；锁/版本校验；唯一约束防重复空间；Outbox 同事务写入 | [x] DONE |
+| M5-06 | 关系空间 | Overview、成员、共同目标、会话与共享上下文；参与者校验；共享快照绑定原授权与来源版本 | [x] DONE（会话/消息 API 未实现） |
+| M5-07 | 撤销传播 | 读取入口立即检查撤销；清理/失效缓存、索引和任务；共享链接无绕过；其他独立有效授权单独判断 | [x] DONE |
+| M5-08 | Android 业务接通 | development build 真机完成主线；弱网幂等、结果未知、会话/授权失效、身份切换、深链和前后台恢复；不以 Expo Go 代替 | [ ] 未开始 |
+| M5-09 | 首条旅程验收 | 两个账号代表个人与组织走完整主线；并发接受、重复请求、过期草稿、拒绝与越权场景通过 | [x] DONE |
 
 验收门槛：真实数据完成完整主线；每条解释对应允许使用的证据；只有双方接受才建立关系；撤销后系统不继续返回相应内容；Web 与 Android 核心流程通过。
 
@@ -201,12 +201,12 @@ M0 不以空页面或能运行安装命令替代数据库、Worker 与移动端�
 
 | 编号 | 工作包 | 具体内容与交付 |
 |---|---|---|
-| M6-01 | 日程与忙闲 | 个人日程与忙闲块；统一 UTC 时间戳并保留时区；区分全天/重复事件及边界；仅共享获授权忙闲 |
-| M6-02 | 外部日历 | 选择并验证一种可用连接方式；凭据加密、撤销、同步游标与失败恢复；其他连接器明确未支持 |
-| M6-03 | 可用时间求交 | TypeScript 确定性计算日期范围、时长、参与者和工作时段；覆盖无交集、跨天和夏令时样例 |
-| M6-04 | 活动状态 | 草稿、提案、等待确认、成立、取消、结束；参与人响应独立记录；候选变化使旧确认失效 |
-| M6-05 | AI 协调 | 模型提取约束，业务求解器计算候选；缺失约束要求补充；不直接修改所有人的外部日历 |
-| M6-06 | 通知投递 | 站内通知及所选移动推送；Outbox、幂等、失败重试、去重、用户偏好和死信人工处理 |
+| M6-01 | 日程与忙闲 | 个人日程与忙闲块；统一 UTC 时间戳并保留时区；区分全天/重复事件及边界；仅共享获授权忙闲 | [x] DONE（共享授权见 M6-01R） |
+| M6-02 | 外部日历 | 选择并验证一种可用连接方式；凭据加密、撤销、同步游标与失败恢复；其他连接器明确未支持 | [~] PARTIAL：仅有数据底座，无 OAuth 连接器 |
+| M6-03 | 可用时间求交 | TypeScript 确定性计算日期范围、时长、参与者和工作时段；覆盖无交集、跨天和夏令时样例 | [x] DONE |
+| M6-04 | 活动状态 | 草稿、提案、等待确认、成立、取消、结束；参与人响应独立记录；候选变化使旧确认失效 | [x] DONE |
+| M6-05 | AI 协调 | 模型提取约束，业务求解器计算候选；缺失约束要求补充；不直接修改所有人的外部日历 | [ ] 未开始 |
+| M6-06 | 通知投递 | 站内通知及所选移动推送；Outbox、幂等、失败重试、去重、用户偏好和死信人工处理 | [ ] 未开始 |
 
 验收门槛：真实多人提供授权忙闲后产生合法候选，按明确确认规则成立活动；取消/改期可追踪；忙闲接口不暴露日程标题或私人细节；通知失败不损坏活动状态。
 
@@ -356,7 +356,7 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 规划轮范围：详细计划、README、Git 基础配置，以及将规划文档提交到指定 GitHub 仓库。未开展应用实现、依赖安装或数据库迁移。
 
-M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M1-07 已交付可点击原型与自检记录，正式双端评审待完成；M2-01–M2-05 已实现认证、资料/校园、组织成员、强制 RLS 与隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02 已实现候选提取、确认/修改/拒绝与用途检索门；M3-03 已实现事件审计、到期失效、软删除保留与审计保留清理；M3-04 已实现 Provider 抽象、Mock、OpenAI-compatible 适配器契约与工具权限/超时/重试/审计；M3-05 已实现 Agent turn 创建、持久事件、SSE 重放、取消、来源复核与 24 小时清理；M3-06 已实现行动草稿、预览、一次性 token、幂等确认执行与取消；M3-07 已实现脱敏评估集、共享匹配/提示构建、来源支持/越权阻断/注入检查、延迟与 token/工具预算、聚合阈值与报告，个人页面/记忆复核 UI 仍受 M1-07 设计评审门阻塞。下一步是 M1-07 正式评审通过后的个人页面实现与真实 Provider 评估；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭对应验收。
+M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建立 workspace 与 strict TypeScript/lint；M0-03 已建立四应用骨架并通过 Web/API/Worker 构建与 Expo Android JS 导出，真机连接与原生流式探针仍待设备环境；M0-04 已建立 Compose、PostgreSQL/Redis、环境模板与数据库角色并通过隔离验证；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed，并通过空库/升级/幂等验证；M0-06 已接入真实依赖就绪检查、统一 503 语义与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执、重试/死信与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M1-07 已交付可点击原型与自检记录，正式双端评审待完成；M2-01–M2-05 已实现认证、资料/校园、组织成员、强制 RLS 与隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02 已实现候选提取、确认/修改/拒绝与用途检索门；M3-03 已实现事件审计、到期失效、软删除保留与审计保留清理；M3-04 已实现 Provider 抽象、Mock、OpenAI-compatible 适配器契约与工具权限/超时/重试/审计；M3-05 已实现 Agent turn 创建、持久事件、SSE 重放、取消、来源复核与 24 小时清理；M3-06 已实现行动草稿、预览、一次性 token、幂等确认执行与取消；M3-07 已实现脱敏评估集、共享匹配/提示构建、来源支持/越权阻断/注入检查、延迟与 token/工具预算、聚合阈值与报告，个人页面/记忆复核 UI 仍受 M1-07 设计评审门阻塞；M4-01–M4-05 已实现组织资料、机会生命周期、组织控制台、组织 Agent 与边界验证；M5-01、M5-03–M5-07、M5-09 已实现意向、候选、授权预览、引荐双向决定、原子建联、共享上下文与撤销传播，首条确定性闭环全流程通过（M5-02 向量语义召回与 M5-08 Android 主线未实现）；M6-01–M6-04 与 M6-01R 已实现忙闲、忙闲用途授权共享、多方求交与活动状态机（M6-02 仅有数据底座，M6-05 AI 协调与 M6-06 通知投递未实现）。下一步是 M1-07 正式双端设计评审（通过后才能进入个人页面与 M1-02–M1-06 组件层编码）、M6-06 通知投递与语义召回的 pgvector 迁移；M0-03 真机补验与 GitHub Actions 实跑仍待环境，不能据此关闭对应验收。
 
 ## 19. 执行记录
 
@@ -391,7 +391,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M4-04 | DONE | 2026-11-11 | 迁移 `0019`–`0021`、Worker 隔离加载、`organization_context.search`、`opportunity_draft.create`、`app.confirm_opportunity_create_action`；`pnpm org:verify` 通过 | 组织 Agent 范围检索与机会草稿行动确认已验证 |
 | M4-05 | DONE | 2026-11-11 | `scripts/organization-action-verify.ts`、`pnpm org:verify`；25 项非成员越权拦截、旧草稿确认阻断、私有资料防泄漏与 FORCE RLS 测试全绿 | 组织安全边界与行动审计已验证 |
 | M5-01 | DONE | 2026-11-11 | `0022_intents_and_matching.sql`、`intents` 表与 FORCE RLS、`apps/api/src/intent/*`、`/api/v1/intents`；`pnpm m5:verify` 通过 | 个人意向创建、更新、状态机与乐观锁并发控制已验证 |
-| M5-02 | DONE | 2026-11-11 | `0022_intents_and_matching.sql`、`match_candidates` 表、`app.generate_match_candidates`；计算特征分与结构化证据原因（`reasons`、`featureScores`）；`pnpm m5:verify` 通过 | 可解释匹配推荐与候选隔离已验证 |
+| M5-02 | PARTIAL | 2026-11-11 | `0022_intents_and_matching.sql`、`match_candidates` 表、`app.generate_match_candidates`；计算特征分与结构化证据原因（`reasons`、`featureScores`）；`pnpm m5:verify` 通过 | 可解释匹配推荐与候选隔离已验证；**向量语义召回未实现**（仓库无 pgvector 列与 embedding 表，`v1` 为确定性特征打分） |
 | M5-03 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`consent_previews` 表、`POST /api/v1/consents/previews`、短期到期与 payload hash 快照；`pnpm m5:verify` 通过 | 用途受限授权预览已验证 |
 | M5-04 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`referrals`、`referral_decisions`、`consent_grants`、`consent_grant_items`、`consent_events`；`POST /api/v1/referrals`、`/decisions`；`pnpm m5:verify` 通过 | 双方双向接受决定状态机与用途绑定已验证 |
 | M5-05 | DONE | 2026-11-11 | `0024_relationships_and_sharing.sql`、`relationships`、`relationship_members`、`app.establish_relationship`、`POST /api/v1/relationships`；`pnpm m5:verify` 通过 | 接受后原子建联与唯一性事务约束已验证 |
@@ -402,8 +402,15 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M6-02 | DONE | 2026-11-11 | `0025_calendar_and_availability.sql`、`calendar_connections` 表与 FORCE RLS、凭据加密隔离与同步游标架构 | 外部日历数据底座与凭据安全隔离已就绪；真实 OAuth 第三方凭据接入待生产配置 |
 | M6-03 | DONE | 2026-11-11 | `packages/domain/src/time-intersection.ts`、确定性多方忙碌区间合并与空闲槽位求解纯函数算法、6 项全景单测、`POST /api/v1/availability/intersection`；`pnpm m6:verify` 通过 | 多方时间求交算法与工作时段过滤已验证 |
 | M6-04 | DONE | 2026-11-11 | `0026_events_and_coordination.sql`、`events`、`event_proposals`、`event_participants` 表与 FORCE RLS、`app.can_view_event` 鉴权、`/api/v1/events/*`；`pnpm m6:verify` 通过 | 活动草稿、提案提议、参与者响应、全员接受自动转 confirmed 终态及取消流转已验证 |
+| M6-01R | DONE | 2026-11-11 | `0029_availability_sharing.sql`（`app.create_availability_share`、`app.list_availability_shares`、`app.revoke_availability_share` 与带授权判定的 `app.query_availability_window`）、`POST/GET/DELETE /api/v1/availability/shares`、ADR-010；`pnpm m6:verify` 30/30、`pnpm db:verify` 184 项通过 | 忙闲用途授权共享已验证：默认拒绝、单向授权、期限上限 90 天、撤销后立即阻断、投影不含私人字段 |
+| M5-08 | NOT_STARTED | 2026-11-11 | 无 | Android development build 主线未开始：当前无 Android SDK，`apps/mobile` 仅有首页骨架 |
+| M6-05 | NOT_STARTED | 2026-11-11 | 无 | AI 活动约束提取与协调求解未实现 |
+| M6-06 | NOT_STARTED | 2026-11-11 | 无 | 通知投递未实现：仓库中没有通知表、通知模块、推送与死信处理 |
 
-M0–M6 阶段关键成果全量通过并固化（47 张租户表全部 FORCE RLS，26 项全量迁移，M6 业务旅程端到端全绿）。后续继续演进 M6-05（AI 活动约束提取与协调）与 M6-06（通知投递）。
+2026-11-11 安全核对：原 `app.query_availability_window` 只检查调用者已登录，未校验被查询主体授权，跨用户忙闲数据存在越权读取风险。新增迁移 `0027_availability_privacy`，临时只允许本人查询；多人求交在用途授权机制实现前不可用。**修复已在 2026-11-11 后续轮次完成**：迁移 `0029_availability_sharing` 落地显式用途授权（忙闲所有者创建带期限的共享授权，撤销后立即阻断），本机已应用 `0027`–`0029` 并复验 `pnpm m6:verify` 30/30、`pnpm db:verify` 184 项、`pnpm m5:verify` 21/21、`pnpm isolation:verify` 21/21。未应用迁移的数据库仍受影响，不能用于真实数据。详见 [M6 交付记录](M6_CALENDAR_EVENT.md) 与 [ADR-010](../architecture/decisions/0010-availability-authorization.md)。
+
+M4–M6 的上述 DONE 记录只反映当时记录的实现和检查，不代表阶段验收全部满足：正式双端设计评审、Android 主线、真实 Provider、外部日历连接和其他验收条件仍待完成。M6-05（AI 活动约束提取与协调）和 M6-06（通知投递）仍待实现。
+
 
 ### AI 用户自配进展（2026-11-11）
 
@@ -413,3 +420,6 @@ M0–M6 阶段关键成果全量通过并固化（47 张租户表全部 FORCE RL
 
 新增 `0028_user_ai_provider.sql`、用户配置 GET/PUT/DELETE API，用户密钥 AES-256-GCM 加密、读接口仅返回元数据，更新/删除通过版本检查；服务端设置存储密钥与 HTTPS URL 精确允许列表。隔离数据库执行空库/升级迁移、seed 和迁移幂等，验证身份、跨用户隔离、密文表禁止直接读取和版本冲突；加密及 URL 规则有单元测试。尚未接入 Worker、前端、密钥轮换、真实服务和真实数据发送授权，不能作为完整自配 AI 功能。**运行数据库已于 2026-11-11 应用 `0028`。**
 
+### 文档与交付记录补齐（2026-11-11）
+
+新增 [M4 交付记录](M4_ORGANIZATION.md)、[M5 交付记录](M5_MATCHING_RELATIONSHIP.md)、[M6 交付记录](M6_CALENDAR_EVENT.md)；新增端点契约 [MATCHING.md](../api/MATCHING.md)、[REFERRALS.md](../api/REFERRALS.md)、[RELATIONSHIPS.md](../api/RELATIONSHIPS.md)、[AVAILABILITY_EVENTS.md](../api/AVAILABILITY_EVENTS.md)；新增 [ADR-010 忙闲用途授权](../architecture/decisions/0010-availability-authorization.md)。README 与 AGENTS.md 的阶段描述同步到 M6 实际状态，并明确 M5-02、M5-08、M6-02、M6-05、M6-06 与 UI 层仍未完成。
