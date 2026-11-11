@@ -33,6 +33,15 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm ai:verify
+      - run: pnpm ai:eval
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-eval-report
+          path: var/eval
+          retention-days: 7
+          if-no-files-found: ignore
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - if: failure()

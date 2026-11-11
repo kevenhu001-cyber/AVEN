@@ -39,6 +39,7 @@
     "memory:verify": "pnpm build && tsx scripts/memory-verify.ts",
     "memory:maintain": "pnpm build:packages && tsx scripts/memory-maintenance.ts",
     "ai:verify": "pnpm build:packages && tsx scripts/ai-verify.ts",
+    "ai:eval": "pnpm build:packages && tsx scripts/ai-eval.ts",
     "agent:verify": "pnpm build && tsx scripts/agent-verify.ts",
     "agent:maintain": "pnpm build:packages && tsx scripts/agent-maintenance.ts",
     "action:verify": "pnpm build && tsx scripts/action-verify.ts",

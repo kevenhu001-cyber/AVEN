@@ -659,6 +659,7 @@ interface AIProvider {
 - 真实 Provider 接入后单独验证成功、限流、超时、错误和取消；Mock 结果不能证明智能能力完成。
 - 可在适配器内复用成熟 AI SDK，不把供应商 SDK 类型泄露给 domain。结构化输出的泛型必须由运行时 Schema 校验，不以类型断言证明正确。
 - M3 在真实接入前登记脱敏评估集、结构化成功率/来源支持/越权拒绝阈值，以及单 run 时间、工具次数、token/费用、并发预算；无依据的理由和越权执行为阻断项。结果保存模型/配置/样例版本与失败案例，不记录私人 Prompt。
+  - 已登记：`packages/ai-core/src/eval/dataset.ts`（版本 `2026-11-11.1`，7 个合成用例）、`docs/development/M3-07_EVALUATION.md`；`corepack pnpm ai:eval` 以 `minBlockingPassRate=1`、`minOverallPassRate=0.9`、p95 ≤ 15s、平均工具 ≤ 1、平均 token ≤ 4000、平均费用 ≤ $0.02 判定并输出不含正文的报告。并发预算与真实 Provider 费用校准仍未实现。
 
 ### 14.2 工作流
 

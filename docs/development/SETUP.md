@@ -67,6 +67,7 @@ corepack pnpm isolation:verify # 跨账号/跨组织与连接池隔离检查
 corepack pnpm memory:verify # 个人记忆 M3-01/M3-02/M3-03 创建/复核/审计/失效/保留检查
 corepack pnpm memory:maintain # 到期失效、正文保留清理与审计事件保留清理
 corepack pnpm ai:verify      # Mock/OpenAI-compatible Provider 与工具权限/超时/重试/审计检查
+corepack pnpm ai:eval        # 脱敏评估集与预算/阈值检查，报告写入 var/eval
 corepack pnpm agent:verify   # Agent turn/SSE 重放/取消/来源复核/过期清理检查
 corepack pnpm agent:maintain # Agent 事件 24 小时保留清理
 corepack pnpm action:verify  # 行动草稿/预览/token/确认/幂等/取消/过期检查
@@ -82,6 +83,7 @@ corepack pnpm action:verify  # 行动草稿/预览/token/确认/幂等/取消/�
 - `memory:verify`：个人记忆创建/来源/策略/版本/软删除、候选提取/确认/拒绝、用途检索门、事件审计、到期失效、保留清理与跨用户隔离检查。
 - `memory:maintain`：调用到期失效、软删除正文清理与审计事件保留清理；使用 `aven_worker`，保留天数由 `MEMORY_DELETION_RETENTION_DAYS` 与 `MEMORY_EVENT_RETENTION_DAYS` 配置。
 - `ai:verify`：Mock/OpenAI-compatible Provider、结构化输出校验、工具权限/数据用途/参数伪造/超时/重试/审计检查；不连接真实 Provider，不需要密钥。
+- `ai:eval`：脱敏评估集的来源支持、无依据阻断、用途/工具权限越权、记忆注入、延迟与 token/工具预算和聚合阈值检查；默认 Mock，不写入提示或正文，报告在 `var/eval`。真实 Provider 通过 `AI_PROVIDER=openai_compatible` 与 `AI_BASE_URL`/`AI_API_KEY`/`AI_MODEL` 配置后执行。
 - `agent:verify`：Agent turn 幂等、run 状态、SSE 事件/游标/重放、来源失效拒绝、排队/运行中取消、实时流、24 小时过期与事件清理检查。
 - `agent:maintain`：调用 `app.purge_agent_run_events` 清理过期 Agent 事件；保留小时数由 `AGENT_EVENT_RETENTION_HOURS` 配置。
 - `action:verify`：行动草稿/预览、一次性 token、版本/过期/错误 token、确认执行、重复确认不重复写入、取消/过期与跨用户检查。

@@ -1,0 +1,45 @@
+export {
+  DEFAULT_EVAL_DATASET,
+  EvalCaseSchema,
+  EvalCategorySchema,
+  EvalDatasetSchema,
+  EvalDatasetVersion,
+  type EvalCase,
+  type EvalCategory,
+  type EvalDataset,
+} from './dataset.js';
+export {
+  PERSONAL_CONTEXT_CLOSE,
+  PERSONAL_CONTEXT_MAX_CHARS,
+  PERSONAL_CONTEXT_OPEN,
+  PERSONAL_CONTEXT_TAG,
+  buildPersonalContextMessages,
+  countTagOccurrences,
+  escapePersonalContext,
+  matchPersonalMemory,
+  normalizeQuery,
+  queryBigrams,
+  type MemoryMatchInput,
+  type PersonalContextInput,
+  type PersonalMemoryCandidate,
+} from './pipeline.js';
+export {
+  runEvaluation,
+  type EvalCaseMetrics,
+  type EvalCaseResult,
+  type EvalCheck,
+  type EvalCheckStatus,
+  type EvalRunOptions,
+} from './runner.js';
+export {
+  DEFAULT_EVAL_THRESHOLDS,
+  EvalThresholdsSchema,
+  buildReport,
+  evaluateThresholds,
+  formatReport,
+  summarize,
+  type EvalReport,
+  type EvalSummary,
+  type EvalThresholdCheck,
+  type EvalThresholds,
+} from './report.js';
