@@ -9,7 +9,7 @@ export { seedIds, seedVersion } from './seed-data.js';
 export type DatabasePoolRole = 'aven_migrator' | 'aven_app' | 'aven_worker' | 'aven_auth';
 export type DatabasePool = Pool;
 
-export const requiredSchemaVersion = '0010_force_rls';
+export const requiredSchemaVersion = '0011_memory';
 
 export function createPool(
   role: DatabasePoolRole = 'aven_app',

@@ -20,6 +20,7 @@
 | `packages/database/migrations/0008_profile_and_campus.sql` | 资料更新、校园列表、本人校园成员与 pending 申请函数、函数所有权与授权 |
 | `packages/database/migrations/0009_organizations.sql` | 组织创建、成员、邀请/接受、角色、移除/离开与最后 owner 保护函数 |
 | `packages/database/migrations/0010_force_rls.sql` | 18 张表 `FORCE ROW LEVEL SECURITY` 与迁移角色显式策略 |
+| `packages/database/migrations/0011_memory.sql` | 记忆/来源/字段策略表、所有权触发器、FORCE RLS、6 个记忆函数与授权 |
 | `packages/database/src/migrate.ts` | 事务化 runner、SHA-256 校验和、`--to` 升级路径、`--status` |
 | `packages/database/src/seed.ts` | 可重复执行的开发 seed |
 | `packages/database/src/verify.ts` | 表/约束/RLS/函数/seed 验证 |
@@ -32,8 +33,8 @@
 
 | 命令 | 结果 |
 |---|---|
-| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；63 项数据库检查通过 |
-| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 63 项检查 |
+| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；74 项数据库检查通过 |
+| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 74 项检查 |
 | 修改已应用迁移后运行 `db:migrate` | 按预期拒绝：`changed after it was applied. Add a new migration instead of editing history.` |
 | `corepack pnpm infra:verify` | 通过；角色隔离、Redis 认证与持久化检查 |
 
@@ -44,6 +45,7 @@
 - 4 个资料/校园函数存在且由 `aven_function_owner` 持有；无用户上下文拒绝资料更新；本人校园成员列表与 pending 申请幂等；资料更新递增 principal version。
 - 10 个组织函数存在且由 `aven_function_owner` 持有；创建者成为 owner；admin 不能改 owner；最后 owner 不能离开；组织成员列表与创建流程可用。
 - 18 张租户/用户数据表启用 `FORCE ROW LEVEL SECURITY`；普通池不能通过 `row_security=off` 绕过；迁移角色有显式维护策略。
+- 6 个记忆函数存在且由 `aven_function_owner` 持有；记忆 owner 必须为当前用户；来源/策略所有权触发器生效；跨用户读取/更新拒绝；软删除后不可读。
 - `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`、`outbox_events.payload`，不能插入/更新/删除 `principals`。
 - 无上下文时看不到用户主体、校园、成员关系；公开组织资料可见。
 - 用户只能看本人主体、私有邮箱和会话；同组织成员关系按组织隔离。
@@ -91,6 +93,7 @@ corepack pnpm db:verify
 - 认证函数已实现会话/邮箱验证/密码重置；生产邮件、MFA、账号锁定、空闲超时与真实设备未实现。
 - 资料更新与校园申请函数已实现；校园审核、邮件域名验证与真实页面未实现。
 - 组织创建/成员/邀请/角色/离开已实现；所有权转让、组织认证审核、审计日志与邀请清理任务未实现。
-- 18 张表已强制 RLS；普通运行角色仍无直接表写，写操作只通过受控函数。M2-05 已覆盖跨账号/跨组织与连接池上下文。
+- 21 张表已强制 RLS；普通运行角色仍无直接表写，写操作只通过受控函数。M2-05 已覆盖跨账号/跨组织与连接池上下文。
+- 手工确认记忆、来源与字段策略已实现；候选提取/确认、生命周期清理、组织记忆、向量与共享授权未实现。
 - 未验证 RLS 查询计划/索引性能、生产备份恢复、迁移回滚或高并发多实例。
 - `aven_test` 由 `db:verify` 重建；不要在其中保存需要保留的数据。

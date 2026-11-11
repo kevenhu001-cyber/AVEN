@@ -351,6 +351,157 @@ export const UpdateOrganizationMemberRoleRequestSchema = z
   .object({ role: z.enum(['admin', 'member']) })
   .strict();
 
+export const MemoryKindSchema = z.enum([
+  'interest',
+  'skill',
+  'project',
+  'goal',
+  'preference',
+  'experience',
+  'education',
+  'other',
+]);
+export const SensitivitySchema = z.enum(['low', 'normal', 'high']);
+export const DisplayAudienceSchema = z.enum(['owner', 'campus', 'public']);
+export const ContextUseSchema = z.enum(['self_ai', 'matching', 'sharing']);
+export const MemoryStatusSchema = z.enum([
+  'pending_confirmation',
+  'confirmed',
+  'rejected',
+  'expired',
+  'deleted',
+]);
+export const MemorySourceTypeSchema = z.enum([
+  'user_input',
+  'conversation',
+  'file',
+  'import',
+  'agent_extraction',
+]);
+
+const AllowedUsesSchema = z
+  .array(ContextUseSchema)
+  .max(3)
+  .refine((values) => new Set(values).size === values.length, 'Allowed uses must be unique.');
+
+export const CreateMemoryRequestSchema = z
+  .object({
+    kind: MemoryKindSchema,
+    title: z.string().trim().min(1).max(160),
+    content: z.string().trim().min(1).max(20000),
+    structuredValue: z.record(z.string(), z.unknown()).optional(),
+    sensitivity: SensitivitySchema.default('normal'),
+    displayAudience: DisplayAudienceSchema.default('owner'),
+    discoverable: z.boolean().default(false),
+    allowedUses: AllowedUsesSchema.default([]),
+    campusId: z.uuid().optional(),
+    validUntil: z.iso.datetime().optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.displayAudience === 'campus' && !value.campusId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['campusId'],
+        message: 'Campus audience requires a campus.',
+      });
+    }
+    if (value.displayAudience !== 'campus' && value.campusId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['campusId'],
+        message: 'Campus id requires campus audience.',
+      });
+    }
+    if (value.discoverable && value.displayAudience === 'owner') {
+      context.addIssue({
+        code: 'custom',
+        path: ['discoverable'],
+        message: 'Owner-only memory cannot be discoverable.',
+      });
+    }
+  });
+
+export const UpdateMemoryRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    title: z.string().trim().min(1).max(160).optional(),
+    content: z.string().trim().min(1).max(20000).optional(),
+    structuredValue: z.record(z.string(), z.unknown()).nullable().optional(),
+    sensitivity: SensitivitySchema.optional(),
+    displayAudience: DisplayAudienceSchema.optional(),
+    discoverable: z.boolean().optional(),
+    allowedUses: AllowedUsesSchema.optional(),
+    campusId: z.uuid().nullable().optional(),
+    validUntil: z.iso.datetime().nullable().optional(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.title !== undefined ||
+      value.content !== undefined ||
+      value.structuredValue !== undefined ||
+      value.sensitivity !== undefined ||
+      value.displayAudience !== undefined ||
+      value.discoverable !== undefined ||
+      value.allowedUses !== undefined ||
+      value.campusId !== undefined ||
+      value.validUntil !== undefined,
+    'At least one memory field is required.',
+  );
+
+export const MemoryPolicySchema = z
+  .object({
+    displayAudience: DisplayAudienceSchema,
+    discoverable: z.boolean(),
+    allowedUses: z.array(ContextUseSchema),
+    campusId: z.uuid().nullable(),
+    version: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const MemoryItemSchema = z
+  .object({
+    id: z.uuid(),
+    kind: MemoryKindSchema,
+    title: z.string(),
+    content: z.string(),
+    structuredValue: z.record(z.string(), z.unknown()).nullable(),
+    sensitivity: SensitivitySchema,
+    status: MemoryStatusSchema,
+    version: z.number().int().positive(),
+    validFrom: z.iso.datetime().nullable(),
+    validUntil: z.iso.datetime().nullable(),
+    confirmedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    policy: MemoryPolicySchema,
+    sourceCount: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const MemorySourceSchema = z
+  .object({
+    id: z.uuid(),
+    sourceType: MemorySourceTypeSchema,
+    sourceId: z.uuid().nullable(),
+    sourceVersion: z.string().nullable(),
+    excerpt: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const MemoryDetailSchema = MemoryItemSchema.extend({
+  sources: z.array(MemorySourceSchema),
+}).strict();
+
+export const MemoryListResponseSchema = z
+  .object({
+    data: z.array(MemoryItemSchema),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -398,3 +549,16 @@ export type AcceptOrganizationInvitationResponse = z.infer<
 export type UpdateOrganizationMemberRoleRequest = z.infer<
   typeof UpdateOrganizationMemberRoleRequestSchema
 >;
+export type MemoryKind = z.infer<typeof MemoryKindSchema>;
+export type Sensitivity = z.infer<typeof SensitivitySchema>;
+export type DisplayAudience = z.infer<typeof DisplayAudienceSchema>;
+export type ContextUse = z.infer<typeof ContextUseSchema>;
+export type MemoryStatus = z.infer<typeof MemoryStatusSchema>;
+export type MemorySourceType = z.infer<typeof MemorySourceTypeSchema>;
+export type CreateMemoryRequest = z.infer<typeof CreateMemoryRequestSchema>;
+export type UpdateMemoryRequest = z.infer<typeof UpdateMemoryRequestSchema>;
+export type MemoryPolicy = z.infer<typeof MemoryPolicySchema>;
+export type MemoryItem = z.infer<typeof MemoryItemSchema>;
+export type MemorySource = z.infer<typeof MemorySourceSchema>;
+export type MemoryDetail = z.infer<typeof MemoryDetailSchema>;
+export type MemoryListResponse = z.infer<typeof MemoryListResponseSchema>;

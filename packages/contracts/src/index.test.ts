@@ -3,14 +3,17 @@ import {
   ApiErrorResponseSchema,
   AuthResponseSchema,
   CampusMembershipSchema,
+  CreateMemoryRequestSchema,
   CreateOrganizationRequestSchema,
   InviteOrganizationMemberRequestSchema,
   LivenessResponseSchema,
   LoginRequestSchema,
+  MemoryItemSchema,
   OrganizationDetailSchema,
   PasswordSchema,
   ReadinessResponseSchema,
   RegisterRequestSchema,
+  UpdateMemoryRequestSchema,
   UpdateProfileRequestSchema,
 } from './index';
 
@@ -185,6 +188,68 @@ describe('public engineering contracts', () => {
         role: 'owner',
         canRepresent: true,
         memberCount: 1,
+      }).success,
+    ).toBe(true);
+  });
+  it('validates memory audience, discoverability, and unique uses', () => {
+    expect(
+      CreateMemoryRequestSchema.parse({
+        kind: 'skill',
+        title: '机器人控制',
+        content: '四足机器人步态控制',
+        allowedUses: ['self_ai', 'matching'],
+      }).allowedUses,
+    ).toEqual(['self_ai', 'matching']);
+    expect(
+      CreateMemoryRequestSchema.safeParse({
+        kind: 'skill',
+        title: '机器人控制',
+        content: '四足机器人步态控制',
+        displayAudience: 'campus',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateMemoryRequestSchema.safeParse({
+        kind: 'skill',
+        title: '机器人控制',
+        content: '四足机器人步态控制',
+        discoverable: true,
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateMemoryRequestSchema.safeParse({
+        kind: 'skill',
+        title: '机器人控制',
+        content: '四足机器人步态控制',
+        allowedUses: ['self_ai', 'self_ai'],
+      }).success,
+    ).toBe(false);
+    expect(UpdateMemoryRequestSchema.safeParse({ expectedVersion: 1 }).success).toBe(false);
+  });
+  it('requires explicit memory policy fields', () => {
+    expect(
+      MemoryItemSchema.safeParse({
+        id: requestId,
+        kind: 'skill',
+        title: '机器人控制',
+        content: '四足机器人步态控制',
+        structuredValue: null,
+        sensitivity: 'normal',
+        status: 'confirmed',
+        version: 1,
+        validFrom: '2026-11-11T00:00:00.000Z',
+        validUntil: null,
+        confirmedAt: '2026-11-11T00:00:00.000Z',
+        createdAt: '2026-11-11T00:00:00.000Z',
+        updatedAt: '2026-11-11T00:00:00.000Z',
+        policy: {
+          displayAudience: 'owner',
+          discoverable: false,
+          allowedUses: ['self_ai'],
+          campusId: null,
+          version: 1,
+        },
+        sourceCount: 1,
       }).success,
     ).toBe(true);
   });

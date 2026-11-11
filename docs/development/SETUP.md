@@ -64,6 +64,7 @@ corepack pnpm auth:verify     # 注册/登录/会话/验证/重置真实 HTTP �
 corepack pnpm profile:verify  # 资料更新/校园成员申请真实 HTTP 检查
 corepack pnpm organization:verify # 组织成员/邀请真实 HTTP 检查
 corepack pnpm isolation:verify # 跨账号/跨组织与连接池隔离检查
+corepack pnpm memory:verify # 个人记忆创建/更新/删除/隔离检查
 ```
 
 - `db:verify`：重建 `aven_test`，验证空库迁移、已有库升级、seed 幂等、RLS 与约束。
@@ -73,6 +74,7 @@ corepack pnpm isolation:verify # 跨账号/跨组织与连接池隔离检查
 - `profile:verify`：真实 API/PostgreSQL 资料更新与校园成员申请检查。
 - `organization:verify`：真实 API/PostgreSQL 组织创建、邀请/接受、角色与离开检查。
 - `isolation:verify`：跨账号/跨组织、伪造头、成员移除与连接池上下文检查。
+- `memory:verify`：个人记忆创建、来源、策略、版本、软删除与跨用户隔离检查。
 - `test:e2e` 的测试服务器故意使用不可用依赖，验证就绪失败不会被渲染为成功。
 
 ## 故障处理

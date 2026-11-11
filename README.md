@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 当前状态
 
-项目进入 **M3 个人上下文与 AI**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01：认证与会话**、**M2-02：主体与校园身份**、**M2-03：组织成员与邀请**、**M2-04：强制 RLS**、**M2-05：隔离验证**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。个人记忆、机会/引荐、真实 AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
+项目处于 **M3 个人上下文与 AI**阶段。已完成 **M0-01**、**M0-02**、**M0-04**、**M0-05**、**M0-06**、**M0-07**、**M0-08**、**M1-01：设计令牌与主题**、**M2-01–M2-05：身份、组织与强制 RLS**、**M3-01：已确认个人上下文**，并交付 **M1-07 核心旅程可点击原型**（正式双端评审待完成）。**M0-03** 的 Web/API/Worker/Expo 骨架已建立并通过实际构建，但 Expo Go 真机连接与原生流式探针尚未执行。机会/引荐、真实 AI 与核心产品 UI 仍未实现，M0 与 MVP 均未完成。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -38,6 +38,8 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | [M2-03 组织成员交付](docs/development/M2-03_ORGANIZATIONS.md) | 组织创建、邀请/接受、角色、最后 owner 保护与验证记录 |
 | [M2-04 强制 RLS](docs/development/M2-04_RLS.md) | 18 张表 FORCE RLS、迁移角色例外与验证 |
 | [M2-05 隔离验证](docs/development/M2-05_ISOLATION.md) | 跨账号/跨组织、伪造头、成员移除与连接池上下文 |
+| [个人记忆 API](docs/api/MEMORIES.md) | 手工确认记忆、来源、字段策略、版本与软删除契约 |
+| [M3-01 记忆交付](docs/development/M3-01_MEMORY.md) | 记忆表/函数、RLS、版本冲突与验证记录 |
 | [契约修订记录](docs/development/CONTRACT_REVIEW.md) | 1.1 变更、静态检查与未验证事项 |
 | [开发启动建议](docs/development/START_HERE.md) | 首次工作区评估与启动思路 |
 | [原始产品与工程规格](Origin%20Plan.md) | 产品范围、设计系统、技术方向和完整 MVP 要求 |
@@ -65,9 +67,9 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 ## 开发入口
 
-下一项是 **M3-01：已确认个人上下文**，实现兴趣、技能、项目、目标与偏好的手工增改、来源/版本/用途/期限与所有权检查；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
+下一项是 **M3-02：记忆复核**，实现候选提取、确认/修改/拒绝，并确保只有确认且允许使用的信息进入相应检索范围；M1-07 正式双端设计评审仍待完成，通过后再进入 M1-02/M1-03 UI 编码。M0-03 的 Expo Go 真机连接与原生流式探针待有设备环境后补验。M0-08 的 CI 工作流已定义、本地命令已通过，但尚未在 GitHub Actions 实跑，不能宣称 CI 已绿。
 
-认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)，组织契约见 [组织成员与邀请 API](docs/api/ORGANIZATIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
+认证契约见 [认证与会话 API](docs/api/AUTH.md)，资料/校园契约见 [个人资料与校园 API](docs/api/PROFILE.md)，组织契约见 [组织成员与邀请 API](docs/api/ORGANIZATIONS.md)，记忆契约见 [个人记忆 API](docs/api/MEMORIES.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
 ## 环境现状
 
@@ -84,7 +86,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；设计令牌层与 contracts 已通过 62 项测试；认证与会话已通过 42 项真实 HTTP/数据库/Redis 检查；资料与校园成员申请已通过 16 项；组织成员与邀请已通过 31 项；强制 RLS 与跨账号/跨组织隔离已通过 63 项数据库检查与 21 项隔离检查。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；设计令牌层与 contracts 已通过 64 项测试；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、强制 RLS/隔离 63 项数据库检查与 21 项隔离检查、个人记忆 27 项真实检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
 
 ## 开发命令
 
@@ -105,6 +107,7 @@ corepack pnpm auth:verify       # 认证/会话真实 HTTP 检查，需要 Compo
 corepack pnpm profile:verify    # 资料/校园成员真实 HTTP 检查
 corepack pnpm organization:verify # 组织成员/邀请真实 HTTP 检查
 corepack pnpm isolation:verify  # 跨账号/跨组织与连接池隔离检查
+corepack pnpm memory:verify     # 个人记忆创建/更新/删除/隔离检查
 ```
 
 开发启动脚本已建立，但依赖数据库/Redis 的业务尚未实现：

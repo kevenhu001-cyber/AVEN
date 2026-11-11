@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('ten migrations are recorded', migrations.rows[0]?.count === '10');
+    check('eleven migrations are recorded', migrations.rows[0]?.count === '11');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -101,13 +101,14 @@ async function main(): Promise<void> {
          'email_verification_tokens','password_reset_tokens','campuses',
          'campus_memberships','organizations','organization_memberships',
          'organization_invitations','platform_role_assignments',
-         'outbox_events','job_receipts'
+         'outbox_events','job_receipts','memory_items','memory_sources',
+         'context_field_policies'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '18');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '21');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -300,6 +301,90 @@ async function main(): Promise<void> {
         'creator becomes the sole owner',
         createdMembers.rows.length === 1 && createdMembers.rows[0]?.role === 'owner',
       );
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    const memoryFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'create_memory_item','update_memory_item','delete_memory_item',
+           'list_my_memory_items','get_memory_item','list_memory_sources'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'six memory functions are owned by the function owner',
+      memoryFunctions.rows[0]?.count === '6',
+    );
+    check(
+      'app cannot create memory without context',
+      await appError(
+        "SELECT app.create_memory_item('skill', 'probe', 'probe', null, 'normal', 'owner', false, '{}', null, null)",
+      ),
+    );
+    check(
+      'app cannot insert memory directly',
+      await appError(
+        "INSERT INTO public.memory_items (owner_principal_id, kind, title, content) VALUES ('00000000-0000-4000-8000-000000000000', 'skill', 'probe', 'probe')",
+      ),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const createdMemory = await app.query<{ id: string }>(
+        "SELECT app.create_memory_item('skill', '验证技能', '验证内容', null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, null) AS id",
+      );
+      const memoryId = createdMemory.rows[0]?.id;
+      check('memory creation returns an id', Boolean(memoryId));
+      const memory = await app.query(`SELECT * FROM app.get_memory_item('${memoryId}')`);
+      check(
+        'memory detail returns the owner policy and source count',
+        memory.rows.length === 1 &&
+          Array.isArray(memory.rows[0]?.allowed_uses) &&
+          memory.rows[0]?.allowed_uses.includes('self_ai') === true &&
+          memory.rows[0]?.source_count === 1,
+      );
+      const listed = await app.query(
+        'SELECT * FROM app.list_my_memory_items(20, null, null, null)',
+      );
+      check('owner memory list includes the item', listed.rows.length === 1);
+      const sources = await app.query(`SELECT * FROM app.list_memory_sources('${memoryId}')`);
+      check('memory sources are visible to the owner', sources.rows.length === 1);
+      const updatedMemory = await app.query<{ version: number }>(
+        `SELECT app.update_memory_item('${memoryId}', 1, '验证技能更新', '验证内容更新', null, 'normal', 'owner', false, ARRAY['self_ai','matching']::public.context_use[], null, null) AS version`,
+      );
+      check('memory update increments the version', updatedMemory.rows[0]?.version === 2);
+      await app.query(`SELECT app.delete_memory_item('${memoryId}', 2)`);
+      const deletedMemory = await app.query(`SELECT * FROM app.get_memory_item('${memoryId}')`);
+      check('deleted memory is no longer readable', deletedMemory.rows.length === 0);
+    } finally {
+      await app.query('ROLLBACK');
+    }
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const createdMemory = await app.query<{ id: string }>(
+        "SELECT app.create_memory_item('skill', '隔离技能', '隔离内容', null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, null) AS id",
+      );
+      const memoryId = createdMemory.rows[0]?.id;
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userTwo]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userTwo]);
+      const otherUserMemory = await app.query(`SELECT * FROM app.get_memory_item('${memoryId}')`);
+      check('another user cannot read the memory', otherUserMemory.rows.length === 0);
+      let updateFailed = false;
+      try {
+        await app.query(
+          `SELECT app.update_memory_item('${memoryId}', 1, 'hijack', 'hijack', null, 'normal', 'owner', false, '{}', null, null)`,
+        );
+      } catch {
+        updateFailed = true;
+      }
+      check('another user cannot update the memory', updateFailed);
     } finally {
       await app.query('ROLLBACK');
     }
