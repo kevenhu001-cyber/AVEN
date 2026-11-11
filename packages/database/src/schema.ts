@@ -573,7 +573,9 @@ export const referrals = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'restrict' }),
-    candidateId: uuid('candidate_id').references(() => matchCandidates.id, { onDelete: 'set null' }),
+    candidateId: uuid('candidate_id').references(() => matchCandidates.id, {
+      onDelete: 'set null',
+    }),
     supersedesReferralId: uuid('supersedes_referral_id'),
     status: referralStatus('status').notNull().default('sent'),
     contentVersion: integer('content_version').notNull().default(1),
@@ -774,7 +776,9 @@ export const events = pgTable('events', {
   organizerPrincipalId: uuid('organizer_principal_id')
     .notNull()
     .references(() => principals.id),
-  relationshipId: uuid('relationship_id').references(() => relationships.id, { onDelete: 'set null' }),
+  relationshipId: uuid('relationship_id').references(() => relationships.id, {
+    onDelete: 'set null',
+  }),
   organizationId: uuid('organization_id').references(() => principals.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   description: text('description'),
@@ -814,4 +818,25 @@ export const eventParticipants = pgTable('event_participants', {
   ...timestamps,
 });
 
-
+export const userAiProviders = pgTable(
+  'user_ai_providers',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    baseUrl: text('base_url').notNull(),
+    model: text('model').notNull(),
+    encryptedKey: text('encrypted_key').notNull(),
+    version: integer('version').notNull().default(1),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('user_ai_provider_base_url_length', sql`length(${table.baseUrl}) between 1 and 2048`),
+    check('user_ai_provider_model_length', sql`length(trim(${table.model})) between 1 and 120`),
+    check(
+      'user_ai_provider_encrypted_key_length',
+      sql`length(${table.encryptedKey}) between 1 and 4096`,
+    ),
+    check('user_ai_provider_version_positive', sql`${table.version} > 0`),
+  ],
+);

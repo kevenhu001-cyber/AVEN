@@ -160,6 +160,60 @@ describe('OpenAICompatibleProvider', () => {
     expect(events.at(-1)?.type).toBe('done');
   });
 
+  it('rejects a truncated stream instead of reporting completion', async () => {
+    const provider = makeProvider(
+      async () => new Response('data: {"choices":[{"delta":{"content":"partial"}}]}\n'),
+    );
+    const events: StreamEvent[] = [];
+    for await (const event of provider.streamText({ messages })) events.push(event);
+    expect(events.at(-1)).toMatchObject({
+      type: 'error',
+      error: { code: 'PROVIDER_INVALID_OUTPUT' },
+    });
+    expect(events.some((event) => event.type === 'done')).toBe(false);
+  });
+
+  it('accepts an unterminated DONE line and calculates estimated totals', async () => {
+    const provider = makeProvider(
+      async () =>
+        new Response('data: {"choices":[{"delta":{"content":"A useful answer"}}]}\ndata: [DONE]'),
+    );
+    const events: StreamEvent[] = [];
+    for await (const event of provider.streamText({ messages })) events.push(event);
+    const done = events.find((event) => event.type === 'done');
+    expect(done?.type).toBe('done');
+    if (done?.type === 'done') {
+      expect(done.usage.outputTokens).toBeGreaterThan(0);
+      expect(done.usage.totalTokens).toBe(done.usage.inputTokens + done.usage.outputTokens);
+    }
+  });
+
+  it('uses a usage-only stream event', async () => {
+    const stream = [
+      'data: {"choices":[{"delta":{"content":"ok"}}]}',
+      'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":2,"total_tokens":12}}',
+      'data: [DONE]',
+      '',
+    ].join('\n');
+    const provider = makeProvider(async () => new Response(stream));
+    const events: StreamEvent[] = [];
+    for await (const event of provider.streamText({ messages })) events.push(event);
+    expect(events.at(-1)).toMatchObject({
+      type: 'done',
+      usage: { inputTokens: 10, outputTokens: 2, totalTokens: 12 },
+    });
+  });
+
+  it('rejects malformed stream events', async () => {
+    const provider = makeProvider(async () => new Response('data: {bad json}\ndata: [DONE]\n'));
+    const events: StreamEvent[] = [];
+    for await (const event of provider.streamText({ messages })) events.push(event);
+    expect(events.at(-1)).toMatchObject({
+      type: 'error',
+      error: { code: 'PROVIDER_INVALID_OUTPUT' },
+    });
+  });
+
   it('times out a stalled stream', async () => {
     const provider = makeProvider(
       async () =>

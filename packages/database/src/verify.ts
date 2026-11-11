@@ -77,7 +77,38 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twenty-six migrations are recorded', migrations.rows[0]?.count === '26');
+    check('twenty-seven migrations are recorded', migrations.rows[0]?.count === '27');
+    const ownerContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
+    const otherContext = { principalId: seedIds.userTwo, userId: seedIds.userTwo };
+    const providerSave = `SELECT * FROM app.save_user_ai_provider('https://ai.example.test/v1', 'model', 'encrypted-test-value', 0)`;
+    check('provider config requires identity', await appError(providerSave));
+    const savedProvider = await appQuery(providerSave, ownerContext);
+    check(
+      'provider config saves metadata without encrypted key',
+      savedProvider.rows[0]?.version === 1 && !('encrypted_key' in (savedProvider.rows[0] ?? {})),
+    );
+    check(
+      'provider config is hidden from another user',
+      (await appQuery('SELECT * FROM app.get_user_ai_provider()', otherContext)).rows.length === 0,
+    );
+    check(
+      'app cannot directly read provider ciphertext',
+      await appError('SELECT * FROM public.user_ai_providers', ownerContext),
+    );
+    check(
+      'worker cannot directly read provider ciphertext',
+      (await queryErrorCode(worker, 'SELECT * FROM public.user_ai_providers')) === '42501',
+    );
+    check('provider config rejects stale updates', await appError(providerSave, ownerContext));
+    check(
+      'provider config rejects stale deletion',
+      await appError('SELECT app.delete_user_ai_provider(2)', ownerContext),
+    );
+    check(
+      'provider config deletes its own version',
+      (await appQuery('SELECT app.delete_user_ai_provider(1) AS deleted', ownerContext)).rows[0]
+        ?.deleted === true,
+    );
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -121,13 +152,14 @@ async function main(): Promise<void> {
          'intents','match_candidates','consent_previews','referrals',
          'referral_decisions','consent_grants','consent_grant_items',
          'consent_events','relationships','relationship_members','shared_context_items',
-         'calendar_connections','availability_blocks','events','event_proposals','event_participants'
+         'calendar_connections','availability_blocks','events','event_proposals','event_participants',
+         'user_ai_providers'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '47');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '48');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -991,10 +1023,11 @@ async function main(): Promise<void> {
       const intentId = createdIntent.rows[0]?.id;
       check('intent creation returns an id', Boolean(intentId));
 
-      const myIntents = await app.query<{ id: string }>(
-        'SELECT id FROM app.list_my_intents()',
+      const myIntents = await app.query<{ id: string }>('SELECT id FROM app.list_my_intents()');
+      check(
+        'user one sees created intent in list',
+        myIntents.rows.some((i) => i.id === intentId),
       );
-      check('user one sees created intent in list', myIntents.rows.some((i) => i.id === intentId));
 
       // 2. Compute matching candidates
       const matchCount = await app.query<{ generate_match_candidates: number }>(
@@ -1042,13 +1075,19 @@ async function main(): Promise<void> {
         `SELECT referral_id, status FROM app.create_referral_with_consent('${previewId}')`,
       );
       const refId = referralRes.rows[0]?.referral_id;
-      check('referral creation with consent succeeds and status is sent', referralRes.rows[0]?.status === 'sent');
+      check(
+        'referral creation with consent succeeds and status is sent',
+        referralRes.rows[0]?.status === 'sent',
+      );
 
       // Check snapshot readable by org admin
       const snapshot = await app.query<{ get_referral_shared_snapshot: Record<string, unknown> }>(
         `SELECT app.get_referral_shared_snapshot('${refId}')`,
       );
-      check('referral shared snapshot is readable by authorized member', Boolean(snapshot.rows[0]?.get_referral_shared_snapshot));
+      check(
+        'referral shared snapshot is readable by authorized member',
+        Boolean(snapshot.rows[0]?.get_referral_shared_snapshot),
+      );
 
       // 4. Organization decides: accept referral
       const decided = await app.query<{ referral_id: string; new_status: string }>(
@@ -1064,9 +1103,9 @@ async function main(): Promise<void> {
       check('relationship established atomically', relRes.rows[0]?.status === 'active');
 
       // Check shared context
-      const relContext = await app.query<{ get_relationship_shared_context: Record<string, unknown> }>(
-        `SELECT app.get_relationship_shared_context('${relId}')`,
-      );
+      const relContext = await app.query<{
+        get_relationship_shared_context: Record<string, unknown>;
+      }>(`SELECT app.get_relationship_shared_context('${relId}')`);
       check(
         'relationship shared context returns authorized fields',
         Boolean(relContext.rows[0]?.get_relationship_shared_context),
@@ -1082,9 +1121,9 @@ async function main(): Promise<void> {
         await app.query(`SELECT app.revoke_consent('${grantId}', '用户自主撤销资料共享')`);
       }
 
-      const revokedContext = await app.query<{ get_relationship_shared_context: Record<string, unknown> }>(
-        `SELECT app.get_relationship_shared_context('${relId}')`,
-      );
+      const revokedContext = await app.query<{
+        get_relationship_shared_context: Record<string, unknown>;
+      }>(`SELECT app.get_relationship_shared_context('${relId}')`);
       check(
         'shared context immediately empty after consent revocation',
         Object.keys(revokedContext.rows[0]?.get_relationship_shared_context ?? {}).length === 0,
@@ -1115,7 +1154,10 @@ async function main(): Promise<void> {
       const myBlocks = await app.query<{ id: string }>(
         `SELECT id FROM app.list_my_availability_blocks(now(), now() + interval '2 days')`,
       );
-      check('user one sees own availability block', myBlocks.rows.some((b) => b.id === blockId));
+      check(
+        'user one sees own availability block',
+        myBlocks.rows.some((b) => b.id === blockId),
+      );
 
       // 2. Query availability window (privacy-preserving)
       const windowRes = await app.query<{ principal_id: string; status: string }>(
@@ -1145,10 +1187,17 @@ async function main(): Promise<void> {
         )`,
       );
       const eventId = eventRes.rows[0]?.id;
-      check('event draft creation returns an id with draft status', eventRes.rows[0]?.status === 'draft');
+      check(
+        'event draft creation returns an id with draft status',
+        eventRes.rows[0]?.status === 'draft',
+      );
 
       // 4. Propose Event Time
-      const propRes = await app.query<{ event_id: string; new_status: string; new_version: number }>(
+      const propRes = await app.query<{
+        event_id: string;
+        new_status: string;
+        new_version: number;
+      }>(
         `SELECT event_id, new_status, new_version FROM app.propose_event_time(
           '${eventId}',
           now() + interval '1 day 3 hours',
@@ -1173,7 +1222,10 @@ async function main(): Promise<void> {
           2
         )`,
       );
-      check('event participant accept leads to all_accepted', respondRes.rows[0]?.all_accepted === true);
+      check(
+        'event participant accept leads to all_accepted',
+        respondRes.rows[0]?.all_accepted === true,
+      );
       check('event auto-confirms when all accepted', respondRes.rows[0]?.status === 'confirmed');
 
       // 6. Cancel event

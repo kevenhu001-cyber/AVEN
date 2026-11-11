@@ -84,3 +84,13 @@
 - `corepack pnpm agent:verify`：45 项真实 HTTP/数据库/Worker 检查通过。
 - 覆盖：turn 创建/幂等冲突、queued 状态、跨用户 404、Worker 完成、SSE 事件顺序/游标/重放/非法游标、来源绑定、来源删除后拒绝重放、排队/运行中取消、实时流、24 小时过期与事件清理、日志不含正文。
 - 未验证：真实 Provider、真实代理/原生 SSE、Worker 崩溃恢复租约、`tool_invocations` 持久化、行动确认（M3-06）、Web/Mobile 页面与真实设备。
+
+## 外部 Provider 流终止约束
+
+OpenAI-compatible 流必须收到 `data: [DONE]` 才能标记完成；连接提前结束或流事件格式错误时标记失败，已输出的文字不能视为完整答案。流中提供 usage 时使用供应商计数；未提供时明确采用估算。用户级 Provider 配置、密钥保管与外部地址访问控制尚未实现。
+
+## 用户模型配置（本轮交付范围）
+
+`GET /api/v1/agent/provider` 返回当前用户的配置元数据或 `null`；`PUT /api/v1/agent/provider` 接收 `baseUrl`、`model`、`apiKey` 和 `expectedVersion`（新建为 0）；`DELETE /api/v1/agent/provider?version=N` 删除指定版本。写请求需要会话与 CSRF，版本不匹配返回 409。密钥仅在写入时接收，经 AES-256-GCM 加密后存储，读取接口不返回明文或密文。允许的 HTTPS base URL 由服务端 `AI_USER_ALLOWED_BASE_URLS` 精确列出，保存本身不发起外网请求；`AI_USER_CONFIG_KEY` 为服务端管理的 32 字节 base64 密钥。缺少有效配置时返回 503。
+
+该接口仅提供安全配置管理；Worker 尚未从用户设置选择 Provider，用户界面、密钥轮换、真实服务调用和外发数据授权尚未实现。不能将保存成功描述为 AI 已接入。

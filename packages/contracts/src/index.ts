@@ -1308,7 +1308,12 @@ export const EventStatusSchema = z.enum([
   'ended',
 ]);
 export const EventProposalStatusSchema = z.enum(['proposed', 'accepted', 'superseded', 'rejected']);
-export const EventParticipantResponseSchema = z.enum(['pending', 'accepted', 'declined', 'tentative']);
+export const EventParticipantResponseSchema = z.enum([
+  'pending',
+  'accepted',
+  'declined',
+  'tentative',
+]);
 
 export const UpsertAvailabilityBlockRequestSchema = z
   .object({
@@ -1498,4 +1503,21 @@ export type TimeSlot = z.infer<typeof TimeSlotSchema>;
 export type TimeIntersectionRequest = z.infer<typeof TimeIntersectionRequestSchema>;
 export type TimeIntersectionResponse = z.infer<typeof TimeIntersectionResponseSchema>;
 
-
+export const UserAIProviderInputSchema = z
+  .object({
+    baseUrl: z.url().max(2048),
+    model: z.string().trim().min(1).max(120),
+    apiKey: z.string().min(1).max(500),
+    expectedVersion: z.number().int().min(0).max(2147483646),
+  })
+  .strict();
+export const UserAIProviderMetadataSchema = z
+  .object({
+    baseUrl: z.string(),
+    model: z.string(),
+    version: z.number().int().positive(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+export type UserAIProviderInput = z.infer<typeof UserAIProviderInputSchema>;
+export type UserAIProviderMetadata = z.infer<typeof UserAIProviderMetadataSchema>;

@@ -86,6 +86,17 @@ describe('API skeleton over real HTTP', () => {
     expect(text).not.toContain('stack');
     expect(ApiErrorResponseSchema.parse(JSON.parse(text)).error.code).toBe('INTERNAL');
   });
+  it('requires authentication for user provider configuration routes', async () => {
+    const cases = [
+      { method: 'GET', path: '/api/v1/agent/provider' },
+      { method: 'PUT', path: '/api/v1/agent/provider' },
+      { method: 'DELETE', path: '/api/v1/agent/provider?version=1' },
+    ];
+    for (const item of cases) {
+      const response = await fetch(`${baseUrl}${item.path}`, { method: item.method });
+      expect(response.status).toBe(401);
+    }
+  });
   it('allows only the configured browser origin', async () => {
     const allowed = await fetch(`${baseUrl}/health/live`, {
       headers: { Origin: 'http://localhost:3000' },

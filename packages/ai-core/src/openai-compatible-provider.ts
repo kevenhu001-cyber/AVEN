@@ -343,6 +343,8 @@ export class OpenAICompatibleProvider implements AIProvider {
       totalTokens: messageTokens(messages),
     };
     let finishReason: GenerateTextResult['finishReason'] = 'unknown';
+    let receivedDone = false;
+    let reportedUsage = false;
     try {
       for (;;) {
         const { done, value } = await withTimeout(reader.read(), {
@@ -353,23 +355,37 @@ export class OpenAICompatibleProvider implements AIProvider {
           timeoutMessage: 'The AI provider stream timed out.',
           cancelMessage: 'The AI request was cancelled.',
         });
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
+        if (done && buffer) {
+          lines.push(buffer);
+          buffer = '';
+        }
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith('data:')) continue;
           const data = trimmed.slice(5).trim();
-          if (data === '[DONE]') continue;
+          if (data === '[DONE]') {
+            receivedDone = true;
+            break;
+          }
           let event: unknown;
           try {
             event = JSON.parse(data);
           } catch {
-            continue;
+            throw new AIError(
+              'PROVIDER_INVALID_OUTPUT',
+              'The AI provider returned invalid stream data.',
+            );
           }
-          if (!isRecord(event) || !Array.isArray(event.choices)) continue;
-          const first = event.choices[0];
+          if (!isRecord(event)) {
+            throw new AIError(
+              'PROVIDER_INVALID_OUTPUT',
+              'The AI provider returned invalid stream data.',
+            );
+          }
+          const first = Array.isArray(event.choices) ? event.choices[0] : undefined;
           const reason = isRecord(first) ? readString(first.finish_reason) : undefined;
           if (reason === 'stop' || reason === 'length' || reason === 'content_filter') {
             finishReason = reason;
@@ -381,20 +397,28 @@ export class OpenAICompatibleProvider implements AIProvider {
             yield { type: 'text_delta', text };
           }
           if (isRecord(event.usage)) {
+            reportedUsage = true;
             const inputTokens = readNumber(event.usage.prompt_tokens) ?? usage.inputTokens;
             const outputTokens = readNumber(event.usage.completion_tokens) ?? usage.outputTokens;
             const totalTokens = readNumber(event.usage.total_tokens) ?? inputTokens + outputTokens;
             usage = { inputTokens, outputTokens, totalTokens };
           }
         }
+        if (receivedDone || done) break;
       }
-      const outputTokens = usage.outputTokens || approximateTokens(output);
+      if (!receivedDone) {
+        throw new AIError(
+          'PROVIDER_INVALID_OUTPUT',
+          'The AI provider stream ended before completion.',
+        );
+      }
+      const outputTokens = reportedUsage ? usage.outputTokens : approximateTokens(output);
       yield {
         type: 'done',
         usage: {
           inputTokens: usage.inputTokens,
           outputTokens,
-          totalTokens: usage.totalTokens || usage.inputTokens + outputTokens,
+          totalTokens: reportedUsage ? usage.totalTokens : usage.inputTokens + outputTokens,
         },
         finishReason,
       };
