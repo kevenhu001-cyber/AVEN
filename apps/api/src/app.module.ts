@@ -3,10 +3,13 @@ import { ActionModule } from './action/action.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { HealthController } from './health.controller';
+import { IntentModule } from './intent/intent.module.js';
 import { MemoryModule } from './memory/memory.module.js';
 import { OpportunityModule } from './opportunity/opportunity.module.js';
 import { OrganizationModule } from './organization/organization.module.js';
 import { ProfileModule } from './profile/profile.module.js';
+import { ReferralModule } from './referral/referral.module.js';
+import { RelationshipModule } from './relationship/relationship.module.js';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { ProfileModule } from './profile/profile.module.js';
     MemoryModule,
     AgentModule,
     ActionModule,
+    IntentModule,
+    ReferralModule,
+    RelationshipModule,
   ],
   controllers: [HealthController],
 })

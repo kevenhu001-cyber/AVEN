@@ -871,6 +871,294 @@ export const ActionConfirmRequestSchema = z
 export const ActionConfirmResponseSchema = ActionSchema;
 export const ActionCancelResponseSchema = ActionSchema;
 
+// M5: Intents, Matching, Referrals, Consents, and Relationships
+export const IntentStatusSchema = z.enum(['draft', 'active', 'paused', 'closed']);
+
+export const CreateIntentRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().min(1).max(10000),
+    domains: z.array(z.string().trim().min(1).max(50)).default([]),
+    desiredStages: z.array(OpportunityStageSchema).default([]),
+    locationPreference: z.string().trim().max(120).nullable().optional(),
+    remoteOk: z.boolean().default(false),
+    commitmentHoursPerWeek: z.number().int().min(1).max(40).nullable().optional(),
+    deadline: z.iso.datetime().nullable().optional(),
+  })
+  .strict();
+
+export const UpdateIntentRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    title: z.string().trim().min(1).max(160).optional(),
+    description: z.string().trim().min(1).max(10000).optional(),
+    domains: z.array(z.string().trim().min(1).max(50)).optional(),
+    desiredStages: z.array(OpportunityStageSchema).optional(),
+    locationPreference: z.string().trim().max(120).nullable().optional(),
+    remoteOk: z.boolean().optional(),
+    commitmentHoursPerWeek: z.number().int().min(1).max(40).nullable().optional(),
+    deadline: z.iso.datetime().nullable().optional(),
+  })
+  .strict();
+
+export const SetIntentStatusRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    status: IntentStatusSchema,
+  })
+  .strict();
+
+export const IntentSchema = z
+  .object({
+    id: z.uuid(),
+    ownerPrincipalId: z.uuid(),
+    title: z.string().min(1).max(160),
+    description: z.string().min(1).max(10000),
+    domains: z.array(z.string()),
+    desiredStages: z.array(OpportunityStageSchema),
+    locationPreference: z.string().nullable(),
+    remoteOk: z.boolean(),
+    commitmentHoursPerWeek: z.number().nullable(),
+    deadline: z.iso.datetime().nullable(),
+    status: IntentStatusSchema,
+    version: z.number().int().positive(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const IntentListResponseSchema = z
+  .object({
+    data: z.array(IntentSchema),
+  })
+  .strict();
+
+export const CandidateStatusSchema = z.enum(['active', 'stale', 'dismissed']);
+
+export const MatchCandidateSchema = z
+  .object({
+    id: z.uuid(),
+    intentId: z.uuid(),
+    opportunityId: z.uuid(),
+    opportunityTitle: z.string().optional(),
+    organizationId: z.uuid().optional(),
+    organizationName: z.string().optional(),
+    algorithmVersion: z.string().min(1).default('v1'),
+    score: z.number().min(0).max(1).nullable(),
+    featureScores: z.record(z.string(), z.unknown()),
+    reasons: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
+    evidence: z.array(z.record(z.string(), z.unknown())),
+    status: CandidateStatusSchema,
+    computedAt: z.iso.datetime(),
+    expiresAt: z.iso.datetime().nullable().optional(),
+  })
+  .strict();
+
+export const GenerateMatchesRequestSchema = z
+  .object({
+    algorithmVersion: z.string().trim().min(1).max(64).default('v1'),
+  })
+  .strict();
+
+export const MatchCandidateListResponseSchema = z
+  .object({
+    data: z.array(MatchCandidateSchema),
+  })
+  .strict();
+
+export const ConsentPurposeSchema = z.enum(['referral', 'relationship_context', 'advisory']);
+export const ConsentItemStatusSchema = z.enum(['active', 'revoked', 'expired', 'stale']);
+
+export const CreateConsentPreviewRequestSchema = z
+  .object({
+    opportunityId: z.uuid(),
+    intentId: z.uuid().optional(),
+    purposeScopes: z.record(z.string(), z.unknown()).default({
+      referral: { fields: ['display_name', 'skills', 'bio'], expiresInDays: 14 },
+    }),
+  })
+  .strict();
+
+export const ConsentPreviewSchema = z
+  .object({
+    previewId: z.uuid(),
+    opportunityId: z.uuid(),
+    recipientOrganizationId: z.uuid(),
+    recipientOrganizationName: z.string(),
+    purposeScopes: z.record(z.string(), z.unknown()),
+    previewData: z.record(z.string(), z.unknown()),
+    expiresAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const RevokeConsentRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(500).default('User requested revocation'),
+  })
+  .strict();
+
+export const ConsentGrantSchema = z
+  .object({
+    id: z.uuid(),
+    grantorPrincipalId: z.uuid(),
+    granteePrincipalId: z.uuid(),
+    referralId: z.uuid().nullable(),
+    purpose: ConsentPurposeSchema,
+    status: ConsentItemStatusSchema,
+    expiresAt: z.iso.datetime(),
+    revokedAt: z.iso.datetime().nullable(),
+    revokeReason: z.string().nullable(),
+    version: z.number().int().positive(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const ReferralStatusSchema = z.enum([
+  'sent',
+  'info_requested',
+  'accepted',
+  'declined',
+  'withdrawn',
+  'expired',
+]);
+
+export const ReferralSideSchema = z.enum(['applicant', 'organization']);
+export const ReferralDecisionTypeSchema = z.enum([
+  'pending',
+  'accepted',
+  'declined',
+  'info_requested',
+]);
+
+export const CreateReferralRequestSchema = z
+  .object({
+    previewId: z.uuid(),
+    candidateId: z.uuid().optional(),
+  })
+  .strict();
+
+export const ReferralDecisionRequestSchema = z
+  .object({
+    decision: z.enum(['accepted', 'declined', 'info_requested']),
+    reason: z.string().trim().max(1000).optional(),
+    expectedVersion: z.number().int().min(1).default(1),
+  })
+  .strict();
+
+export const WithdrawReferralRequestSchema = z
+  .object({
+    reason: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+export const ReferralDecisionSchema = z
+  .object({
+    id: z.uuid(),
+    referralId: z.uuid(),
+    side: ReferralSideSchema,
+    decision: ReferralDecisionTypeSchema,
+    reason: z.string().nullable(),
+    decidedAt: z.iso.datetime().nullable(),
+    version: z.number().int().positive(),
+  })
+  .strict();
+
+export const ReferralSchema = z
+  .object({
+    id: z.uuid(),
+    applicantUserId: z.uuid().optional(),
+    applicantName: z.string().optional(),
+    intentId: z.uuid().optional(),
+    opportunityId: z.uuid().optional(),
+    opportunityTitle: z.string().optional(),
+    organizationId: z.uuid().optional(),
+    organizationName: z.string().optional(),
+    candidateId: z.uuid().nullable().optional(),
+    status: ReferralStatusSchema,
+    contentVersion: z.number().int().positive().optional(),
+    decisions: z.array(ReferralDecisionSchema).optional(),
+    applicantDecision: ReferralDecisionTypeSchema.optional(),
+    orgDecision: ReferralDecisionTypeSchema.optional(),
+    orgDecisionReason: z.string().nullable().optional(),
+    sentAt: z.iso.datetime().optional(),
+    expiresAt: z.iso.datetime(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional(),
+  })
+  .strict();
+
+export const ReferralListResponseSchema = z
+  .object({
+    data: z.array(ReferralSchema),
+  })
+  .strict();
+
+export const ReferralSharedSnapshotResponseSchema = z
+  .object({
+    referralId: z.uuid(),
+    snapshot: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+
+export const RelationshipStatusSchema = z.enum(['active', 'paused', 'completed', 'closed']);
+export const RelationshipMemberRoleSchema = z.enum(['applicant', 'organization_lead', 'member']);
+
+export const EstablishRelationshipRequestSchema = z
+  .object({
+    referralId: z.uuid(),
+  })
+  .strict();
+
+export const CloseRelationshipRequestSchema = z
+  .object({
+    reason: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
+export const RelationshipMemberSchema = z
+  .object({
+    id: z.uuid(),
+    relationshipId: z.uuid(),
+    principalId: z.uuid(),
+    role: RelationshipMemberRoleSchema,
+    joinedAt: z.iso.datetime(),
+    leftAt: z.iso.datetime().nullable(),
+  })
+  .strict();
+
+export const RelationshipSchema = z
+  .object({
+    id: z.uuid(),
+    referralId: z.uuid(),
+    applicantUserId: z.uuid(),
+    applicantName: z.string().optional(),
+    opportunityId: z.uuid(),
+    opportunityTitle: z.string().optional(),
+    organizationId: z.uuid(),
+    status: RelationshipStatusSchema,
+    establishedAt: z.iso.datetime(),
+    closedAt: z.iso.datetime().nullable(),
+    closedBy: z.uuid().nullable(),
+    version: z.number().int().positive(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const RelationshipListResponseSchema = z
+  .object({
+    data: z.array(RelationshipSchema),
+  })
+  .strict();
+
+export const RelationshipContextResponseSchema = z
+  .object({
+    relationshipId: z.uuid(),
+    sharedContext: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -972,3 +1260,39 @@ export type ActionCreateResponse = z.infer<typeof ActionCreateResponseSchema>;
 export type ActionConfirmRequest = z.infer<typeof ActionConfirmRequestSchema>;
 export type ActionConfirmResponse = z.infer<typeof ActionConfirmResponseSchema>;
 export type ActionCancelResponse = z.infer<typeof ActionCancelResponseSchema>;
+
+export type IntentStatus = z.infer<typeof IntentStatusSchema>;
+export type CreateIntentRequest = z.infer<typeof CreateIntentRequestSchema>;
+export type UpdateIntentRequest = z.infer<typeof UpdateIntentRequestSchema>;
+export type SetIntentStatusRequest = z.infer<typeof SetIntentStatusRequestSchema>;
+export type Intent = z.infer<typeof IntentSchema>;
+export type IntentListResponse = z.infer<typeof IntentListResponseSchema>;
+export type CandidateStatus = z.infer<typeof CandidateStatusSchema>;
+export type MatchCandidate = z.infer<typeof MatchCandidateSchema>;
+export type GenerateMatchesRequest = z.infer<typeof GenerateMatchesRequestSchema>;
+export type MatchCandidateListResponse = z.infer<typeof MatchCandidateListResponseSchema>;
+export type ConsentPurpose = z.infer<typeof ConsentPurposeSchema>;
+export type ConsentItemStatus = z.infer<typeof ConsentItemStatusSchema>;
+export type CreateConsentPreviewRequest = z.infer<typeof CreateConsentPreviewRequestSchema>;
+export type ConsentPreview = z.infer<typeof ConsentPreviewSchema>;
+export type RevokeConsentRequest = z.infer<typeof RevokeConsentRequestSchema>;
+export type ConsentGrant = z.infer<typeof ConsentGrantSchema>;
+export type ReferralStatus = z.infer<typeof ReferralStatusSchema>;
+export type ReferralSide = z.infer<typeof ReferralSideSchema>;
+export type ReferralDecisionType = z.infer<typeof ReferralDecisionTypeSchema>;
+export type CreateReferralRequest = z.infer<typeof CreateReferralRequestSchema>;
+export type ReferralDecisionRequest = z.infer<typeof ReferralDecisionRequestSchema>;
+export type WithdrawReferralRequest = z.infer<typeof WithdrawReferralRequestSchema>;
+export type ReferralDecision = z.infer<typeof ReferralDecisionSchema>;
+export type Referral = z.infer<typeof ReferralSchema>;
+export type ReferralListResponse = z.infer<typeof ReferralListResponseSchema>;
+export type ReferralSharedSnapshotResponse = z.infer<typeof ReferralSharedSnapshotResponseSchema>;
+export type RelationshipStatus = z.infer<typeof RelationshipStatusSchema>;
+export type RelationshipMemberRole = z.infer<typeof RelationshipMemberRoleSchema>;
+export type EstablishRelationshipRequest = z.infer<typeof EstablishRelationshipRequestSchema>;
+export type CloseRelationshipRequest = z.infer<typeof CloseRelationshipRequestSchema>;
+export type RelationshipMember = z.infer<typeof RelationshipMemberSchema>;
+export type Relationship = z.infer<typeof RelationshipSchema>;
+export type RelationshipListResponse = z.infer<typeof RelationshipListResponseSchema>;
+export type RelationshipContextResponse = z.infer<typeof RelationshipContextResponseSchema>;
+

@@ -4,6 +4,8 @@ import {
   check,
   index,
   integer,
+  jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -422,3 +424,297 @@ export const opportunities = pgTable(
     index('idx_opportunities_visibility_status').on(table.visibility, table.status),
   ],
 );
+
+// M5: Intents, Matching, Referrals, Consents, and Relationships
+
+export const intentStatus = pgEnum('intent_status', ['draft', 'active', 'paused', 'closed']);
+export const candidateStatus = pgEnum('candidate_status', ['active', 'stale', 'dismissed']);
+
+export const intents = pgTable(
+  'intents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerPrincipalId: uuid('owner_principal_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    domains: text('domains')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    desiredStages: opportunityStage('desired_stages')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    locationPreference: text('location_preference'),
+    remoteOk: boolean('remote_ok').notNull().default(false),
+    commitmentHoursPerWeek: integer('commitment_hours_per_week'),
+    deadline: timestamp('deadline', { withTimezone: true }),
+    status: intentStatus('status').notNull().default('draft'),
+    version: integer('version').notNull().default(1),
+    ...timestamps,
+  },
+  (table) => [
+    check('chk_intent_title', sql`length(trim(${table.title})) between 1 and 160`),
+    check('chk_intent_description', sql`length(trim(${table.description})) between 1 and 10000`),
+    check(
+      'chk_intent_hours',
+      sql`${table.commitmentHoursPerWeek} is null or (${table.commitmentHoursPerWeek} between 1 and 40)`,
+    ),
+    index('idx_intents_owner_status').on(table.ownerPrincipalId, table.status),
+    index('idx_intents_status_deadline')
+      .on(table.deadline)
+      .where(sql`${table.status} = 'active'`),
+  ],
+);
+
+export const matchCandidates = pgTable(
+  'match_candidates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    intentId: uuid('intent_id')
+      .notNull()
+      .references(() => intents.id, { onDelete: 'cascade' }),
+    opportunityId: uuid('opportunity_id')
+      .notNull()
+      .references(() => opportunities.id, { onDelete: 'cascade' }),
+    algorithmVersion: text('algorithm_version').notNull(),
+    score: numeric('score', { precision: 5, scale: 4 }),
+    featureScores: jsonb('feature_scores').notNull().default('{}'),
+    reasons: jsonb('reasons').notNull().default('[]'),
+    evidence: jsonb('evidence').notNull().default('[]'),
+    status: candidateStatus('status').notNull().default('active'),
+    sourceManifestHash: text('source_manifest_hash').notNull(),
+    computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    version: integer('version').notNull().default(1),
+    ...timestamps,
+  },
+  (table) => [
+    index('idx_match_candidates_intent_status').on(table.intentId, table.status),
+    index('idx_match_candidates_opportunity_status').on(table.opportunityId, table.status),
+  ],
+);
+
+export const consentPurpose = pgEnum('consent_purpose', [
+  'referral',
+  'relationship_context',
+  'event_coordination',
+]);
+export const consentStatus = pgEnum('consent_status', ['active', 'revoked', 'expired']);
+export const consentItemStatus = pgEnum('consent_item_status', [
+  'active',
+  'stale',
+  'revoked',
+  'expired',
+]);
+export const consentEventType = pgEnum('consent_event_type', [
+  'granted',
+  'revoked',
+  'expired',
+  'stale_marked',
+  'purged',
+]);
+export const referralStatus = pgEnum('referral_status', [
+  'sent',
+  'info_requested',
+  'accepted',
+  'declined',
+  'withdrawn',
+  'expired',
+]);
+export const referralSide = pgEnum('referral_side', ['applicant', 'organization']);
+export const referralDecisionType = pgEnum('referral_decision_type', [
+  'accepted',
+  'declined',
+  'info_requested',
+  'withdrawn',
+  'expired',
+  'pending',
+]);
+
+export const consentPreviews = pgTable('consent_previews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorUserId: uuid('actor_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  recipientPrincipalId: uuid('recipient_principal_id')
+    .notNull()
+    .references(() => principals.id),
+  intentId: uuid('intent_id').references(() => intents.id, { onDelete: 'set null' }),
+  opportunityId: uuid('opportunity_id')
+    .notNull()
+    .references(() => opportunities.id, { onDelete: 'cascade' }),
+  existingReferralId: uuid('existing_referral_id'),
+  payloadHash: text('payload_hash').notNull(),
+  sourceManifest: jsonb('source_manifest').notNull().default('{}'),
+  purposeScopes: jsonb('purpose_scopes').notNull().default('{}'),
+  previewData: jsonb('preview_data').notNull().default('{}'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  resultReferralId: uuid('result_referral_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const referrals = pgTable(
+  'referrals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    applicantUserId: uuid('applicant_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    intentId: uuid('intent_id')
+      .notNull()
+      .references(() => intents.id, { onDelete: 'restrict' }),
+    opportunityId: uuid('opportunity_id')
+      .notNull()
+      .references(() => opportunities.id, { onDelete: 'restrict' }),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'restrict' }),
+    candidateId: uuid('candidate_id').references(() => matchCandidates.id, { onDelete: 'set null' }),
+    supersedesReferralId: uuid('supersedes_referral_id'),
+    status: referralStatus('status').notNull().default('sent'),
+    contentVersion: integer('content_version').notNull().default(1),
+    version: integer('version').notNull().default(1),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index('idx_referrals_org_status').on(table.organizationId, table.status),
+    index('idx_referrals_applicant_status').on(table.applicantUserId, table.status),
+  ],
+);
+
+export const referralDecisions = pgTable('referral_decisions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  referralId: uuid('referral_id')
+    .notNull()
+    .references(() => referrals.id, { onDelete: 'cascade' }),
+  side: referralSide('side').notNull(),
+  deciderPrincipalId: uuid('decider_principal_id')
+    .notNull()
+    .references(() => principals.id),
+  actedByUserId: uuid('acted_by_user_id')
+    .notNull()
+    .references(() => users.id),
+  referralContentVersion: integer('referral_content_version').notNull().default(1),
+  decision: referralDecisionType('decision').notNull().default('pending'),
+  reason: text('reason'),
+  version: integer('version').notNull().default(1),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  ...timestamps,
+});
+
+export const consentGrants = pgTable('consent_grants', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  grantorPrincipalId: uuid('grantor_principal_id')
+    .notNull()
+    .references(() => principals.id),
+  granteePrincipalId: uuid('grantee_principal_id')
+    .notNull()
+    .references(() => principals.id),
+  referralId: uuid('referral_id').references(() => referrals.id, { onDelete: 'cascade' }),
+  eventId: uuid('event_id'),
+  purpose: consentPurpose('purpose').notNull(),
+  status: consentStatus('status').notNull().default('active'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  version: integer('version').notNull().default(1),
+  supersedesGrantId: uuid('supersedes_grant_id'),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  revokedBy: uuid('revoked_by').references(() => principals.id),
+  revokeReason: text('revoke_reason'),
+  ...timestamps,
+});
+
+export const consentGrantItems = pgTable('consent_grant_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  grantId: uuid('grant_id')
+    .notNull()
+    .references(() => consentGrants.id, { onDelete: 'cascade' }),
+  sourceType: text('source_type').notNull(),
+  sourceId: uuid('source_id').notNull(),
+  sourceVersion: integer('source_version').notNull().default(1),
+  policyVersion: integer('policy_version').notNull().default(1),
+  fieldKey: text('field_key').notNull(),
+  valueSnapshot: jsonb('value_snapshot').notNull(),
+  purgedAt: timestamp('purged_at', { withTimezone: true }),
+  sensitivity: text('sensitivity').notNull().default('normal'),
+  status: consentItemStatus('status').notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const consentEvents = pgTable('consent_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  grantId: uuid('grant_id')
+    .notNull()
+    .references(() => consentGrants.id, { onDelete: 'cascade' }),
+  eventType: consentEventType('event_type').notNull(),
+  actorPrincipalId: uuid('actor_principal_id').references(() => principals.id),
+  metadata: jsonb('metadata').notNull().default('{}'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const relationshipStatus = pgEnum('relationship_status', ['active', 'closed']);
+export const relationshipMemberRole = pgEnum('relationship_member_role', [
+  'applicant',
+  'organization_lead',
+  'member',
+]);
+export const sharedContextStatus = pgEnum('shared_context_status', [
+  'active',
+  'revoked',
+  'expired',
+  'stale',
+]);
+
+export const relationships = pgTable('relationships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  referralId: uuid('referral_id')
+    .notNull()
+    .references(() => referrals.id),
+  applicantUserId: uuid('applicant_user_id')
+    .notNull()
+    .references(() => users.id),
+  opportunityId: uuid('opportunity_id')
+    .notNull()
+    .references(() => opportunities.id),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id),
+  status: relationshipStatus('status').notNull().default('active'),
+  establishedAt: timestamp('established_at', { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
+  closedBy: uuid('closed_by').references(() => principals.id),
+  version: integer('version').notNull().default(1),
+  ...timestamps,
+});
+
+export const relationshipMembers = pgTable('relationship_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  relationshipId: uuid('relationship_id')
+    .notNull()
+    .references(() => relationships.id, { onDelete: 'cascade' }),
+  principalId: uuid('principal_id')
+    .notNull()
+    .references(() => principals.id),
+  role: relationshipMemberRole('role').notNull(),
+  joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  leftAt: timestamp('left_at', { withTimezone: true }),
+});
+
+export const sharedContextItems = pgTable('shared_context_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  relationshipId: uuid('relationship_id')
+    .notNull()
+    .references(() => relationships.id, { onDelete: 'cascade' }),
+  consentGrantId: uuid('consent_grant_id')
+    .notNull()
+    .references(() => consentGrants.id, { onDelete: 'cascade' }),
+  consentGrantItemId: uuid('consent_grant_item_id').notNull(),
+  status: sharedContextStatus('status').notNull().default('active'),
+  ...timestamps,
+});
+

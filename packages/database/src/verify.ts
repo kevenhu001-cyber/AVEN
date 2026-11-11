@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twenty-one migrations are recorded', migrations.rows[0]?.count === '21');
+    check('twenty-four migrations are recorded', migrations.rows[0]?.count === '24');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -117,13 +117,16 @@ async function main(): Promise<void> {
          'outbox_events','job_receipts','memory_items','memory_sources',
          'context_field_policies','memory_events','conversations',
          'conversation_members','messages','agent_runs','agent_run_events',
-         'agent_run_sources','idempotency_keys','actions','opportunities'
+         'agent_run_sources','idempotency_keys','actions','opportunities',
+         'intents','match_candidates','consent_previews','referrals',
+         'referral_decisions','consent_grants','consent_grant_items',
+         'consent_events','relationships','relationship_members','shared_context_items'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '31');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '42');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -960,6 +963,130 @@ async function main(): Promise<void> {
         'confirming opportunity action sets status succeeded and creates opportunity',
         confirmedAction.rows[0]?.status === 'succeeded' &&
           confirmedAction.rows[0]?.executed === true,
+      );
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    // M5: Intents, Matching, Referrals, Consents, and Relationships
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+
+      // 1. Create personal intent
+      const createdIntent = await app.query<{ id: string }>(
+        `SELECT id FROM app.create_intent(
+          '寻找强化学习算法科研合作',
+          '希望参与具身智能与大模型多模态强化学习方向的实验研究',
+          ARRAY['机器人', '强化学习']::text[],
+          ARRAY['undergraduate', 'master']::public.opportunity_stage[],
+          '创新港',
+          true,
+          15,
+          now() + interval '30 days'
+        )`,
+      );
+      const intentId = createdIntent.rows[0]?.id;
+      check('intent creation returns an id', Boolean(intentId));
+
+      const myIntents = await app.query<{ id: string }>(
+        'SELECT id FROM app.list_my_intents()',
+      );
+      check('user one sees created intent in list', myIntents.rows.some((i) => i.id === intentId));
+
+      // 2. Compute matching candidates
+      const matchCount = await app.query<{ generate_match_candidates: number }>(
+        `SELECT app.generate_match_candidates('${intentId}', 'v1-test')`,
+      );
+      check(
+        'match candidate computation completes',
+        typeof matchCount.rows[0]?.generate_match_candidates === 'number',
+      );
+
+      // Create a test open opportunity so we have guaranteed candidate
+      const oppRes = await app.query<{ create_opportunity_draft: string }>(
+        `SELECT app.create_opportunity_draft(
+          $1, '强化学习具身智能助研', '参与机器人算法原型验证', '深入参与实验室具身智能项目',
+          ARRAY['机器人', '强化学习']::text[], ARRAY['Python', 'PyTorch']::text[], 'undergraduate',
+          15, '创新港', true, 2, now() + interval '30 days', 'campus', $2
+        )`,
+        [seedIds.organizationOne, seedIds.userOne],
+      );
+      const oppId = oppRes.rows[0]?.create_opportunity_draft;
+      await app.query(`SELECT * FROM app.publish_opportunity('${oppId}', 1)`);
+
+      // Re-run matching to get candidate for this opportunity
+      await app.query(`SELECT app.generate_match_candidates('${intentId}', 'v1-test')`);
+      const candidates = await app.query<{ candidate_id: string; opportunity_id: string }>(
+        `SELECT candidate_id, opportunity_id FROM app.list_candidates_for_intent('${intentId}')`,
+      );
+      check(
+        'candidates list contains the published opportunity',
+        candidates.rows.some((c) => c.opportunity_id === oppId),
+      );
+
+      // 3. Create consent preview and referral
+      const previewRes = await app.query<{ preview_id: string }>(
+        `SELECT preview_id FROM app.create_consent_preview(
+          '${oppId}',
+          '${intentId}',
+          '{"referral": {"fields": ["skills"]}, "relationship_context": {"fields": ["projects"]}}'::jsonb
+        )`,
+      );
+      const previewId = previewRes.rows[0]?.preview_id;
+      check('consent preview creation returns an id', Boolean(previewId));
+
+      const referralRes = await app.query<{ referral_id: string; status: string }>(
+        `SELECT referral_id, status FROM app.create_referral_with_consent('${previewId}')`,
+      );
+      const refId = referralRes.rows[0]?.referral_id;
+      check('referral creation with consent succeeds and status is sent', referralRes.rows[0]?.status === 'sent');
+
+      // Check snapshot readable by org admin
+      const snapshot = await app.query<{ get_referral_shared_snapshot: Record<string, unknown> }>(
+        `SELECT app.get_referral_shared_snapshot('${refId}')`,
+      );
+      check('referral shared snapshot is readable by authorized member', Boolean(snapshot.rows[0]?.get_referral_shared_snapshot));
+
+      // 4. Organization decides: accept referral
+      const decided = await app.query<{ referral_id: string; new_status: string }>(
+        `SELECT referral_id, new_status FROM app.decide_referral('${refId}', 'accepted', '欢迎加入实验室项目', 1)`,
+      );
+      check('organization accepts referral', decided.rows[0]?.new_status === 'accepted');
+
+      // 5. Establish relationship
+      const relRes = await app.query<{ relationship_id: string; status: string }>(
+        `SELECT relationship_id, status FROM app.establish_relationship('${refId}')`,
+      );
+      const relId = relRes.rows[0]?.relationship_id;
+      check('relationship established atomically', relRes.rows[0]?.status === 'active');
+
+      // Check shared context
+      const relContext = await app.query<{ get_relationship_shared_context: Record<string, unknown> }>(
+        `SELECT app.get_relationship_shared_context('${relId}')`,
+      );
+      check(
+        'relationship shared context returns authorized fields',
+        Boolean(relContext.rows[0]?.get_relationship_shared_context),
+      );
+
+      // 6. Test Revocation Propagation: Revoke consent grant and verify instant blocking!
+      const grantRes = await app.query<{ id: string }>(
+        `SELECT id FROM public.consent_grants WHERE referral_id = '${refId}' AND purpose = 'relationship_context'`,
+      );
+      const grantId = grantRes.rows[0]?.id;
+      check('relationship context grant exists', Boolean(grantId));
+      if (grantId) {
+        await app.query(`SELECT app.revoke_consent('${grantId}', '用户自主撤销资料共享')`);
+      }
+
+      const revokedContext = await app.query<{ get_relationship_shared_context: Record<string, unknown> }>(
+        `SELECT app.get_relationship_shared_context('${relId}')`,
+      );
+      check(
+        'shared context immediately empty after consent revocation',
+        Object.keys(revokedContext.rows[0]?.get_relationship_shared_context ?? {}).length === 0,
       );
     } finally {
       await app.query('ROLLBACK');
