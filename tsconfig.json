@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@aven/contracts": ["packages/contracts/src/index.ts"],
+      "@aven/ai-core": ["packages/ai-core/src/index.ts"],
       "@aven/api-client": ["packages/api-client/src/index.ts"],
       "@aven/database": ["packages/database/src/index.ts"],
       "@aven/domain": ["packages/domain/src/index.ts"],

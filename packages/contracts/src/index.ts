@@ -364,6 +364,11 @@ export const MemoryKindSchema = z.enum([
 export const SensitivitySchema = z.enum(['low', 'normal', 'high']);
 export const DisplayAudienceSchema = z.enum(['owner', 'campus', 'public']);
 export const ContextUseSchema = z.enum(['self_ai', 'matching', 'sharing']);
+export const ToolPermissionSchema = z.enum(['memory:read:self', 'memory:write:self']);
+export const TOOL_PERMISSIONS = {
+  memoryReadSelf: 'memory:read:self',
+  memoryWriteSelf: 'memory:write:self',
+} as const satisfies Record<string, z.infer<typeof ToolPermissionSchema>>;
 export const MemoryStatusSchema = z.enum([
   'pending_confirmation',
   'confirmed',
@@ -662,3 +667,4 @@ export type MemoryEventType = z.infer<typeof MemoryEventTypeSchema>;
 export type MemoryEventActorType = z.infer<typeof MemoryEventActorTypeSchema>;
 export type MemoryEvent = z.infer<typeof MemoryEventSchema>;
 export type MemoryEventListResponse = z.infer<typeof MemoryEventListResponseSchema>;
+export type ToolPermission = z.infer<typeof ToolPermissionSchema>;

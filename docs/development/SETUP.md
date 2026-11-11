@@ -66,6 +66,7 @@ corepack pnpm organization:verify # 组织成员/邀请真实 HTTP 检查
 corepack pnpm isolation:verify # 跨账号/跨组织与连接池隔离检查
 corepack pnpm memory:verify # 个人记忆 M3-01/M3-02/M3-03 创建/复核/审计/失效/保留检查
 corepack pnpm memory:maintain # 到期失效、正文保留清理与审计事件保留清理
+corepack pnpm ai:verify      # Mock/OpenAI-compatible Provider 与工具权限/超时/重试/审计检查
 ```
 
 - `db:verify`：重建 `aven_test`，验证空库迁移、已有库升级、seed 幂等、RLS 与约束。
@@ -77,6 +78,7 @@ corepack pnpm memory:maintain # 到期失效、正文保留清理与审计事件
 - `isolation:verify`：跨账号/跨组织、伪造头、成员移除与连接池上下文检查。
 - `memory:verify`：个人记忆创建/来源/策略/版本/软删除、候选提取/确认/拒绝、用途检索门、事件审计、到期失效、保留清理与跨用户隔离检查。
 - `memory:maintain`：调用到期失效、软删除正文清理与审计事件保留清理；使用 `aven_worker`，保留天数由 `MEMORY_DELETION_RETENTION_DAYS` 与 `MEMORY_EVENT_RETENTION_DAYS` 配置。
+- `ai:verify`：Mock/OpenAI-compatible Provider、结构化输出校验、工具权限/数据用途/参数伪造/超时/重试/审计检查；不连接真实 Provider，不需要密钥。
 - `test:e2e` 的测试服务器故意使用不可用依赖，验证就绪失败不会被渲染为成功。
 
 ## 故障处理

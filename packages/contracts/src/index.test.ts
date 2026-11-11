@@ -17,6 +17,8 @@ import {
   ReadinessResponseSchema,
   RegisterRequestSchema,
   RejectMemoryRequestSchema,
+  TOOL_PERMISSIONS,
+  ToolPermissionSchema,
   UpdateMemoryRequestSchema,
   UpdateProfileRequestSchema,
 } from './index';
@@ -300,5 +302,11 @@ describe('public engineering contracts', () => {
         createdAt: '2026-11-11T00:00:00.000Z',
       }).success,
     ).toBe(false);
+  });
+  it('exposes stable AI tool permissions', () => {
+    expect(TOOL_PERMISSIONS.memoryReadSelf).toBe('memory:read:self');
+    expect(TOOL_PERMISSIONS.memoryWriteSelf).toBe('memory:write:self');
+    expect(ToolPermissionSchema.safeParse('memory:read:self').success).toBe(true);
+    expect(ToolPermissionSchema.safeParse('memory:delete:any').success).toBe(false);
   });
 });
