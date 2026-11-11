@@ -72,7 +72,9 @@ function mapEvent(row: EventRow, participants?: EventParticipant[]): Event {
     myResponse: row.my_response,
     participants: participants ?? [],
     createdAt: new Date(row.created_at).toISOString(),
-    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date(row.created_at).toISOString(),
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at).toISOString()
+      : new Date(row.created_at).toISOString(),
   });
 }
 
@@ -126,10 +128,7 @@ export class EventService implements OnModuleDestroy {
 
   async get(auth: AuthContext, eventId: string): Promise<Event> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<EventRow>(
-        'SELECT * FROM app.get_event($1)',
-        [eventId],
-      );
+      const res = await client.query<EventRow>('SELECT * FROM app.get_event($1)', [eventId]);
       const row = res.rows[0];
       if (!row) throw new NotFoundException('Event not found.');
 
@@ -146,27 +145,27 @@ export class EventService implements OnModuleDestroy {
 
   async listMine(auth: AuthContext, status?: EventStatus): Promise<Event[]> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<EventRow>(
-        'SELECT * FROM app.list_my_events($1)',
-        [status ?? null],
-      );
+      const res = await client.query<EventRow>('SELECT * FROM app.list_my_events($1)', [
+        status ?? null,
+      ]);
       return res.rows.map((r) => mapEvent(r));
     });
   }
 
-  async proposeTime(auth: AuthContext, eventId: string, input: ProposeEventTimeRequest): Promise<Event> {
+  async proposeTime(
+    auth: AuthContext,
+    eventId: string,
+    input: ProposeEventTimeRequest,
+  ): Promise<Event> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
       try {
-        await client.query(
-          'SELECT * FROM app.propose_event_time($1, $2, $3, $4, $5)',
-          [
-            eventId,
-            new Date(input.startAt),
-            new Date(input.endAt),
-            input.timezone,
-            input.expectedVersion,
-          ],
-        );
+        await client.query('SELECT * FROM app.propose_event_time($1, $2, $3, $4, $5)', [
+          eventId,
+          new Date(input.startAt),
+          new Date(input.endAt),
+          input.timezone,
+          input.expectedVersion,
+        ]);
       } catch (err) {
         if (err instanceof Error && 'code' in err && (err as { code: string }).code === '40001') {
           throw new ConflictException('Event version conflict.');
@@ -178,7 +177,11 @@ export class EventService implements OnModuleDestroy {
     return this.get(auth, eventId);
   }
 
-  async respond(auth: AuthContext, eventId: string, input: RespondEventParticipantRequest): Promise<Event> {
+  async respond(
+    auth: AuthContext,
+    eventId: string,
+    input: RespondEventParticipantRequest,
+  ): Promise<Event> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
       try {
         await client.query(
@@ -198,10 +201,10 @@ export class EventService implements OnModuleDestroy {
 
   async cancel(auth: AuthContext, eventId: string, input: CancelEventRequest): Promise<Event> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      await client.query(
-        'SELECT app.cancel_event($1, $2)',
-        [eventId, input.reason ?? 'Cancelled by participant'],
-      );
+      await client.query('SELECT app.cancel_event($1, $2)', [
+        eventId,
+        input.reason ?? 'Cancelled by participant',
+      ]);
     });
 
     return this.get(auth, eventId);

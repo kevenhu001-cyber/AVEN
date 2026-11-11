@@ -58,11 +58,7 @@ export class IntentController {
 
   @Patch('intents/:id')
   @HttpCode(200)
-  async update(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async update(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(UpdateIntentRequestSchema, body);
     return IntentSchema.parse(await this.intents.update(auth, parseId(id), input));
   }

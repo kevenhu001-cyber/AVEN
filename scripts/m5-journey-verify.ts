@@ -200,7 +200,11 @@ async function main(): Promise<void> {
       },
     });
     const orgId = String(nested(orgRes.body, ['id']));
-    check('organization created', orgRes.status === 201 && Boolean(orgId), JSON.stringify(orgRes.body));
+    check(
+      'organization created',
+      orgRes.status === 201 && Boolean(orgId),
+      JSON.stringify(orgRes.body),
+    );
 
     // Create & Publish Opportunity
     const oppRes = await client2.call(`/api/v1/organizations/${orgId}/opportunities`, {
@@ -219,13 +223,24 @@ async function main(): Promise<void> {
       },
     });
     const oppId = String(nested(oppRes.body, ['id']));
-    check('opportunity draft created', oppRes.status === 201 && Boolean(oppId), JSON.stringify(oppRes.body));
+    check(
+      'opportunity draft created',
+      oppRes.status === 201 && Boolean(oppId),
+      JSON.stringify(oppRes.body),
+    );
 
-    const pubRes = await client2.call(`/api/v1/organizations/${orgId}/opportunities/${oppId}/publish`, {
-      method: 'POST',
-      body: { expectedVersion: 1 },
-    });
-    check('opportunity published to campus', pubRes.status === 200 && nested(pubRes.body, ['status']) === 'open', JSON.stringify(pubRes.body));
+    const pubRes = await client2.call(
+      `/api/v1/organizations/${orgId}/opportunities/${oppId}/publish`,
+      {
+        method: 'POST',
+        body: { expectedVersion: 1 },
+      },
+    );
+    check(
+      'opportunity published to campus',
+      pubRes.status === 200 && nested(pubRes.body, ['status']) === 'open',
+      JSON.stringify(pubRes.body),
+    );
 
     // M5-01: Intent Creation & Management
     const intentRes = await client1.call('/api/v1/intents', {
@@ -240,11 +255,19 @@ async function main(): Promise<void> {
       },
     });
     const intentId = String(nested(intentRes.body, ['id']));
-    check('M5-01: intent created', intentRes.status === 201 && Boolean(intentId), JSON.stringify(intentRes.body));
+    check(
+      'M5-01: intent created',
+      intentRes.status === 201 && Boolean(intentId),
+      JSON.stringify(intentRes.body),
+    );
 
     const myIntentsRes = await client1.call('/api/v1/intents/me');
     const myIntents = (nested(myIntentsRes.body, ['data']) as Record<string, unknown>[]) ?? [];
-    check('M5-01: list my intents returns created intent', myIntents.some((i) => i.id === intentId), JSON.stringify(myIntentsRes.body));
+    check(
+      'M5-01: list my intents returns created intent',
+      myIntents.some((i) => i.id === intentId),
+      JSON.stringify(myIntentsRes.body),
+    );
 
     // M5-02: Matching Candidate Generation & Explainability
     const matchGenRes = await client1.call(`/api/v1/intents/${intentId}/matches/generate`, {
@@ -256,7 +279,11 @@ async function main(): Promise<void> {
     const matchesRes = await client1.call(`/api/v1/intents/${intentId}/matches`);
     const matches = (nested(matchesRes.body, ['data']) as Record<string, unknown>[]) ?? [];
     const matchedOpp = matches.find((m) => m.opportunityId === oppId);
-    check('M5-02: matching candidates include published opportunity', Boolean(matchedOpp), JSON.stringify(matchesRes.body));
+    check(
+      'M5-02: matching candidates include published opportunity',
+      Boolean(matchedOpp),
+      JSON.stringify(matchesRes.body),
+    );
     check(
       'M5-02: matching candidate includes explainable score and reasons',
       Boolean(matchedOpp?.score !== undefined && Array.isArray(matchedOpp?.reasons)),
@@ -275,7 +302,11 @@ async function main(): Promise<void> {
       },
     });
     const previewId = String(nested(previewRes.body, ['previewId']));
-    check('M5-03: consent preview created with bounded scopes', previewRes.status === 201 && Boolean(previewId), JSON.stringify(previewRes.body));
+    check(
+      'M5-03: consent preview created with bounded scopes',
+      previewRes.status === 201 && Boolean(previewId),
+      JSON.stringify(previewRes.body),
+    );
 
     // M5-04: Formal Referral Creation & Two-way Decision
     const referralRes = await client1.call('/api/v1/referrals', {
@@ -286,16 +317,29 @@ async function main(): Promise<void> {
       },
     });
     const referralId = String(nested(referralRes.body, ['id']));
-    check('M5-04: referral created with status sent', referralRes.status === 201 && nested(referralRes.body, ['status']) === 'sent', JSON.stringify(referralRes.body));
+    check(
+      'M5-04: referral created with status sent',
+      referralRes.status === 201 && nested(referralRes.body, ['status']) === 'sent',
+      JSON.stringify(referralRes.body),
+    );
 
     // Organization PI sees the referral
     const orgReferralsRes = await client2.call(`/api/v1/organizations/${orgId}/referrals`);
-    const orgReferrals = (nested(orgReferralsRes.body, ['data']) as Record<string, unknown>[]) ?? [];
-    check('M5-04: organization PI lists received referral', orgReferrals.some((r) => r.id === referralId), JSON.stringify(orgReferralsRes.body));
+    const orgReferrals =
+      (nested(orgReferralsRes.body, ['data']) as Record<string, unknown>[]) ?? [];
+    check(
+      'M5-04: organization PI lists received referral',
+      orgReferrals.some((r) => r.id === referralId),
+      JSON.stringify(orgReferralsRes.body),
+    );
 
     // Organization PI reads authorized shared snapshot
     const snapshotRes = await client2.call(`/api/v1/referrals/${referralId}/shared-snapshot`);
-    check('M5-04: organization reads authorized shared snapshot', snapshotRes.status === 200 && Boolean(nested(snapshotRes.body, ['snapshot'])), JSON.stringify(snapshotRes.body));
+    check(
+      'M5-04: organization reads authorized shared snapshot',
+      snapshotRes.status === 200 && Boolean(nested(snapshotRes.body, ['snapshot'])),
+      JSON.stringify(snapshotRes.body),
+    );
 
     // Organization PI decides: accept referral
     const acceptRes = await client2.call(`/api/v1/referrals/${referralId}/decisions`, {
@@ -306,7 +350,11 @@ async function main(): Promise<void> {
         expectedVersion: 1,
       },
     });
-    check('M5-04: organization accepts referral', acceptRes.status === 200 && nested(acceptRes.body, ['status']) === 'accepted', JSON.stringify(acceptRes.body));
+    check(
+      'M5-04: organization accepts referral',
+      acceptRes.status === 200 && nested(acceptRes.body, ['status']) === 'accepted',
+      JSON.stringify(acceptRes.body),
+    );
 
     // M5-05: Atomic Relationship Establishment
     const relRes = await client2.call('/api/v1/relationships', {
@@ -316,12 +364,20 @@ async function main(): Promise<void> {
       },
     });
     const relationshipId = String(nested(relRes.body, ['id']));
-    check('M5-05: relationship established atomically with active status', relRes.status === 201 && nested(relRes.body, ['status']) === 'active', JSON.stringify(relRes.body));
+    check(
+      'M5-05: relationship established atomically with active status',
+      relRes.status === 201 && nested(relRes.body, ['status']) === 'active',
+      JSON.stringify(relRes.body),
+    );
 
     // M5-06: Relationship Space & Authorized Context Retrieval
     const contextRes = await client2.call(`/api/v1/relationships/${relationshipId}/context`);
     const sharedContext = nested(contextRes.body, ['sharedContext']) as Record<string, unknown>;
-    check('M5-06: shared context accessible by organization lead', contextRes.status === 200 && Object.keys(sharedContext).length > 0, JSON.stringify(contextRes.body));
+    check(
+      'M5-06: shared context accessible by organization lead',
+      contextRes.status === 200 && Object.keys(sharedContext).length > 0,
+      JSON.stringify(contextRes.body),
+    );
 
     // M5-07: Consent Revocation Real-Time Propagation & Instant Downstream Blocking
     // Look up the relationship_context consent grant for this referral
@@ -335,7 +391,11 @@ async function main(): Promise<void> {
         ),
     );
     const grantId = grantDbRes.rows[0]?.id;
-    check('M5-07: relationship_context consent grant exists', Boolean(grantId), `referralId: ${referralId}`);
+    check(
+      'M5-07: relationship_context consent grant exists',
+      Boolean(grantId),
+      `referralId: ${referralId}`,
+    );
 
     if (grantId) {
       // User One revokes consent
@@ -345,11 +405,19 @@ async function main(): Promise<void> {
           reason: '科研实习项目调整，自主撤回资料授权',
         },
       });
-      check('M5-07: user one revokes consent grant', revokeRes.status === 200 && nested(revokeRes.body, ['revoked']) === true);
+      check(
+        'M5-07: user one revokes consent grant',
+        revokeRes.status === 200 && nested(revokeRes.body, ['revoked']) === true,
+      );
 
       // Verify immediate downstream blocking for organization lead
-      const blockedContextRes = await client2.call(`/api/v1/relationships/${relationshipId}/context`);
-      const blockedContext = nested(blockedContextRes.body, ['sharedContext']) as Record<string, unknown>;
+      const blockedContextRes = await client2.call(
+        `/api/v1/relationships/${relationshipId}/context`,
+      );
+      const blockedContext = nested(blockedContextRes.body, ['sharedContext']) as Record<
+        string,
+        unknown
+      >;
       check(
         'M5-07: revocation instantly blocks downstream relationship shared context',
         blockedContextRes.status === 200 && Object.keys(blockedContext ?? {}).length === 0,
@@ -361,8 +429,10 @@ async function main(): Promise<void> {
       method: 'POST',
       body: { reason: '课题合作顺利结题' },
     });
-    check('M5-05/06: participant closes relationship', closeRes.status === 200 && nested(closeRes.body, ['status']) === 'closed');
-
+    check(
+      'M5-05/06: participant closes relationship',
+      closeRes.status === 200 && nested(closeRes.body, ['status']) === 'closed',
+    );
   } finally {
     await app.close();
     await pool.end();

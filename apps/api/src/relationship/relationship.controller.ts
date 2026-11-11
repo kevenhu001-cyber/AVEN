@@ -72,11 +72,7 @@ export class RelationshipController {
 
   @Post('relationships/:id/close')
   @HttpCode(200)
-  async close(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async close(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(CloseRelationshipRequestSchema, body ?? {});
     return RelationshipSchema.parse(await this.relationships.close(auth, parseId(id), input));
   }

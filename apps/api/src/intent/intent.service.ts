@@ -149,10 +149,7 @@ export class IntentService implements OnModuleDestroy {
 
   async get(auth: AuthContext, intentId: string): Promise<Intent> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<IntentRow>(
-        'SELECT * FROM app.get_intent($1)',
-        [intentId],
-      );
+      const res = await client.query<IntentRow>('SELECT * FROM app.get_intent($1)', [intentId]);
       const row = res.rows[0];
       if (!row) throw new NotFoundException('Intent not found.');
       return mapIntent(row);
@@ -161,9 +158,7 @@ export class IntentService implements OnModuleDestroy {
 
   async listMine(auth: AuthContext): Promise<Intent[]> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<IntentRow>(
-        'SELECT * FROM app.list_my_intents()',
-      );
+      const res = await client.query<IntentRow>('SELECT * FROM app.list_my_intents()');
       return res.rows.map(mapIntent);
     });
   }
@@ -200,7 +195,11 @@ export class IntentService implements OnModuleDestroy {
     });
   }
 
-  async setStatus(auth: AuthContext, intentId: string, input: SetIntentStatusRequest): Promise<Intent> {
+  async setStatus(
+    auth: AuthContext,
+    intentId: string,
+    input: SetIntentStatusRequest,
+  ): Promise<Intent> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       try {
         const res = await client.query<IntentRow>(
@@ -219,7 +218,11 @@ export class IntentService implements OnModuleDestroy {
     });
   }
 
-  async generateMatches(auth: AuthContext, intentId: string, input: GenerateMatchesRequest): Promise<number> {
+  async generateMatches(
+    auth: AuthContext,
+    intentId: string,
+    input: GenerateMatchesRequest,
+  ): Promise<number> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       const res = await client.query<{ generate_match_candidates: number }>(
         'SELECT app.generate_match_candidates($1, $2)',

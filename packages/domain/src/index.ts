@@ -19,4 +19,3 @@ export {
   type TimeIntersectionOptions,
   type TimeRange,
 } from './time-intersection.js';
-

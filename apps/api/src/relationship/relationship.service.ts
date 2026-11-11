@@ -41,8 +41,12 @@ function mapRelationship(row: RelationshipRow): Relationship {
     closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null,
     closedBy: row.closed_by ?? null,
     version: row.version ?? 1,
-    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date(row.established_at).toISOString(),
-    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date(row.established_at).toISOString(),
+    createdAt: row.created_at
+      ? new Date(row.created_at).toISOString()
+      : new Date(row.established_at).toISOString(),
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at).toISOString()
+      : new Date(row.established_at).toISOString(),
   });
 }
 
@@ -69,26 +73,29 @@ export class RelationshipService implements OnModuleDestroy {
   }
 
   async establish(auth: AuthContext, input: EstablishRelationshipRequest): Promise<Relationship> {
-    const relationshipId = await withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<{ relationship_id?: string; id?: string }>(
-        'SELECT * FROM app.establish_relationship($1)',
-        [input.referralId],
-      );
-      const row = res.rows[0];
-      if (!row) throw new NotFoundException('Failed to establish relationship.');
-      const id = row.relationship_id ?? row.id;
-      if (!id) throw new NotFoundException('Failed to establish relationship.');
-      return id;
-    });
+    const relationshipId = await withRequestContext(
+      this.getPool(),
+      this.context(auth),
+      async (client) => {
+        const res = await client.query<{ relationship_id?: string; id?: string }>(
+          'SELECT * FROM app.establish_relationship($1)',
+          [input.referralId],
+        );
+        const row = res.rows[0];
+        if (!row) throw new NotFoundException('Failed to establish relationship.');
+        const id = row.relationship_id ?? row.id;
+        if (!id) throw new NotFoundException('Failed to establish relationship.');
+        return id;
+      },
+    );
     return this.get(auth, relationshipId);
   }
 
   async get(auth: AuthContext, relationshipId: string): Promise<Relationship> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<RelationshipRow>(
-        'SELECT * FROM app.get_relationship($1)',
-        [relationshipId],
-      );
+      const res = await client.query<RelationshipRow>('SELECT * FROM app.get_relationship($1)', [
+        relationshipId,
+      ]);
       const row = res.rows[0];
       if (!row) throw new NotFoundException('Relationship not found.');
       return mapRelationship(row);
@@ -97,9 +104,7 @@ export class RelationshipService implements OnModuleDestroy {
 
   async listMine(auth: AuthContext): Promise<Relationship[]> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<RelationshipRow>(
-        'SELECT * FROM app.list_my_relationships()',
-      );
+      const res = await client.query<RelationshipRow>('SELECT * FROM app.list_my_relationships()');
       return res.rows.map(mapRelationship);
     });
   }
@@ -121,7 +126,10 @@ export class RelationshipService implements OnModuleDestroy {
     });
   }
 
-  async getSharedContext(auth: AuthContext, relationshipId: string): Promise<Record<string, unknown>> {
+  async getSharedContext(
+    auth: AuthContext,
+    relationshipId: string,
+  ): Promise<Record<string, unknown>> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       const res = await client.query<{ get_relationship_shared_context: Record<string, unknown> }>(
         'SELECT app.get_relationship_shared_context($1)',
@@ -131,12 +139,16 @@ export class RelationshipService implements OnModuleDestroy {
     });
   }
 
-  async close(auth: AuthContext, relationshipId: string, input: CloseRelationshipRequest): Promise<Relationship> {
+  async close(
+    auth: AuthContext,
+    relationshipId: string,
+    input: CloseRelationshipRequest,
+  ): Promise<Relationship> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      await client.query(
-        'SELECT app.close_relationship($1, $2)',
-        [relationshipId, input.reason ?? 'Closed by participant'],
-      );
+      await client.query('SELECT app.close_relationship($1, $2)', [
+        relationshipId,
+        input.reason ?? 'Closed by participant',
+      ]);
     });
     return this.get(auth, relationshipId);
   }

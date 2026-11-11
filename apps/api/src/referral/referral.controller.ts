@@ -83,22 +83,14 @@ export class ReferralController {
 
   @Post('referrals/:id/decisions')
   @HttpCode(200)
-  async decide(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async decide(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(ReferralDecisionRequestSchema, body);
     return ReferralSchema.parse(await this.referrals.decide(auth, parseId(id), input));
   }
 
   @Post('referrals/:id/withdraw')
   @HttpCode(200)
-  async withdraw(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async withdraw(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(WithdrawReferralRequestSchema, body ?? {});
     return ReferralSchema.parse(await this.referrals.withdraw(auth, parseId(id), input));
   }

@@ -69,22 +69,14 @@ export class EventController {
 
   @Post(':id/responses')
   @HttpCode(200)
-  async respond(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async respond(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(RespondEventParticipantRequestSchema, body);
     return EventSchema.parse(await this.events.respond(auth, parseId(id), input));
   }
 
   @Post(':id/cancel')
   @HttpCode(200)
-  async cancel(
-    @CurrentAuth() auth: AuthContext,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async cancel(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
     const input = parse(CancelEventRequestSchema, body ?? {});
     return EventSchema.parse(await this.events.cancel(auth, parseId(id), input));
   }

@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { OnModuleDestroy } from '@nestjs/common';
 import {
   ConsentPreviewSchema,
@@ -103,8 +108,16 @@ function mapReferral(row: ReferralRow, decisions?: ReferralDecision[]): Referral
     orgDecisionReason: row.org_decision_reason ?? null,
     sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : undefined,
     expiresAt: new Date(row.expires_at).toISOString(),
-    createdAt: row.created_at ? new Date(row.created_at).toISOString() : (row.sent_at ? new Date(row.sent_at).toISOString() : undefined),
-    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : (row.sent_at ? new Date(row.sent_at).toISOString() : undefined),
+    createdAt: row.created_at
+      ? new Date(row.created_at).toISOString()
+      : row.sent_at
+        ? new Date(row.sent_at).toISOString()
+        : undefined,
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at).toISOString()
+      : row.sent_at
+        ? new Date(row.sent_at).toISOString()
+        : undefined,
   });
 }
 
@@ -130,7 +143,10 @@ export class ReferralService implements OnModuleDestroy {
     }
   }
 
-  async createPreview(auth: AuthContext, input: CreateConsentPreviewRequest): Promise<ConsentPreview> {
+  async createPreview(
+    auth: AuthContext,
+    input: CreateConsentPreviewRequest,
+  ): Promise<ConsentPreview> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       const res = await client.query<ConsentPreviewRow>(
         'SELECT * FROM app.create_consent_preview($1, $2, $3::jsonb)',
@@ -163,10 +179,9 @@ export class ReferralService implements OnModuleDestroy {
   async get(auth: AuthContext, referralId: string): Promise<Referral> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       try {
-        const res = await client.query<ReferralRow>(
-          'SELECT * FROM app.get_referral($1)',
-          [referralId],
-        );
+        const res = await client.query<ReferralRow>('SELECT * FROM app.get_referral($1)', [
+          referralId,
+        ]);
         const row = res.rows[0];
         if (!row) throw new NotFoundException('Referral not found.');
 
@@ -187,10 +202,10 @@ export class ReferralService implements OnModuleDestroy {
 
   async listMine(auth: AuthContext): Promise<Referral[]> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      const res = await client.query<ReferralRow>(
-        'SELECT * FROM app.list_my_referrals()',
+      const res = await client.query<ReferralRow>('SELECT * FROM app.list_my_referrals()');
+      return res.rows.map((r) =>
+        mapReferral({ ...r, applicant_user_id: r.applicant_user_id ?? auth.userId }),
       );
-      return res.rows.map((r) => mapReferral({ ...r, applicant_user_id: r.applicant_user_id ?? auth.userId }));
     });
   }
 
@@ -201,7 +216,9 @@ export class ReferralService implements OnModuleDestroy {
           'SELECT * FROM app.list_organization_referrals($1)',
           [organizationId],
         );
-        return res.rows.map((r) => mapReferral({ ...r, organization_id: r.organization_id ?? organizationId }));
+        return res.rows.map((r) =>
+          mapReferral({ ...r, organization_id: r.organization_id ?? organizationId }),
+        );
       } catch (err) {
         if (err instanceof Error && 'code' in err && (err as { code: string }).code === '42501') {
           throw new ForbiddenException('Not an organization member.');
@@ -221,7 +238,11 @@ export class ReferralService implements OnModuleDestroy {
     });
   }
 
-  async decide(auth: AuthContext, referralId: string, input: ReferralDecisionRequest): Promise<Referral> {
+  async decide(
+    auth: AuthContext,
+    referralId: string,
+    input: ReferralDecisionRequest,
+  ): Promise<Referral> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
       try {
         await client.query(
@@ -238,12 +259,16 @@ export class ReferralService implements OnModuleDestroy {
     return this.get(auth, referralId);
   }
 
-  async withdraw(auth: AuthContext, referralId: string, input: WithdrawReferralRequest): Promise<Referral> {
+  async withdraw(
+    auth: AuthContext,
+    referralId: string,
+    input: WithdrawReferralRequest,
+  ): Promise<Referral> {
     await withRequestContext(this.getPool(), this.context(auth), async (client) => {
-      await client.query(
-        'SELECT * FROM app.withdraw_referral($1, $2)',
-        [referralId, input.reason ?? 'Withdrawn by applicant'],
-      );
+      await client.query('SELECT * FROM app.withdraw_referral($1, $2)', [
+        referralId,
+        input.reason ?? 'Withdrawn by applicant',
+      ]);
     });
     return this.get(auth, referralId);
   }

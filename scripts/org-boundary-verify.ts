@@ -198,7 +198,11 @@ async function main(): Promise<void> {
 
     const _ownerUserId = await ownerClient.register(ownerEmail, 'Lab Owner', 'Password123!');
     const memberUserId = await memberClient.register(memberEmail, 'Lab Member', 'Password123!');
-    const _strangerUserId = await strangerClient.register(strangerEmail, 'Stranger', 'Password123!');
+    const _strangerUserId = await strangerClient.register(
+      strangerEmail,
+      'Stranger',
+      'Password123!',
+    );
 
     // User 1 creates Organization A
     const orgARes = await ownerClient.call('/api/v1/organizations', {

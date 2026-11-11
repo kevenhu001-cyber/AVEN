@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import {
-  CreateOpportunityDraftRequestSchema,
-  TOOL_PERMISSIONS,
-} from '@aven/contracts';
+import { CreateOpportunityDraftRequestSchema, TOOL_PERMISSIONS } from '@aven/contracts';
 import type { ToolActor, ToolDefinition } from '../tools.js';
 
 export const OpportunityDraftCreateInputSchema = CreateOpportunityDraftRequestSchema;
