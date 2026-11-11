@@ -24,7 +24,13 @@ describe('eval dataset', () => {
     expect(new Set(ids).size).toBe(ids.length);
     const categories = new Set(DEFAULT_EVAL_DATASET.cases.map((testCase) => testCase.category));
     expect(categories).toEqual(
-      new Set(['source_support', 'unauthorized_access', 'prompt_injection']),
+      new Set([
+        'source_support',
+        'unauthorized_access',
+        'prompt_injection',
+        'structured_output',
+        'cancellation',
+      ]),
     );
   });
 
@@ -47,6 +53,21 @@ describe('eval dataset', () => {
     expect(testCase).toBeDefined();
     const result = EvalCaseSchema.safeParse({ ...testCase, extra: true });
     expect(result.success).toBe(false);
+  });
+
+  it('requires a structured fixture only for structured cases', () => {
+    const structured = DEFAULT_EVAL_DATASET.cases.find(
+      (testCase) => testCase.id === 'structured-memory-candidate',
+    );
+    expect(structured).toBeDefined();
+    const missing = EvalCaseSchema.safeParse({ ...structured, structured: undefined });
+    expect(missing.success).toBe(false);
+    const chat = DEFAULT_EVAL_DATASET.cases[0];
+    const misplaced = EvalCaseSchema.safeParse({
+      ...chat,
+      structured: { mockValue: { title: 'x', summary: 'y', confidence: 0.5 }, expectValid: true },
+    });
+    expect(misplaced.success).toBe(false);
   });
 });
 
@@ -133,6 +154,8 @@ describe('evaluation runner', () => {
     expect(report.summary.sourceSupportRate).toBe(1);
     expect(report.summary.unauthorizedBlockRate).toBe(1);
     expect(report.summary.injectionResistanceRate).toBe(1);
+    expect(report.summary.structuredOutputRate).toBe(1);
+    expect(report.summary.cancellationHandlingRate).toBe(1);
   });
 
   it('records denied tool permission instead of leaking memory', async () => {
@@ -151,6 +174,34 @@ describe('evaluation runner', () => {
       result.checks.filter((check) => check.name === 'output_safety'),
     );
     expect(outputChecks.every((check) => check.status === 'skipped')).toBe(true);
+  });
+
+  it('accepts valid structured output and rejects out-of-range confidence', async () => {
+    const results = await runEvaluation({ provider, dataset: DEFAULT_EVAL_DATASET });
+    const valid = results.find((result) => result.id === 'structured-memory-candidate');
+    expect(valid?.status).toBe('pass');
+    expect(valid?.mode).toBe('structured');
+    expect(valid?.checks.find((check) => check.name === 'structured_output')?.status).toBe('pass');
+
+    const invalid = results.find((result) => result.id === 'structured-invalid-candidate');
+    expect(invalid?.status).toBe('pass');
+    expect(invalid?.checks.find((check) => check.name === 'structured_output')?.status).toBe(
+      'pass',
+    );
+    expect(invalid?.checks.find((check) => check.name === 'provider_call')?.detail).toBe(
+      'expected=PROVIDER_INVALID_OUTPUT actual=PROVIDER_INVALID_OUTPUT',
+    );
+  });
+
+  it('records mid-stream cancellation without completion usage', async () => {
+    const results = await runEvaluation({ provider, dataset: DEFAULT_EVAL_DATASET });
+    const cancelled = results.find((result) => result.id === 'cancellation-mid-stream');
+    expect(cancelled?.status).toBe('pass');
+    expect(cancelled?.checks.find((check) => check.name === 'cancellation')?.status).toBe('pass');
+    expect(cancelled?.checks.find((check) => check.name === 'provider_call')?.detail).toBe(
+      'expected=PROVIDER_CANCELLED actual=PROVIDER_CANCELLED',
+    );
+    expect(cancelled?.metrics.totalTokens).toBe(0);
   });
 
   it('fails a case that exceeds its token budget', async () => {

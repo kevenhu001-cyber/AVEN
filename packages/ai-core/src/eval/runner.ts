@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { TOOL_PERMISSIONS } from '@aven/contracts';
 import { AIError } from '../errors.js';
 import type { AIProvider, AIUsage } from '../provider.js';
@@ -12,6 +13,16 @@ import {
   PERSONAL_CONTEXT_CLOSE,
   PERSONAL_CONTEXT_OPEN,
 } from './pipeline.js';
+
+export const EvalMemoryCandidateSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120),
+    summary: z.string().trim().min(1).max(500),
+    confidence: z.number().min(0).max(1),
+  })
+  .strict();
+
+export type EvalMemoryCandidate = z.infer<typeof EvalMemoryCandidateSchema>;
 
 export type EvalCheckStatus = 'pass' | 'fail' | 'skipped';
 
@@ -31,6 +42,7 @@ export type EvalCaseMetrics = {
 export type EvalCaseResult = {
   id: string;
   category: EvalCase['category'];
+  mode: EvalCase['mode'];
   blocking: boolean;
   status: 'pass' | 'fail';
   checks: EvalCheck[];
@@ -113,19 +125,51 @@ async function runCase(testCase: EvalCase, options: EvalRunOptions): Promise<Eva
   let output = '';
   let usage: AIUsage | undefined;
   let providerError: string | undefined;
+  let deltas = 0;
+  let structuredValueValid = false;
+  const expectedErrorCode =
+    testCase.mode === 'cancellation'
+      ? 'PROVIDER_CANCELLED'
+      : testCase.mode === 'structured' &&
+          testCase.structured !== undefined &&
+          !testCase.structured.expectValid
+        ? 'PROVIDER_INVALID_OUTPUT'
+        : undefined;
+
   try {
-    for await (const event of options.provider.streamText({
-      messages,
-      purpose: 'general',
-    })) {
-      if (event.type === 'text_delta') {
-        output += event.text;
-      } else if (event.type === 'done') {
-        usage = event.usage;
-      } else if (event.type === 'error') {
-        throw new AIError(event.error.code, event.error.message, {
-          retryable: event.error.retryable,
-        });
+    if (testCase.mode === 'structured') {
+      const fixture = testCase.structured;
+      if (!fixture) {
+        throw new AIError('PROVIDER_INVALID_REQUEST', 'Structured fixture is missing.');
+      }
+      const result = await options.provider.generateObject({
+        messages,
+        schema: EvalMemoryCandidateSchema,
+        schemaName: 'memory_candidate',
+        purpose: 'memory_organization',
+        mockValue: fixture.mockValue,
+      });
+      structuredValueValid = EvalMemoryCandidateSchema.safeParse(result.value).success;
+      output = JSON.stringify(result.value);
+      usage = result.usage;
+    } else {
+      const controller = testCase.mode === 'cancellation' ? new AbortController() : undefined;
+      for await (const event of options.provider.streamText({
+        messages,
+        purpose: 'general',
+        ...(controller ? { signal: controller.signal } : {}),
+      })) {
+        if (event.type === 'text_delta') {
+          output += event.text;
+          deltas += 1;
+          if (controller && deltas === 1) controller.abort();
+        } else if (event.type === 'done') {
+          usage = event.usage;
+        } else if (event.type === 'error') {
+          throw new AIError(event.error.code, event.error.message, {
+            retryable: event.error.retryable,
+          });
+        }
       }
     }
   } catch (error) {
@@ -140,13 +184,44 @@ async function runCase(testCase: EvalCase, options: EvalRunOptions): Promise<Eva
   };
 
   const checks: EvalCheck[] = [];
+  const providerCallOk =
+    expectedErrorCode === undefined
+      ? providerError === undefined
+      : providerError === expectedErrorCode;
   checks.push(
     check(
       'provider_call',
-      providerError === undefined,
-      providerError === undefined ? 'completed' : `error=${providerError}`,
+      providerCallOk,
+      expectedErrorCode === undefined
+        ? providerError === undefined
+          ? 'completed'
+          : `error=${providerError}`
+        : `expected=${expectedErrorCode} actual=${providerError ?? 'none'}`,
     ),
   );
+  if (testCase.mode === 'structured' && testCase.structured !== undefined) {
+    const valid = testCase.structured.expectValid
+      ? providerError === undefined && structuredValueValid
+      : providerError === 'PROVIDER_INVALID_OUTPUT';
+    checks.push(
+      check(
+        'structured_output',
+        valid,
+        testCase.structured.expectValid
+          ? `schema_valid=${structuredValueValid}`
+          : `expected_error=${providerError ?? 'none'}`,
+      ),
+    );
+  }
+  if (testCase.mode === 'cancellation') {
+    checks.push(
+      check(
+        'cancellation',
+        providerError === 'PROVIDER_CANCELLED' && usage === undefined && deltas > 0,
+        `error=${providerError ?? 'none'} deltas=${deltas} usage=${usage === undefined ? 'none' : 'reported'}`,
+      ),
+    );
+  }
   const retrievalOk =
     idsEqual(testCase.expected.boundSourceIds, boundSourceIds) &&
     (testCase.expected.retrievalEmpty ? boundSourceIds.length === 0 : true);
@@ -189,7 +264,13 @@ async function runCase(testCase: EvalCase, options: EvalRunOptions): Promise<Eva
     ),
   );
 
-  if (providerError !== undefined) {
+  if (testCase.mode === 'structured') {
+    checks.push({
+      name: 'output_safety',
+      status: 'skipped',
+      detail: 'structured_output_has_no_free_text',
+    });
+  } else if (providerError !== undefined) {
     checks.push({
       name: 'output_safety',
       status: 'skipped',
@@ -250,6 +331,7 @@ async function runCase(testCase: EvalCase, options: EvalRunOptions): Promise<Eva
   return {
     id: testCase.id,
     category: testCase.category,
+    mode: testCase.mode,
     blocking: testCase.blocking,
     status: checks.some((item) => item.status === 'fail') ? 'fail' : 'pass',
     checks,

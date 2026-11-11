@@ -4,9 +4,13 @@ export {
   EvalCategorySchema,
   EvalDatasetSchema,
   EvalDatasetVersion,
+  EvalModeSchema,
+  EvalStructuredOutputSchema,
   type EvalCase,
   type EvalCategory,
   type EvalDataset,
+  type EvalMode,
+  type EvalStructuredOutput,
 } from './dataset.js';
 export {
   PERSONAL_CONTEXT_CLOSE,
@@ -24,11 +28,13 @@ export {
   type PersonalMemoryCandidate,
 } from './pipeline.js';
 export {
+  EvalMemoryCandidateSchema,
   runEvaluation,
   type EvalCaseMetrics,
   type EvalCaseResult,
   type EvalCheck,
   type EvalCheckStatus,
+  type EvalMemoryCandidate,
   type EvalRunOptions,
 } from './runner.js';
 export {
