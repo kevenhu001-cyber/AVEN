@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('eleven migrations are recorded', migrations.rows[0]?.count === '11');
+    check('twelve migrations are recorded', migrations.rows[0]?.count === '12');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -311,13 +311,15 @@ async function main(): Promise<void> {
        WHERE n.nspname = 'app'
          AND p.proname IN (
            'create_memory_item','update_memory_item','delete_memory_item',
-           'list_my_memory_items','get_memory_item','list_memory_sources'
+           'list_my_memory_items','get_memory_item','list_memory_sources',
+           'create_memory_candidate','confirm_memory_item','reject_memory_item',
+           'list_memory_candidates','list_memory_for_use'
          )
          AND p.proowner = 'aven_function_owner'::regrole`,
     );
     check(
-      'six memory functions are owned by the function owner',
-      memoryFunctions.rows[0]?.count === '6',
+      'eleven memory functions are owned by the function owner',
+      memoryFunctions.rows[0]?.count === '11',
     );
     check(
       'app cannot create memory without context',
@@ -385,6 +387,171 @@ async function main(): Promise<void> {
         updateFailed = true;
       }
       check('another user cannot update the memory', updateFailed);
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    check(
+      'app cannot create a memory candidate without context',
+      await appError(
+        "SELECT app.create_memory_candidate('skill', 'probe', 'probe', null, 'normal', 'agent_extraction', null, 'probe', 'probe')",
+      ),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const createdCandidate = await app.query<{ id: string }>(
+        "SELECT app.create_memory_candidate('interest', '具身智能', '关注具身智能', null, 'normal', 'conversation', null, 'conversation-v1', '兴趣：具身智能') AS id",
+      );
+      const candidateId = createdCandidate.rows[0]?.id;
+      check('memory candidate creation returns an id', Boolean(candidateId));
+      const pendingDetail = await app.query(`SELECT * FROM app.get_memory_item('${candidateId}')`);
+      check(
+        'memory candidate starts pending with an owner-only empty policy',
+        pendingDetail.rows.length === 1 &&
+          pendingDetail.rows[0]?.status === 'pending_confirmation' &&
+          pendingDetail.rows[0]?.display_audience === 'owner' &&
+          pendingDetail.rows[0]?.discoverable === false &&
+          Array.isArray(pendingDetail.rows[0]?.allowed_uses) &&
+          (pendingDetail.rows[0]?.allowed_uses as unknown[]).length === 0,
+      );
+      const pendingList = await app.query(
+        'SELECT * FROM app.list_my_memory_items(20, null, null, null)',
+      );
+      check(
+        'pending candidates are excluded from the confirmed memory list',
+        !pendingList.rows.some((row) => row.id === candidateId),
+      );
+      const candidateList = await app.query(
+        'SELECT * FROM app.list_memory_candidates(20, null, null)',
+      );
+      check(
+        'candidate list returns pending items with provenance',
+        candidateList.rows.length === 1 &&
+          candidateList.rows[0]?.id === candidateId &&
+          candidateList.rows[0]?.source_type === 'conversation' &&
+          candidateList.rows[0]?.source_excerpt === '兴趣：具身智能',
+      );
+      const pendingUsable = await app.query(
+        "SELECT * FROM app.list_memory_for_use('self_ai', 20, null, null)",
+      );
+      check(
+        'pending candidates are excluded from the retrieval scope',
+        !pendingUsable.rows.some((row) => row.id === candidateId),
+      );
+      const confirmedCandidate = await app.query<{ version: number }>(
+        `SELECT app.confirm_memory_item(
+           '${candidateId}', 1, 'interest', '具身智能（已确认）', '关注具身智能与机器人学习',
+           null, 'normal', 'owner', false, ARRAY['self_ai']::public.context_use[], null, null
+         ) AS version`,
+      );
+      check(
+        'candidate confirmation increments the version',
+        confirmedCandidate.rows[0]?.version === 2,
+      );
+      const confirmedDetail = await app.query(
+        `SELECT * FROM app.get_memory_item('${candidateId}')`,
+      );
+      check(
+        'candidate confirmation sets confirmed status and uses',
+        confirmedDetail.rows[0]?.status === 'confirmed' &&
+          confirmedDetail.rows[0]?.title === '具身智能（已确认）' &&
+          (confirmedDetail.rows[0]?.allowed_uses as string[]).includes('self_ai'),
+      );
+      const usableAfterConfirm = await app.query(
+        "SELECT * FROM app.list_memory_for_use('self_ai', 20, null, null)",
+      );
+      check(
+        'confirmed memory with self_ai enters the retrieval scope',
+        usableAfterConfirm.rows.some((row) => row.id === candidateId),
+      );
+      const matchingAfterConfirm = await app.query(
+        "SELECT * FROM app.list_memory_for_use('matching', 20, null, null)",
+      );
+      check(
+        'confirmed memory without matching use stays out of matching scope',
+        !matchingAfterConfirm.rows.some((row) => row.id === candidateId),
+      );
+      const rejectedCandidate = await app.query<{ id: string }>(
+        "SELECT app.create_memory_candidate('skill', 'ROS 2', 'ROS 2 控制', null, 'normal', 'agent_extraction', null, 'mock_rules_v1', '技能：ROS 2') AS id",
+      );
+      const rejectedId = rejectedCandidate.rows[0]?.id;
+      const rejectedVersion = await app.query<{ version: number }>(
+        `SELECT app.reject_memory_item('${rejectedId}', 1) AS version`,
+      );
+      check('candidate rejection increments the version', rejectedVersion.rows[0]?.version === 2);
+      const rejectedDetail = await app.query(`SELECT * FROM app.get_memory_item('${rejectedId}')`);
+      check(
+        'candidate rejection clears uses and discoverability',
+        rejectedDetail.rows[0]?.status === 'rejected' &&
+          (rejectedDetail.rows[0]?.allowed_uses as unknown[]).length === 0 &&
+          rejectedDetail.rows[0]?.discoverable === false,
+      );
+      const rejectedUsable = await app.query(
+        "SELECT * FROM app.list_memory_for_use('self_ai', 20, null, null)",
+      );
+      check(
+        'rejected candidates stay out of the retrieval scope',
+        !rejectedUsable.rows.some((row) => row.id === rejectedId),
+      );
+      let rejectedUpdateFailed = false;
+      await app.query('SAVEPOINT rejected_update');
+      try {
+        await app.query(
+          `SELECT app.update_memory_item('${rejectedId}', 2, 'resurrect', 'resurrect', null, 'normal', 'owner', false, '{}', null, null)`,
+        );
+      } catch {
+        rejectedUpdateFailed = true;
+        await app.query('ROLLBACK TO SAVEPOINT rejected_update');
+      }
+      check('rejected candidates cannot be edited', rejectedUpdateFailed);
+      const noUsesCandidate = await app.query<{ id: string }>(
+        "SELECT app.create_memory_candidate('preference', '远程协作', '偏好远程协作', null, 'normal', 'agent_extraction', null, 'mock_rules_v1', '偏好：远程协作') AS id",
+      );
+      const noUsesId = noUsesCandidate.rows[0]?.id;
+      await app.query(
+        `SELECT app.confirm_memory_item(
+           '${noUsesId}', 1, 'preference', '远程协作', '偏好远程协作',
+           null, 'normal', 'owner', false, '{}', null, null
+         )`,
+      );
+      const noUsesUsable = await app.query(
+        "SELECT * FROM app.list_memory_for_use('self_ai', 20, null, null)",
+      );
+      check(
+        'confirmed memory without uses stays out of the retrieval scope',
+        !noUsesUsable.rows.some((row) => row.id === noUsesId),
+      );
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userTwo]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userTwo]);
+      let crossConfirmFailed = false;
+      await app.query('SAVEPOINT cross_confirm');
+      try {
+        await app.query(
+          `SELECT app.confirm_memory_item(
+             '${noUsesId}', 2, 'preference', 'hijack', 'hijack', null, 'normal',
+             'owner', false, ARRAY['self_ai']::public.context_use[], null, null
+           )`,
+        );
+      } catch {
+        crossConfirmFailed = true;
+        await app.query('ROLLBACK TO SAVEPOINT cross_confirm');
+      }
+      check('another user cannot confirm a candidate', crossConfirmFailed);
+      let crossRejectFailed = false;
+      await app.query('SAVEPOINT cross_reject');
+      try {
+        await app.query(`SELECT app.reject_memory_item('${noUsesId}', 2)`);
+      } catch {
+        crossRejectFailed = true;
+        await app.query('ROLLBACK TO SAVEPOINT cross_reject');
+      }
+      check('another user cannot reject a candidate', crossRejectFailed);
+      const otherCandidateList = await app.query(
+        'SELECT * FROM app.list_memory_candidates(20, null, null)',
+      );
+      check('another user sees no candidates', otherCandidateList.rows.length === 0);
     } finally {
       await app.query('ROLLBACK');
     }

@@ -13,12 +13,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ConfirmMemoryRequestSchema,
+  ContextUseSchema,
   CreateMemoryRequestSchema,
+  ExtractMemoryRequestSchema,
+  ExtractMemoryResponseSchema,
+  MemoryCandidateListResponseSchema,
   MemoryDetailSchema,
   MemoryKindSchema,
   MemoryListResponseSchema,
+  RejectMemoryRequestSchema,
   RequestIdSchema,
   UpdateMemoryRequestSchema,
+  type ContextUse,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
@@ -39,6 +46,12 @@ function parseLimit(value: string | undefined): number {
     throw new UnprocessableEntityException('Invalid limit.');
   }
   return limit;
+}
+
+function parseUse(value: string | undefined): ContextUse {
+  const parsed = ContextUseSchema.safeParse(value);
+  if (!parsed.success) throw new UnprocessableEntityException('Invalid memory use.');
+  return parsed.data;
 }
 
 @Controller('api/v1/memories')
@@ -66,11 +79,61 @@ export class MemoryController {
     );
   }
 
+  @Get('candidates')
+  async listCandidates(
+    @CurrentAuth() auth: AuthContext,
+    @Query('limit') limit: string | undefined,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    return MemoryCandidateListResponseSchema.parse(
+      await this.memories.listCandidates(auth, {
+        limit: parseLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      }),
+    );
+  }
+
+  @Get('usable')
+  async listUsable(
+    @CurrentAuth() auth: AuthContext,
+    @Query('use') use: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    return MemoryListResponseSchema.parse(
+      await this.memories.listUsable(auth, parseUse(use), {
+        limit: parseLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      }),
+    );
+  }
+
   @Post()
   @HttpCode(201)
   async create(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
     const input = parse(CreateMemoryRequestSchema, body);
     return MemoryDetailSchema.parse(await this.memories.create(auth, input));
+  }
+
+  @Post('extract')
+  @HttpCode(201)
+  async extract(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    const input = parse(ExtractMemoryRequestSchema, body);
+    return ExtractMemoryResponseSchema.parse(await this.memories.extract(auth, input));
+  }
+
+  @Post(':id/confirm')
+  @HttpCode(200)
+  async confirm(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
+    const input = parse(ConfirmMemoryRequestSchema, body);
+    return MemoryDetailSchema.parse(await this.memories.confirm(auth, parseId(id), input));
+  }
+
+  @Post(':id/reject')
+  @HttpCode(200)
+  async reject(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
+    const input = parse(RejectMemoryRequestSchema, body);
+    return MemoryDetailSchema.parse(await this.memories.reject(auth, parseId(id), input));
   }
 
   @Get(':id')

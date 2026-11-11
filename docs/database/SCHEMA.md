@@ -357,9 +357,12 @@ erDiagram
 - `chk_memory_content`：`length(trim(content)) > 0`。
 - `chk_memory_validity`：`valid_until IS NULL OR valid_from IS NULL OR valid_until > valid_from`。
 - `idx_memory_owner_status`：`(owner_principal_id, status)`。
+- `uq_memory_pending_candidate`：唯一部分索引 `(owner_principal_id, kind, title, content) WHERE status='pending_confirmation'`，使重复提取返回同一候选。
 - 个人记忆仅本人直接读写；组织成员读取 confirmed 内容，owner/admin 另可读本组织待确认候选并确认/写入；组织上下文不能读取成员的个人记忆。
 - `idx_memory_valid_until`：部分索引 `WHERE status='confirmed' AND valid_until IS NOT NULL`。
 - GIN：`structured_value`（后续按查询需要）。
+- 状态机：`pending_confirmation --confirm--> confirmed`、`pending_confirmation --reject--> rejected`、任一非删除状态 `--delete--> deleted`；`rejected`/`expired` 不可编辑。
+- 检索门：`app.list_memory_for_use(use)` 只返回 `confirmed`、未删除、未过期且 `context_field_policies.allowed_uses` 包含该用途的记忆；候选、拒绝、过期与空用途不进入检索范围。
 
 ### 6.1.1 `context_field_policies`
 

@@ -502,6 +502,62 @@ export const MemoryListResponseSchema = z
   })
   .strict();
 
+export const MemoryCandidateSchema = MemoryItemSchema.extend({
+  source: MemorySourceSchema.nullable(),
+}).strict();
+
+export const MemoryCandidateListResponseSchema = z
+  .object({
+    data: z.array(MemoryCandidateSchema),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
+
+export const ExtractMemorySourceTypeSchema = z.enum([
+  'conversation',
+  'file',
+  'import',
+  'agent_extraction',
+]);
+
+export const ExtractMemoryRequestSchema = z
+  .object({
+    text: z.string().trim().min(1).max(20000),
+    sourceType: ExtractMemorySourceTypeSchema.default('agent_extraction'),
+    sourceId: z.uuid().optional(),
+    sourceVersion: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
+export const ExtractMemoryResponseSchema = z
+  .object({
+    extractor: z.literal('mock_rules_v1'),
+    data: z.array(MemoryCandidateSchema),
+  })
+  .strict();
+
+export const ConfirmMemoryRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    kind: MemoryKindSchema.optional(),
+    title: z.string().trim().min(1).max(160).optional(),
+    content: z.string().trim().min(1).max(20000).optional(),
+    structuredValue: z.record(z.string(), z.unknown()).nullable().optional(),
+    sensitivity: SensitivitySchema.optional(),
+    displayAudience: DisplayAudienceSchema.optional(),
+    discoverable: z.boolean().optional(),
+    allowedUses: AllowedUsesSchema.optional(),
+    campusId: z.uuid().nullable().optional(),
+    validUntil: z.iso.datetime().nullable().optional(),
+  })
+  .strict();
+
+export const RejectMemoryRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+  })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -562,3 +618,10 @@ export type MemoryItem = z.infer<typeof MemoryItemSchema>;
 export type MemorySource = z.infer<typeof MemorySourceSchema>;
 export type MemoryDetail = z.infer<typeof MemoryDetailSchema>;
 export type MemoryListResponse = z.infer<typeof MemoryListResponseSchema>;
+export type MemoryCandidate = z.infer<typeof MemoryCandidateSchema>;
+export type MemoryCandidateListResponse = z.infer<typeof MemoryCandidateListResponseSchema>;
+export type ExtractMemorySourceType = z.infer<typeof ExtractMemorySourceTypeSchema>;
+export type ExtractMemoryRequest = z.infer<typeof ExtractMemoryRequestSchema>;
+export type ExtractMemoryResponse = z.infer<typeof ExtractMemoryResponseSchema>;
+export type ConfirmMemoryRequest = z.infer<typeof ConfirmMemoryRequestSchema>;
+export type RejectMemoryRequest = z.infer<typeof RejectMemoryRequestSchema>;

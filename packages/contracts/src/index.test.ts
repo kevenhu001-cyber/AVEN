@@ -3,8 +3,10 @@ import {
   ApiErrorResponseSchema,
   AuthResponseSchema,
   CampusMembershipSchema,
+  ConfirmMemoryRequestSchema,
   CreateMemoryRequestSchema,
   CreateOrganizationRequestSchema,
+  ExtractMemoryRequestSchema,
   InviteOrganizationMemberRequestSchema,
   LivenessResponseSchema,
   LoginRequestSchema,
@@ -13,6 +15,7 @@ import {
   PasswordSchema,
   ReadinessResponseSchema,
   RegisterRequestSchema,
+  RejectMemoryRequestSchema,
   UpdateMemoryRequestSchema,
   UpdateProfileRequestSchema,
 } from './index';
@@ -252,5 +255,23 @@ describe('public engineering contracts', () => {
         sourceCount: 1,
       }).success,
     ).toBe(true);
+  });
+  it('validates memory extraction and review requests', () => {
+    expect(ExtractMemoryRequestSchema.parse({ text: '兴趣：具身智能' })).toMatchObject({
+      sourceType: 'agent_extraction',
+    });
+    expect(
+      ExtractMemoryRequestSchema.safeParse({ text: '兴趣：具身智能', sourceType: 'user_input' })
+        .success,
+    ).toBe(false);
+    expect(ExtractMemoryRequestSchema.safeParse({ text: '' }).success).toBe(false);
+    expect(ConfirmMemoryRequestSchema.parse({ expectedVersion: 1 }).expectedVersion).toBe(1);
+    expect(
+      ConfirmMemoryRequestSchema.safeParse({
+        expectedVersion: 1,
+        allowedUses: ['self_ai', 'self_ai'],
+      }).success,
+    ).toBe(false);
+    expect(RejectMemoryRequestSchema.safeParse({ expectedVersion: 0 }).success).toBe(false);
   });
 });
