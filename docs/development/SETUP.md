@@ -62,6 +62,7 @@ corepack pnpm check:readiness
 corepack pnpm async:verify    # 会短暂停止 Redis
 corepack pnpm auth:verify     # 注册/登录/会话/验证/重置真实 HTTP 检查
 corepack pnpm profile:verify  # 资料更新/校园成员申请真实 HTTP 检查
+corepack pnpm organization:verify # 组织成员/邀请真实 HTTP 检查
 ```
 
 - `db:verify`：重建 `aven_test`，验证空库迁移、已有库升级、seed 幂等、RLS 与约束。
@@ -69,6 +70,7 @@ corepack pnpm profile:verify  # 资料更新/校园成员申请真实 HTTP 检�
 - `async:verify`：真实 Outbox/BullMQ 故障注入；会停止并重启 Redis，结束后恢复。
 - `auth:verify`：真实 API/PostgreSQL/Redis 认证流程；开发邮件写入 `.data/mail`，不写日志。
 - `profile:verify`：真实 API/PostgreSQL 资料更新与校园成员申请检查。
+- `organization:verify`：真实 API/PostgreSQL 组织创建、邀请/接受、角色与离开检查。
 - `test:e2e` 的测试服务器故意使用不可用依赖，验证就绪失败不会被渲染为成功。
 
 ## 故障处理

@@ -7,7 +7,7 @@ export type MailMessage = {
   to: string;
   subject: string;
   text: string;
-  kind: 'verify_email' | 'reset_password';
+  kind: 'verify_email' | 'reset_password' | 'invite_organization';
 };
 
 export interface Mailer {

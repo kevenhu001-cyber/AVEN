@@ -49,10 +49,31 @@ export function formatException(
     '57P02',
     '57P03',
   ]);
+  const databaseErrors: Record<string, { status: number; code: ApiErrorCode; message: string }> = {
+    '28000': { status: 401, code: 'UNAUTHENTICATED', message: 'Authentication is required.' },
+    '42501': { status: 403, code: 'FORBIDDEN', message: 'Access is not allowed.' },
+    '23505': {
+      status: 409,
+      code: 'CONFLICT',
+      message: 'The request conflicts with the current state.',
+    },
+    '23514': {
+      status: 409,
+      code: 'CONFLICT',
+      message: 'The request conflicts with the current state.',
+    },
+    '22023': { status: 422, code: 'VALIDATION_ERROR', message: 'The request is invalid.' },
+    P0002: { status: 404, code: 'NOT_FOUND', message: 'Resource not found.' },
+  };
   if (error instanceof ServiceNotReadyException) {
     code = 'SERVICE_NOT_READY';
     message = 'Foundation dependencies and consumers are not configured.';
     retryable = error.retryable;
+  } else if (databaseErrors[errorCode]) {
+    const mapped = databaseErrors[errorCode];
+    status = mapped.status;
+    code = mapped.code;
+    message = mapped.message;
   } else if (dependencyCodes.has(errorCode)) {
     status = 503;
     code = 'SERVICE_NOT_READY';

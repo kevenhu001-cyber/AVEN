@@ -18,6 +18,7 @@
 | `packages/database/migrations/0006_outbox_available_at_grant.sql` | Worker 回退待处理事件所需的 `available_at` 更新权限 |
 | `packages/database/migrations/0007_authentication.sql` | 会话 CSRF 哈希、邮箱规范化约束、13 个认证函数、函数所有权、RLS 与角色授权 |
 | `packages/database/migrations/0008_profile_and_campus.sql` | 资料更新、校园列表、本人校园成员与 pending 申请函数、函数所有权与授权 |
+| `packages/database/migrations/0009_organizations.sql` | 组织创建、成员、邀请/接受、角色、移除/离开与最后 owner 保护函数 |
 | `packages/database/src/migrate.ts` | 事务化 runner、SHA-256 校验和、`--to` 升级路径、`--status` |
 | `packages/database/src/seed.ts` | 可重复执行的开发 seed |
 | `packages/database/src/verify.ts` | 表/约束/RLS/函数/seed 验证 |
@@ -30,8 +31,8 @@
 
 | 命令 | 结果 |
 |---|---|
-| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；52 项数据库检查通过 |
-| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 52 项检查 |
+| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；61 项数据库检查通过 |
+| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 61 项检查 |
 | 修改已应用迁移后运行 `db:migrate` | 按预期拒绝：`changed after it was applied. Add a new migration instead of editing history.` |
 | `corepack pnpm infra:verify` | 通过；角色隔离、Redis 认证与持久化检查 |
 
@@ -40,6 +41,7 @@
 - 13 张 D1 表存在，全部启用 RLS；`outbox_events`、`job_receipts` 存在并启用 RLS。
 - 13 个认证函数存在且由 `aven_function_owner` 持有；`aven_app` 不能执行认证查找/会话创建，`aven_auth` 不能直接读 `principals`。
 - 4 个资料/校园函数存在且由 `aven_function_owner` 持有；无用户上下文拒绝资料更新；本人校园成员列表与 pending 申请幂等；资料更新递增 principal version。
+- 10 个组织函数存在且由 `aven_function_owner` 持有；创建者成为 owner；admin 不能改 owner；最后 owner 不能离开；组织成员列表与创建流程可用。
 - `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`、`outbox_events.payload`，不能插入/更新/删除 `principals`。
 - 无上下文时看不到用户主体、校园、成员关系；公开组织资料可见。
 - 用户只能看本人主体、私有邮箱和会话；同组织成员关系按组织隔离。
@@ -85,8 +87,9 @@ corepack pnpm db:verify
 - 未实现 D2–D6 表、机会/引荐/授权/关系/Agent/Audit。
 - Outbox/回执仅用于工程样例；业务队列、死信运维、指标与 exactly-once 未实现。
 - 认证函数已实现会话/邮箱验证/密码重置；生产邮件、MFA、账号锁定、空闲超时与真实设备未实现。
-- 资料更新与校园申请函数已实现；校园审核、邮件域名验证、组织成员/邀请与真实页面未实现。
-- 未实现组织/校园写策略与 `FORCE RLS`；M2-03–M2-05 负责。
+- 资料更新与校园申请函数已实现；校园审核、邮件域名验证与真实页面未实现。
+- 组织创建/成员/邀请/角色/离开已实现；所有权转让、组织认证审核、审计日志与邀请清理任务未实现。
+- 未实现组织/校园写策略与 `FORCE RLS`；M2-04/M2-05 负责。
 - 就绪探针已接入 API/Worker（M0-06）；业务连接池与认证池仍待 M2。
 - 未验证生产迁移、备份恢复、扩展启用（pgvector/PostGIS）或大表回填。
 - `aven_test` 由 `db:verify` 重建；不要在其中保存需要保留的数据。

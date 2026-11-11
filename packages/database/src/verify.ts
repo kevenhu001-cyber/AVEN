@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('eight migrations are recorded', migrations.rows[0]?.count === '8');
+    check('nine migrations are recorded', migrations.rows[0]?.count === '9');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -205,6 +205,81 @@ async function main(): Promise<void> {
       check(
         'profile update changes the display name',
         updated.rows[0]?.display_name === '验证资料更新',
+      );
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    const organizationFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'create_organization','list_my_organizations','get_organization',
+           'list_organization_members','create_organization_invitation',
+           'list_organization_invitations','accept_organization_invitation',
+           'update_organization_member_role','remove_organization_member',
+           'leave_organization'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'ten organization functions are owned by the function owner',
+      organizationFunctions.rows[0]?.count === '10',
+    );
+    check(
+      'app cannot create an organization without context',
+      await appError("SELECT app.create_organization('probe', 'probe-org', null, 'lab', null)"),
+    );
+    const userOneContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
+    const userTwoContext = { principalId: seedIds.userTwo, userId: seedIds.userTwo };
+    check(
+      'user one lists two organizations',
+      (await scalar(
+        'SELECT count(*)::text AS value FROM app.list_my_organizations()',
+        userOneContext,
+      )) === '2',
+    );
+    check(
+      'organization detail reports two active members',
+      (await scalar(
+        `SELECT member_count::text AS value FROM app.get_organization('${seedIds.organizationOne}')`,
+        userOneContext,
+      )) === '2',
+    );
+    check(
+      'organization member list is visible to members',
+      (await scalar(
+        `SELECT count(*)::text AS value FROM app.list_organization_members('${seedIds.organizationOne}')`,
+        userOneContext,
+      )) === '2',
+    );
+    check(
+      'admin cannot change the owner role',
+      await appError(
+        `SELECT app.update_organization_member_role('${seedIds.organizationOne}', '${seedIds.userOne}', 'admin')`,
+        userTwoContext,
+      ),
+    );
+    check(
+      'last owner cannot leave',
+      await appError(`SELECT app.leave_organization('${seedIds.organizationOne}')`, userOneContext),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const created = await app.query<{ id: string }>(
+        "SELECT app.create_organization('验证组织', 'verify-org', null, 'lab', null) AS id",
+      );
+      const organizationId = created.rows[0]?.id;
+      check('organization creation returns an id', Boolean(organizationId));
+      const createdMembers = await app.query(
+        `SELECT * FROM app.list_organization_members('${organizationId}')`,
+      );
+      check(
+        'creator becomes the sole owner',
+        createdMembers.rows.length === 1 && createdMembers.rows[0]?.role === 'owner',
       );
     } finally {
       await app.query('ROLLBACK');

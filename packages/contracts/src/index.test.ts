@@ -3,8 +3,11 @@ import {
   ApiErrorResponseSchema,
   AuthResponseSchema,
   CampusMembershipSchema,
+  CreateOrganizationRequestSchema,
+  InviteOrganizationMemberRequestSchema,
   LivenessResponseSchema,
   LoginRequestSchema,
+  OrganizationDetailSchema,
   PasswordSchema,
   ReadinessResponseSchema,
   RegisterRequestSchema,
@@ -148,5 +151,41 @@ describe('public engineering contracts', () => {
         createdAt: '2026-11-11T00:00:00.000Z',
       }).success,
     ).toBe(false);
+  });
+  it('validates organization creation and invitation roles', () => {
+    expect(
+      CreateOrganizationRequestSchema.parse({
+        name: '验证实验室',
+        slug: 'verify-lab',
+        type: 'lab',
+      }).slug,
+    ).toBe('verify-lab');
+    expect(
+      CreateOrganizationRequestSchema.safeParse({
+        name: '验证实验室',
+        slug: 'Verify Lab',
+        type: 'lab',
+      }).success,
+    ).toBe(false);
+    expect(
+      InviteOrganizationMemberRequestSchema.safeParse({
+        email: 'user@example.test',
+        role: 'owner',
+      }).success,
+    ).toBe(false);
+    expect(
+      OrganizationDetailSchema.safeParse({
+        id: requestId,
+        name: '验证实验室',
+        slug: 'verify-lab',
+        description: null,
+        type: 'lab',
+        campusId: null,
+        verificationStatus: 'unverified',
+        role: 'owner',
+        canRepresent: true,
+        memberCount: 1,
+      }).success,
+    ).toBe(true);
   });
 });

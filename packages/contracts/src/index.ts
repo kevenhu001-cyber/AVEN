@@ -236,6 +236,121 @@ export const CampusMembershipListResponseSchema = z
 
 export const RequestCampusMembershipSchema = z.object({ campusId: z.uuid() }).strict();
 
+export const OrganizationTypeSchema = z.enum([
+  'lab',
+  'research_group',
+  'club',
+  'department',
+  'company',
+  'other',
+]);
+export const OrganizationRoleSchema = z.enum(['owner', 'admin', 'member']);
+export const OrganizationMembershipStatusSchema = z.enum(['invited', 'active', 'removed', 'left']);
+export const OrganizationVerificationStatusSchema = z.enum([
+  'unverified',
+  'pending',
+  'verified',
+  'rejected',
+]);
+
+export const CreateOrganizationRequestSchema = z
+  .object({
+    name: DisplayNameSchema,
+    slug: z
+      .string()
+      .trim()
+      .min(3)
+      .max(60)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must use lowercase letters, digits, and hyphens.'),
+    description: z.string().trim().max(2000).optional(),
+    type: OrganizationTypeSchema,
+    campusId: z.uuid().optional(),
+  })
+  .strict();
+
+export const OrganizationSummarySchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string(),
+    type: OrganizationTypeSchema,
+    role: OrganizationRoleSchema,
+    status: OrganizationMembershipStatusSchema,
+    canRepresent: z.boolean(),
+    joinedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const OrganizationListResponseSchema = z
+  .object({ data: z.array(OrganizationSummarySchema) })
+  .strict();
+
+export const OrganizationDetailSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string(),
+    description: z.string().nullable(),
+    type: OrganizationTypeSchema,
+    campusId: z.uuid().nullable(),
+    verificationStatus: OrganizationVerificationStatusSchema,
+    role: OrganizationRoleSchema,
+    canRepresent: z.boolean(),
+    memberCount: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const OrganizationMemberSchema = z
+  .object({
+    userId: z.uuid(),
+    displayName: z.string(),
+    role: OrganizationRoleSchema,
+    status: OrganizationMembershipStatusSchema,
+    canRepresent: z.boolean(),
+    joinedAt: z.iso.datetime().nullable(),
+  })
+  .strict();
+
+export const OrganizationMemberListResponseSchema = z
+  .object({ data: z.array(OrganizationMemberSchema) })
+  .strict();
+
+export const InviteOrganizationMemberRequestSchema = z
+  .object({ email: EmailSchema, role: z.enum(['admin', 'member']) })
+  .strict();
+
+export const OrganizationInvitationSchema = z
+  .object({
+    id: z.uuid(),
+    email: z.email(),
+    role: OrganizationRoleSchema,
+    status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
+    expiresAt: z.iso.datetime(),
+    createdAt: z.iso.datetime(),
+    acceptedAt: z.iso.datetime().nullable(),
+  })
+  .strict();
+
+export const OrganizationInvitationListResponseSchema = z
+  .object({ data: z.array(OrganizationInvitationSchema) })
+  .strict();
+
+export const AcceptOrganizationInvitationRequestSchema = z
+  .object({ token: z.string().min(20).max(256) })
+  .strict();
+
+export const AcceptOrganizationInvitationResponseSchema = z
+  .object({
+    organizationId: z.uuid(),
+    membershipId: z.uuid(),
+    role: OrganizationRoleSchema,
+  })
+  .strict();
+
+export const UpdateOrganizationMemberRoleRequestSchema = z
+  .object({ role: z.enum(['admin', 'member']) })
+  .strict();
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -260,3 +375,26 @@ export type CampusListResponse = z.infer<typeof CampusListResponseSchema>;
 export type CampusMembership = z.infer<typeof CampusMembershipSchema>;
 export type CampusMembershipListResponse = z.infer<typeof CampusMembershipListResponseSchema>;
 export type RequestCampusMembership = z.infer<typeof RequestCampusMembershipSchema>;
+export type OrganizationType = z.infer<typeof OrganizationTypeSchema>;
+export type OrganizationRole = z.infer<typeof OrganizationRoleSchema>;
+export type OrganizationMembershipStatus = z.infer<typeof OrganizationMembershipStatusSchema>;
+export type CreateOrganizationRequest = z.infer<typeof CreateOrganizationRequestSchema>;
+export type OrganizationSummary = z.infer<typeof OrganizationSummarySchema>;
+export type OrganizationListResponse = z.infer<typeof OrganizationListResponseSchema>;
+export type OrganizationDetail = z.infer<typeof OrganizationDetailSchema>;
+export type OrganizationMember = z.infer<typeof OrganizationMemberSchema>;
+export type OrganizationMemberListResponse = z.infer<typeof OrganizationMemberListResponseSchema>;
+export type InviteOrganizationMemberRequest = z.infer<typeof InviteOrganizationMemberRequestSchema>;
+export type OrganizationInvitation = z.infer<typeof OrganizationInvitationSchema>;
+export type OrganizationInvitationListResponse = z.infer<
+  typeof OrganizationInvitationListResponseSchema
+>;
+export type AcceptOrganizationInvitationRequest = z.infer<
+  typeof AcceptOrganizationInvitationRequestSchema
+>;
+export type AcceptOrganizationInvitationResponse = z.infer<
+  typeof AcceptOrganizationInvitationResponseSchema
+>;
+export type UpdateOrganizationMemberRoleRequest = z.infer<
+  typeof UpdateOrganizationMemberRoleRequestSchema
+>;
