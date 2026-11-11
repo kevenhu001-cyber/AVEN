@@ -44,7 +44,8 @@ corepack pnpm dev:mobile        # Expo；需设置 EXPO_PUBLIC_API_URL
 - Web 通过同源 `/health/*` 代理访问 API；内部 API 地址不暴露到浏览器。
 - Expo 真机不能使用开发机 `localhost`；设置设备可达的局域网 IP 或 HTTPS origin。`API_HOST=0.0.0.0` 仅限显式开发局域网。
 - 当前 Worker 只消费 `sample_task` 工程样例；业务任务未实现。
-- 依赖就绪 200 不代表业务可用；业务 API、认证、组织/机会/引荐仍未开放。
+- 认证 API 已实现注册/登录/会话/验证/重置；Web/Mobile 页面尚未接入。
+- 依赖就绪 200 不代表业务可用；组织/机会/引荐仍未开放。
 
 ## 检查命令
 
@@ -59,11 +60,13 @@ corepack pnpm test:e2e        # 本机缺 Playwright headless shell 时加 PLAYW
 corepack pnpm db:verify
 corepack pnpm check:readiness
 corepack pnpm async:verify    # 会短暂停止 Redis
+corepack pnpm auth:verify     # 注册/登录/会话/验证/重置真实 HTTP 检查
 ```
 
 - `db:verify`：重建 `aven_test`，验证空库迁移、已有库升级、seed 幂等、RLS 与约束。
 - `check:readiness`：启动真实 API/Worker 进程，验证 API 200、Redis 故障 503、Worker 消费者就绪 200。
 - `async:verify`：真实 Outbox/BullMQ 故障注入；会停止并重启 Redis，结束后恢复。
+- `auth:verify`：真实 API/PostgreSQL/Redis 认证流程；开发邮件写入 `.data/mail`，不写日志。
 - `test:e2e` 的测试服务器故意使用不可用依赖，验证就绪失败不会被渲染为成功。
 
 ## 故障处理
@@ -74,6 +77,8 @@ corepack pnpm async:verify    # 会短暂停止 Redis
 | 迁移报 `changed after it was applied` | 不要编辑已应用迁移；新增迁移修正并重新验证空库/升级 |
 | `db:verify` 失败 | 查看 `aven_test` 的迁移/RLS 输出；确认 `.env` 与角色密码一致 |
 | API 就绪 503 | `pnpm infra:status`；确认 PostgreSQL/Redis 健康、`pnpm db:migrate` 已执行 |
+| 认证注册/重置 503 | 检查 `AUTH_DEV_MODE=true` 与 `.data/mail` 写入权限；生产邮件 Provider 尚未配置 |
+| 认证登录 429 | 等待 `Retry-After`；开发测试可清理 Redis `auth:rl:*` 键 |
 | Worker 就绪 503 | 确认 Redis 可用且 Worker 进程已启动消费者；查看 `worker.queue_error` 日志 |
 | Redis 停止后队列不恢复 | `pnpm infra:up`；Outbox 会把未投递事件退回 pending，等待重投 |
 | Playwright 缺浏览器 | `pnpm exec playwright install chromium`，或本地使用 `PLAYWRIGHT_CHANNEL=chrome` |

@@ -11,8 +11,10 @@ function check(name: string, ok: boolean, detail = ''): void {
 async function main(): Promise<void> {
   const migrator = new Client({ connectionString: migrationDatabaseUrl() });
   const app = new Client({ connectionString: databaseUrlFor('aven_app') });
+  const auth = new Client({ connectionString: databaseUrlFor('aven_auth') });
   await migrator.connect();
   await app.connect();
+  await auth.connect();
 
   async function appQuery(
     sql: string,
@@ -44,6 +46,15 @@ async function main(): Promise<void> {
     }
   }
 
+  async function authError(sql: string) {
+    try {
+      await auth.query(sql);
+      return false;
+    } catch {
+      return true;
+    }
+  }
+
   async function scalar(sql: string, context: { principalId?: string; userId?: string } = {}) {
     const result = await appQuery(sql, context);
     return String(result.rows[0]?.value ?? result.rows[0]?.count ?? '');
@@ -53,7 +64,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('six migrations are recorded', migrations.rows[0]?.count === '6');
+    check('seven migrations are recorded', migrations.rows[0]?.count === '7');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -100,6 +111,56 @@ async function main(): Promise<void> {
     check(
       'app cannot read outbox payloads',
       await appError('SELECT payload FROM public.outbox_events'),
+    );
+
+    const authFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app' AND p.proname IN (
+         'register_user','auth_lookup','password_lookup','create_session',
+         'session_lookup','list_sessions','revoke_session','revoke_all_sessions',
+         'verify_email','create_email_verification_token',
+         'create_password_reset_token','reset_password','update_password'
+       )`,
+    );
+    check('thirteen authentication functions exist', authFunctions.rows[0]?.count === '13');
+    const authFunctionOwners = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'register_user','auth_lookup','password_lookup','create_session',
+           'session_lookup','list_sessions','revoke_session','revoke_all_sessions',
+           'verify_email','create_email_verification_token',
+           'create_password_reset_token','reset_password','update_password'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'authentication functions are owned by the function owner',
+      authFunctionOwners.rows[0]?.count === '13',
+    );
+    check(
+      'app cannot execute the auth lookup',
+      await appError("SELECT * FROM app.auth_lookup('nobody@example.test')"),
+    );
+    check(
+      'app cannot execute session creation',
+      await appError(
+        "SELECT app.create_session('00000000-0000-4000-8000-000000000000', repeat('a', 64), repeat('b', 64), 'web', null, null, now() + interval '1 day')",
+      ),
+    );
+    check(
+      'auth pool can execute the auth lookup',
+      (await auth.query("SELECT * FROM app.auth_lookup('nobody@example.test')")).rows.length === 0,
+    );
+    check(
+      'auth pool cannot read principals directly',
+      await authError('SELECT * FROM public.principals'),
+    );
+    check(
+      'app can execute session lookup',
+      (await app.query("SELECT * FROM app.session_lookup(repeat('a', 64))")).rows.length === 0,
     );
 
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));
@@ -311,6 +372,7 @@ async function main(): Promise<void> {
       await migrator.query('ROLLBACK');
     }
   } finally {
+    await auth.end();
     await app.end();
     await migrator.end();
   }

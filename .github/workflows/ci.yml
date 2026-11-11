@@ -65,5 +65,6 @@ jobs:
       - run: pnpm build
       - run: pnpm check:readiness
       - run: pnpm async:verify
+      - run: pnpm auth:verify
       - if: always()
         run: pnpm infra:down

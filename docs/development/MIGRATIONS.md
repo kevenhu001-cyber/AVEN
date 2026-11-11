@@ -16,6 +16,7 @@
 | `packages/database/migrations/0004_readiness_schema_version.sql` | 就绪探针只读迁移版本 |
 | `packages/database/migrations/0005_outbox_and_sample_task.sql` | Outbox、消费回执、样例任务/结果/外部效果表、RLS 与列级授权 |
 | `packages/database/migrations/0006_outbox_available_at_grant.sql` | Worker 回退待处理事件所需的 `available_at` 更新权限 |
+| `packages/database/migrations/0007_authentication.sql` | 会话 CSRF 哈希、邮箱规范化约束、13 个认证函数、函数所有权、RLS 与角色授权 |
 | `packages/database/src/migrate.ts` | 事务化 runner、SHA-256 校验和、`--to` 升级路径、`--status` |
 | `packages/database/src/seed.ts` | 可重复执行的开发 seed |
 | `packages/database/src/verify.ts` | 表/约束/RLS/函数/seed 验证 |
@@ -28,14 +29,15 @@
 
 | 命令 | 结果 |
 |---|---|
-| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；39 项数据库检查通过 |
-| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 39 项检查 |
+| `corepack pnpm db:verify` | 通过；空库先应用 `0001`，再应用剩余迁移；seed 与迁移重复执行均幂等；46 项数据库检查通过 |
+| `corepack pnpm db:verify:current` | 通过；当前 `aven` 库同样通过 46 项检查 |
 | 修改已应用迁移后运行 `db:migrate` | 按预期拒绝：`changed after it was applied. Add a new migration instead of editing history.` |
 | `corepack pnpm infra:verify` | 通过；角色隔离、Redis 认证与持久化检查 |
 
 覆盖的关键检查：
 
 - 13 张 D1 表存在，全部启用 RLS；`outbox_events`、`job_receipts` 存在并启用 RLS。
+- 13 个认证函数存在且由 `aven_function_owner` 持有；`aven_app` 不能执行认证查找/会话创建，`aven_auth` 不能直接读 `principals`。
 - `aven_app` 不能读 `credentials`、`sessions.token_hash`、`platform_role_assignments`、`outbox_events.payload`，不能插入/更新/删除 `principals`。
 - 无上下文时看不到用户主体、校园、成员关系；公开组织资料可见。
 - 用户只能看本人主体、私有邮箱和会话；同组织成员关系按组织隔离。
@@ -80,7 +82,8 @@ corepack pnpm db:verify
 
 - 未实现 D2–D6 表、机会/引荐/授权/关系/Agent/Audit。
 - Outbox/回执仅用于工程样例；业务队列、死信运维、指标与 exactly-once 未实现。
-- 未实现注册、登录、会话、邀请接受、组织写操作与 `FORCE RLS`。
+- 认证函数已实现会话/邮箱验证/密码重置；生产邮件、MFA、账号锁定、空闲超时与真实设备未实现。
+- 未实现组织/校园写策略与 `FORCE RLS`；M2-02–M2-05 负责。
 - 就绪探针已接入 API/Worker（M0-06）；业务连接池与认证池仍待 M2。
 - 未验证生产迁移、备份恢复、扩展启用（pgvector/PostGIS）或大表回填。
 - `aven_test` 由 `db:verify` 重建；不要在其中保存需要保留的数据。

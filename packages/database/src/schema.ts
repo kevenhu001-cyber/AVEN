@@ -113,6 +113,10 @@ export const userPrivate = pgTable(
     index('idx_user_private_unverified')
       .on(table.emailVerifiedAt)
       .where(sql`${table.emailVerifiedAt} is null`),
+    check(
+      'chk_user_private_email_normalized',
+      sql`${table.emailNormalized} = lower(trim(${table.emailNormalized})) and length(${table.emailNormalized}) between 3 and 320`,
+    ),
   ],
 );
 
@@ -141,6 +145,7 @@ export const sessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull(),
+    csrfTokenHash: text('csrf_token_hash'),
     client: sessionClient('client').notNull(),
     userAgent: text('user_agent'),
     ipHash: text('ip_hash'),

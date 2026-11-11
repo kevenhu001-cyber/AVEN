@@ -7,6 +7,8 @@ describe('environment boundaries', () => {
       API_HOST: '127.0.0.1',
       API_PORT: 3001,
       AUTH_DEV_MODE: 'false',
+      AUTH_SESSION_TTL_DAYS: 30,
+      AUTH_MAIL_DIR: '.data/mail',
     });
     expect(parseWorkerEnvironment({}).WORKER_HEALTH_PORT).toBe(3002);
   });
@@ -18,13 +20,28 @@ describe('environment boundaries', () => {
       parseApiEnvironment({ WEB_ORIGIN: 'https://user:private-password@example.org' }),
     ).toThrow('Invalid environment fields: WEB_ORIGIN');
   });
-  it('does not silently enable the unimplemented developer identity', () => {
-    expect(() => parseApiEnvironment({ AUTH_DEV_MODE: 'true' })).toThrow('AUTH_DEV_MODE');
+  it('allows explicit development mail mode but not in production', () => {
+    expect(parseApiEnvironment({ AUTH_DEV_MODE: 'true' }).AUTH_DEV_MODE).toBe('true');
+    expect(() =>
+      parseApiEnvironment({
+        APP_ENV: 'production',
+        WEB_ORIGIN: 'https://aven.example',
+        AUTH_DEV_MODE: 'true',
+        AUTH_IP_SALT: '0123456789abcdef',
+      }),
+    ).toThrow('AUTH_DEV_MODE');
   });
-  it('requires a secure production web origin', () => {
+  it('requires a secure production web origin and IP salt', () => {
     expect(() => parseApiEnvironment({ APP_ENV: 'production' })).toThrow('WEB_ORIGIN');
+    expect(() =>
+      parseApiEnvironment({ APP_ENV: 'production', WEB_ORIGIN: 'https://aven.example' }),
+    ).toThrow('AUTH_IP_SALT');
     expect(
-      parseApiEnvironment({ APP_ENV: 'production', WEB_ORIGIN: 'https://aven.example' }).APP_ENV,
+      parseApiEnvironment({
+        APP_ENV: 'production',
+        WEB_ORIGIN: 'https://aven.example',
+        AUTH_IP_SALT: '0123456789abcdef',
+      }).APP_ENV,
     ).toBe('production');
   });
   it.each([

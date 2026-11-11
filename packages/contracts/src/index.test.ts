@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ApiErrorResponseSchema, LivenessResponseSchema, ReadinessResponseSchema } from './index';
+import {
+  ApiErrorResponseSchema,
+  AuthResponseSchema,
+  LivenessResponseSchema,
+  LoginRequestSchema,
+  PasswordSchema,
+  ReadinessResponseSchema,
+  RegisterRequestSchema,
+} from './index';
 
 const requestId = 'b434644d-d195-4978-b457-765c6d9b755e';
 describe('public engineering contracts', () => {
@@ -64,5 +72,45 @@ describe('public engineering contracts', () => {
         request_id: requestId,
       }).success,
     ).toBe(false);
+  });
+  it('normalizes email and rejects short passwords', () => {
+    const parsed = RegisterRequestSchema.parse({
+      email: '  User@Example.Test ',
+      password: 'Correct Horse Battery 42!',
+      displayName: '张雨',
+    });
+    expect(parsed.email).toBe('user@example.test');
+    expect(PasswordSchema.safeParse('too-short').success).toBe(false);
+    expect(
+      LoginRequestSchema.parse({
+        email: 'user@example.test',
+        password: 'x',
+      }).client,
+    ).toBe('web');
+  });
+  it('accepts either a CSRF token or a mobile session token, not unknown fields', () => {
+    const base = {
+      user: {
+        id: requestId,
+        displayName: '张雨',
+        email: 'user@example.test',
+        emailVerified: true,
+        locale: 'zh-CN',
+        timezone: 'Asia/Shanghai',
+      },
+      session: {
+        id: requestId,
+        client: 'web',
+        userAgent: null,
+        createdAt: '2026-11-11T00:00:00.000Z',
+        lastSeenAt: '2026-11-11T00:00:00.000Z',
+        expiresAt: '2026-12-11T00:00:00.000Z',
+        revokedAt: null,
+        current: true,
+      },
+    };
+    expect(AuthResponseSchema.safeParse({ ...base, csrfToken: 'token' }).success).toBe(true);
+    expect(AuthResponseSchema.safeParse({ ...base, sessionToken: 'token' }).success).toBe(true);
+    expect(AuthResponseSchema.safeParse({ ...base, secret: 'token' }).success).toBe(false);
   });
 });

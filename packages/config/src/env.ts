@@ -31,7 +31,10 @@ const ApiEnvironmentSchema = z
     API_HOST: HostSchema.default('127.0.0.1'),
     API_PORT: PortSchema.default(3001),
     WEB_ORIGIN: OriginSchema.default('http://localhost:3000'),
-    AUTH_DEV_MODE: z.literal('false').default('false'),
+    AUTH_DEV_MODE: z.enum(['true', 'false']).default('false'),
+    AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+    AUTH_IP_SALT: z.string().min(16).optional(),
+    AUTH_MAIL_DIR: z.string().min(1).default('.data/mail'),
   })
   .superRefine((env, context) => {
     if (env.APP_ENV === 'production' && !env.WEB_ORIGIN.startsWith('https://')) {
@@ -39,6 +42,20 @@ const ApiEnvironmentSchema = z
         code: 'custom',
         path: ['WEB_ORIGIN'],
         message: 'Production requires HTTPS.',
+      });
+    }
+    if (env.APP_ENV === 'production' && env.AUTH_DEV_MODE === 'true') {
+      context.addIssue({
+        code: 'custom',
+        path: ['AUTH_DEV_MODE'],
+        message: 'Development authentication mode is not allowed in production.',
+      });
+    }
+    if (env.APP_ENV === 'production' && !env.AUTH_IP_SALT) {
+      context.addIssue({
+        code: 'custom',
+        path: ['AUTH_IP_SALT'],
+        message: 'Production requires AUTH_IP_SALT.',
       });
     }
   });

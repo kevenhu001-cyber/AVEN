@@ -789,6 +789,7 @@ SENTRY_DSN=
 | [ADR-006](decisions/0006-ai-provider.md) | Mock + OpenAI-compatible Provider | 已接受，M3 验证 |
 | [ADR-007](decisions/0007-authorization-boundaries.md) | 字段用途、引荐隔离、最小权限与撤销语义 | 已接受，未实现 |
 | [ADR-008](decisions/0008-progressive-delivery.md) | 按需扩展、双端设计与渐进验证门 | 已接受，未验证 |
+| [ADR-009](decisions/0009-authentication-implementation.md) | Argon2id、不透明会话、CSRF、限流与认证函数边界 | 已接受，M2-01 验证 |
 
 ## 19. 开放问题与验证门
 

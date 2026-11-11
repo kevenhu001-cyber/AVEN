@@ -32,6 +32,7 @@
     "db:verify:current": "pnpm --filter @aven/database db:verify",
     "check:readiness": "node scripts/check-readiness.mjs",
     "async:verify": "tsx scripts/async-verify.ts",
+    "auth:verify": "pnpm build && tsx scripts/auth-verify.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

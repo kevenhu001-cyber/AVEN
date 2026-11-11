@@ -14,6 +14,12 @@ export class ServiceNotReadyException extends HttpException {
   }
 }
 
+export class RateLimitedException extends HttpException {
+  constructor(public readonly retryAfter: number) {
+    super('Too many requests.', 429);
+  }
+}
+
 export function responseRequestId(response: Response): string {
   const id = RequestIdSchema.safeParse(response.getHeader('X-Request-Id'));
   return id.success ? id.data : randomUUID();
@@ -27,10 +33,31 @@ export function formatException(
   let code: ApiErrorCode = 'INTERNAL';
   let message = 'The service could not complete this request.';
   let retryable = false;
+  const errorCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+  const dependencyCodes = new Set([
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ETIMEDOUT',
+    'EHOSTUNREACH',
+    '08000',
+    '08001',
+    '08006',
+    '57P01',
+    '57P02',
+    '57P03',
+  ]);
   if (error instanceof ServiceNotReadyException) {
     code = 'SERVICE_NOT_READY';
     message = 'Foundation dependencies and consumers are not configured.';
     retryable = error.retryable;
+  } else if (dependencyCodes.has(errorCode)) {
+    status = 503;
+    code = 'SERVICE_NOT_READY';
+    message = 'A required dependency is unavailable.';
+    retryable = true;
   } else if (status === 404) {
     code = 'NOT_FOUND';
     message = 'Resource not found.';
@@ -44,6 +71,9 @@ export function formatException(
   } else if (status === 403) {
     code = 'FORBIDDEN';
     message = 'Access is not allowed.';
+  } else if (status === 409) {
+    code = 'CONFLICT';
+    message = 'The request conflicts with the current state.';
   } else if (status === 429) {
     code = 'RATE_LIMITED';
     message = 'Too many requests.';
@@ -67,6 +97,9 @@ export class HttpErrorFilter implements ExceptionFilter {
     const result = formatException(error, requestId);
     response.setHeader('X-Request-Id', requestId);
     response.setHeader('Cache-Control', 'no-store');
+    if (error instanceof RateLimitedException) {
+      response.setHeader('Retry-After', String(error.retryAfter));
+    }
     response.status(result.status).json(result.body);
   }
 }
