@@ -26,6 +26,10 @@ import {
   TOOL_PERMISSIONS,
   ToolPermissionSchema,
   UpdateMemoryRequestSchema,
+  UpdateOpportunityRequestSchema,
+  UpdateOrganizationRequestSchema,
+  CreateOpportunityDraftRequestSchema,
+  OpportunityDetailSchema,
   UpdateProfileRequestSchema,
 } from './index';
 
@@ -386,5 +390,94 @@ describe('public engineering contracts', () => {
         updatedAt: '2026-11-11T00:00:00.000Z',
       }).status,
     ).toBe('pending_confirmation');
+  });
+
+  it('validates organization update and opportunity contracts', () => {
+    const orgUpdate = UpdateOrganizationRequestSchema.parse({
+      name: '交大智能机器人实验室',
+      description: '实验室最新更新',
+      websiteUrl: 'https://robotics.xjtu.edu.cn',
+    });
+    expect(orgUpdate.name).toBe('交大智能机器人实验室');
+
+    expect(
+      UpdateOrganizationRequestSchema.safeParse({
+        name: ' ',
+      }).success,
+    ).toBe(false);
+
+    const draft = CreateOpportunityDraftRequestSchema.parse({
+      title: '具身智能系统研究助理',
+      summary: '参与灵巧手遥操作与强化学习算法研究',
+      description: '详细要求见实验室 wiki，需具备良好的 Python / C++ 基础与 ROS 经验。',
+      domains: ['机器人', '强化学习'],
+      requirements: ['Python', 'ROS2', 'PyTorch'],
+      stage: 'undergraduate',
+      commitmentHoursPerWeek: 15,
+      headcount: 2,
+      visibility: 'campus',
+    });
+    expect(draft.stage).toBe('undergraduate');
+    expect(draft.headcount).toBe(2);
+    expect(draft.commitmentHoursPerWeek).toBe(15);
+    expect(draft.remoteOk).toBe(false);
+
+    // Invalid headcount (> 100) or hours (> 40)
+    expect(
+      CreateOpportunityDraftRequestSchema.safeParse({
+        title: '测试',
+        summary: '摘要',
+        description: '描述',
+        headcount: 150,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      CreateOpportunityDraftRequestSchema.safeParse({
+        title: '测试',
+        summary: '摘要',
+        description: '描述',
+        commitmentHoursPerWeek: 50,
+      }).success,
+    ).toBe(false);
+
+    const detail = OpportunityDetailSchema.parse({
+      id: requestId,
+      organizationId: requestId,
+      organizationName: '智能机器人实验室',
+      organizationSlug: 'robotics-lab',
+      campusId: requestId,
+      title: '具身智能助理',
+      summary: '强化学习研究',
+      description: '负责控制策略训练',
+      domains: ['机器人'],
+      requirements: ['Python'],
+      stage: 'undergraduate',
+      commitmentHoursPerWeek: 10,
+      location: '创新港 3 号巨构',
+      remoteOk: false,
+      headcount: 1,
+      deadline: null,
+      status: 'open',
+      visibility: 'campus',
+      version: 2,
+      createdBy: requestId,
+      contactUserId: requestId,
+      publishedAt: '2026-11-11T00:00:00.000Z',
+      closedAt: null,
+      createdAt: '2026-11-11T00:00:00.000Z',
+      updatedAt: '2026-11-11T00:00:00.000Z',
+      isMember: true,
+    });
+    expect(detail.status).toBe('open');
+    expect(detail.version).toBe(2);
+
+    const updated = UpdateOpportunityRequestSchema.parse({
+      expectedVersion: 1,
+      title: '更新标题',
+      commitmentHoursPerWeek: 15,
+    });
+    expect(updated.expectedVersion).toBe(1);
+    expect(updated.title).toBe('更新标题');
   });
 });

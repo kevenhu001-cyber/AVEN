@@ -42,7 +42,7 @@
 1. 认证与会话：注册、登录、登出、邮箱验证、密码找回、会话列表/撤销；见 [AUTH.md](AUTH.md)。
 2. 本人、校园与组织：`/me`、校园成员、组织、成员、邀请；资料/校园见 [PROFILE.md](PROFILE.md)，组织见 [ORGANIZATIONS.md](ORGANIZATIONS.md)。
 3. 个人上下文：记忆、来源、需求；记忆见 [MEMORIES.md](MEMORIES.md)。
-4. 组织机会：创建、编辑、发布、暂停、关闭。
+4. 组织机会：创建、编辑、发布、暂停、关闭；见 [OPPORTUNITIES.md](OPPORTUNITIES.md)。
 5. 匹配与引荐：/matches 只返回本人候选；/referrals 发送、补充、独立决定、撤回。
 6. 授权：服务端预览、创建、查询、撤销；关系用途单独确认。
 7. 关系空间：列表、详情、共享上下文、关闭。

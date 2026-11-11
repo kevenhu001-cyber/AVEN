@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('seventeen migrations are recorded', migrations.rows[0]?.count === '17');
+    check('eighteen migrations are recorded', migrations.rows[0]?.count === '18');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -117,13 +117,13 @@ async function main(): Promise<void> {
          'outbox_events','job_receipts','memory_items','memory_sources',
          'context_field_policies','memory_events','conversations',
          'conversation_members','messages','agent_runs','agent_run_events',
-         'agent_run_sources','idempotency_keys','actions'
+         'agent_run_sources','idempotency_keys','actions','opportunities'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '30');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '31');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -254,13 +254,13 @@ async function main(): Promise<void> {
            'list_organization_members','create_organization_invitation',
            'list_organization_invitations','accept_organization_invitation',
            'update_organization_member_role','remove_organization_member',
-           'leave_organization'
+           'leave_organization','update_organization','get_public_organization'
          )
          AND p.proowner = 'aven_function_owner'::regrole`,
     );
     check(
-      'ten organization functions are owned by the function owner',
-      organizationFunctions.rows[0]?.count === '10',
+      'twelve organization functions are owned by the function owner',
+      organizationFunctions.rows[0]?.count === '12',
     );
     check(
       'app cannot create an organization without context',
@@ -863,6 +863,77 @@ async function main(): Promise<void> {
       await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userTwo]);
       const otherAction = await app.query(`SELECT * FROM app.get_action('${actionId}')`);
       check('another user cannot read the action', otherAction.rows.length === 0);
+    } finally {
+      await app.query('ROLLBACK');
+    }
+
+    const opportunityFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'create_opportunity_draft','update_opportunity','publish_opportunity',
+           'pause_opportunity','close_opportunity','get_opportunity',
+           'list_organization_opportunities','list_public_opportunities',
+           'expire_due_opportunities'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'nine opportunity functions are owned by the function owner',
+      opportunityFunctions.rows[0]?.count === '9',
+    );
+    check(
+      'app cannot create an opportunity without context',
+      await appError(
+        "SELECT app.create_opportunity_draft('00000000-0000-4000-8000-000000000000', '标题', '摘要', '正文', '{}'::text[], '{}'::text[], 'any', null, null, false, 1, null, 'campus', null)",
+      ),
+    );
+    check(
+      'app cannot insert opportunities directly',
+      await appError(
+        "INSERT INTO public.opportunities (organization_id, title, summary, description, created_by) VALUES ('00000000-0000-4000-8000-000000000000', '标题', '摘要', '描述', '00000000-0000-4000-8000-000000000000')",
+      ),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const createdOpp = await app.query<{ create_opportunity_draft: string }>(
+        `SELECT app.create_opportunity_draft(
+          $1, '测试研究助理', '协助强化学习算法实验', '详细描述要求',
+          ARRAY['机器人']::text[], ARRAY['Python']::text[], 'undergraduate',
+          10, '创新港', false, 2, null, 'campus', $2
+        )`,
+        [seedIds.organizationOne, seedIds.userOne],
+      );
+      const oppId = createdOpp.rows[0]?.create_opportunity_draft;
+      check('opportunity draft creation returns an id', Boolean(oppId));
+
+      const orgList = await app.query<{ id: string }>(
+        `SELECT * FROM app.list_organization_opportunities('${seedIds.organizationOne}')`,
+      );
+      check(
+        'organization member sees the draft opportunity',
+        orgList.rows.some((r) => r.id === oppId),
+      );
+
+      const strangerId = '99999999-9999-4999-8999-999999999999';
+      await app.query("SELECT set_config('app.user_id', $1, true)", [strangerId]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [strangerId]);
+      const nonMemberRead = await app.query(`SELECT * FROM app.get_opportunity('${oppId}')`);
+      check('non-member cannot read draft opportunity', nonMemberRead.rows.length === 0);
+
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const published = await app.query(`SELECT * FROM app.publish_opportunity('${oppId}', 1)`);
+      check('publishing opportunity sets status to open', published.rows[0]?.status === 'open');
+
+      const paused = await app.query(`SELECT * FROM app.pause_opportunity('${oppId}', 2)`);
+      check('pausing opportunity sets status to paused', paused.rows[0]?.status === 'paused');
+
+      const closed = await app.query(`SELECT * FROM app.close_opportunity('${oppId}', 3)`);
+      check('closing opportunity sets status to closed', closed.rows[0]?.status === 'closed');
     } finally {
       await app.query('ROLLBACK');
     }

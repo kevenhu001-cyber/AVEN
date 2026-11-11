@@ -21,12 +21,15 @@ import {
   OrganizationInvitationSchema,
   OrganizationListResponseSchema,
   OrganizationMemberListResponseSchema,
+  PublicOrganizationSchema,
   RequestIdSchema,
   UpdateOrganizationMemberRoleRequestSchema,
+  UpdateOrganizationRequestSchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentAuth } from '../auth/current-auth.decorator.js';
+import { Public } from '../auth/public.decorator.js';
 import { parse } from '../http-validation.js';
 import { OrganizationService } from './organization.service.js';
 
@@ -56,6 +59,21 @@ export class OrganizationController {
   @Get('organizations/:id')
   async get(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
     return OrganizationDetailSchema.parse(await this.organizations.get(auth, parseId(id)));
+  }
+
+  @Public()
+  @Get('organizations/:id/public')
+  async getPublic(@Param('id') id: string) {
+    return PublicOrganizationSchema.parse(await this.organizations.getPublic(parseId(id)));
+  }
+
+  @Patch('organizations/:id')
+  @HttpCode(200)
+  async update(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: unknown) {
+    const input = parse(UpdateOrganizationRequestSchema, body);
+    return OrganizationDetailSchema.parse(
+      await this.organizations.update(auth, parseId(id), input),
+    );
   }
 
   @Get('organizations/:id/members')

@@ -77,10 +77,24 @@
 - 最后一名 active owner 不能离开，返回 `CONFLICT` 409；所有权转让尚未实现。
 - 离开不等于删除组织历史，也不撤销其他独立授权。
 
+## PATCH /organizations/:id
+
+- 认证：受保护；Web 需要 CSRF；调用者必须是 active `owner`/`admin`。
+- 请求 `UpdateOrganizationRequest`：`{name?, description?, websiteUrl?, logoUrl?}`。
+  - `name`: 1–120 字符；`description`: 最大 2000 字符；`websiteUrl`/`logoUrl`: 最大 500 字符。
+- 成功 200 `OrganizationDetail`：返回更新后的组织详情；同步递增 `principals.version` 与更新 `principals.display_name`。
+- 失败：`FORBIDDEN` 403（普通成员或外部访客越权）、`VALIDATION_ERROR` 422。
+
+## GET /organizations/:id/public
+
+- 认证：公开免登录 (`@Public()`)。
+- 成功 200 `PublicOrganization`：`{id, name, slug, description, type, campusId, websiteUrl, logoUrl, verificationStatus, createdAt}`。
+- 只返回组织公共资料，不泄露内部成员结构或非公开机会。
+
 ## 安全边界
 
 - 组织函数全部为 `SECURITY DEFINER`，由 `aven_function_owner` 持有，使用事务本地 `app.user_id`；不接收客户端 actor/role 作为权限依据。
-- `aven_app` 只执行函数；不能直接写 organizations/memberships/invitations。
+- `aven_app` 只执行函数；不能直接写 organizations/memberships/invitations/principals。
 - 最后 owner 不能被移除/降级/离开；admin 不能移除 admin；非成员不能读取成员或邀请。
 - 邀请 token 只存哈希；开发邮件 sink 不写日志；生产邮件 Provider 未配置时失败关闭。
 - 组织认证状态与成员角色分离；创建组织不等于官方认证。
@@ -88,5 +102,6 @@
 ## 验收
 
 - `corepack pnpm organization:verify`：31 项真实 HTTP/数据库检查通过。
-- 覆盖：创建/列表/详情、非成员隔离、owner/admin/member、邀请/接受、重复邀请、邮箱不匹配、无效 token、角色变更、移除、离开、最后 owner 保护、重复 slug、CSRF。
-- 未验证：所有权转让、校园/组织审核、管理员审计日志、`FORCE RLS`、Web/Mobile 页面与真实设备。
+- `corepack pnpm opportunity:verify`：包含 M4-01 组织资料修改、普通成员/访客越权拦截、公开端点访问等端到端验收检查。
+- 覆盖：创建/列表/详情、非成员隔离、owner/admin/member、邀请/接受、重复邀请、邮箱不匹配、无效 token、角色变更、移除、离开、最后 owner 保护、资料更新与公开主页、重复 slug、CSRF。
+

@@ -7,7 +7,7 @@ import { parseApiEnvironment } from '../packages/config/dist/env.js';
 import { createApiApplication } from '../apps/api/dist/app.js';
 import { AppModule } from '../apps/api/dist/app.module.js';
 
-const root = resolve(import.meta.dirname, '..');
+const root = process.cwd();
 const envFile = resolve(root, '.env');
 const composeFile = resolve(root, 'infra/compose/compose.yaml');
 if (!existsSync(envFile)) {

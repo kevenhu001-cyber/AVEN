@@ -355,6 +355,141 @@ export const UpdateOrganizationMemberRoleRequestSchema = z
   .object({ role: z.enum(['admin', 'member']) })
   .strict();
 
+export const UpdateOrganizationRequestSchema = z
+  .object({
+    name: DisplayNameSchema.optional(),
+    description: z.string().trim().max(2000).nullable().optional(),
+    websiteUrl: z.string().trim().max(500).nullable().optional(),
+    logoUrl: z.string().trim().max(500).nullable().optional(),
+  })
+  .strict();
+
+export const PublicOrganizationSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string(),
+    description: z.string().nullable(),
+    type: OrganizationTypeSchema,
+    campusId: z.uuid().nullable(),
+    websiteUrl: z.string().nullable(),
+    logoUrl: z.string().nullable(),
+    verificationStatus: OrganizationVerificationStatusSchema,
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const OpportunityStageSchema = z.enum(['undergraduate', 'master', 'phd', 'postdoc', 'any']);
+
+export const OpportunityStatusSchema = z.enum(['draft', 'open', 'paused', 'closed', 'expired']);
+
+export const OpportunityVisibilitySchema = z.enum(['organization', 'campus', 'public']);
+
+export const CreateOpportunityDraftRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    summary: z.string().trim().min(1).max(2000),
+    description: z.string().trim().min(1).max(20000),
+    domains: z.array(z.string().trim().min(1).max(50)).default([]),
+    requirements: z.array(z.string().trim().min(1).max(200)).default([]),
+    stage: OpportunityStageSchema.default('any'),
+    commitmentHoursPerWeek: z.number().int().min(1).max(40).nullable().optional(),
+    location: z.string().trim().max(200).nullable().optional(),
+    remoteOk: z.boolean().default(false),
+    headcount: z.number().int().min(1).max(100).default(1),
+    deadline: z.iso.datetime().nullable().optional(),
+    visibility: OpportunityVisibilitySchema.default('campus'),
+    contactUserId: z.uuid().optional(),
+  })
+  .strict();
+
+export const UpdateOpportunityRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    title: z.string().trim().min(1).max(200).optional(),
+    summary: z.string().trim().min(1).max(2000).optional(),
+    description: z.string().trim().min(1).max(20000).optional(),
+    domains: z.array(z.string().trim().min(1).max(50)).optional(),
+    requirements: z.array(z.string().trim().min(1).max(200)).optional(),
+    stage: OpportunityStageSchema.optional(),
+    commitmentHoursPerWeek: z.number().int().min(1).max(40).nullable().optional(),
+    location: z.string().trim().max(200).nullable().optional(),
+    remoteOk: z.boolean().optional(),
+    headcount: z.number().int().min(1).max(100).optional(),
+    deadline: z.iso.datetime().nullable().optional(),
+    visibility: OpportunityVisibilitySchema.optional(),
+    contactUserId: z.uuid().optional(),
+  })
+  .strict();
+
+export const OpportunityLifecycleActionRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+  })
+  .strict();
+
+export const OpportunitySummarySchema = z
+  .object({
+    id: z.uuid(),
+    organizationId: z.uuid().optional(),
+    organizationName: z.string().optional(),
+    organizationSlug: z.string().optional(),
+    campusId: z.uuid().nullable().optional(),
+    title: z.string(),
+    summary: z.string(),
+    domains: z.array(z.string()).optional(),
+    stage: OpportunityStageSchema,
+    status: OpportunityStatusSchema.optional(),
+    visibility: OpportunityVisibilitySchema,
+    headcount: z.number().int().positive(),
+    commitmentHoursPerWeek: z.number().int().nullable().optional(),
+    location: z.string().nullable().optional(),
+    remoteOk: z.boolean().optional(),
+    deadline: z.iso.datetime().nullable(),
+    publishedAt: z.iso.datetime().nullable(),
+    closedAt: z.iso.datetime().nullable().optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional(),
+  })
+  .strict();
+
+export const OpportunityDetailSchema = z
+  .object({
+    id: z.uuid(),
+    organizationId: z.uuid(),
+    organizationName: z.string(),
+    organizationSlug: z.string(),
+    campusId: z.uuid().nullable(),
+    title: z.string(),
+    summary: z.string(),
+    description: z.string(),
+    domains: z.array(z.string()),
+    requirements: z.array(z.string()),
+    stage: OpportunityStageSchema,
+    commitmentHoursPerWeek: z.number().int().nullable(),
+    location: z.string().nullable(),
+    remoteOk: z.boolean(),
+    headcount: z.number().int().positive(),
+    deadline: z.iso.datetime().nullable(),
+    status: OpportunityStatusSchema,
+    visibility: OpportunityVisibilitySchema,
+    version: z.number().int().positive(),
+    createdBy: z.uuid(),
+    contactUserId: z.uuid().nullable(),
+    publishedAt: z.iso.datetime().nullable(),
+    closedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    isMember: z.boolean(),
+  })
+  .strict();
+
+export const OpportunityListResponseSchema = z
+  .object({
+    data: z.array(OpportunitySummarySchema),
+  })
+  .strict();
+
 export const MemoryKindSchema = z.enum([
   'interest',
   'skill',
@@ -772,6 +907,20 @@ export type AcceptOrganizationInvitationResponse = z.infer<
 export type UpdateOrganizationMemberRoleRequest = z.infer<
   typeof UpdateOrganizationMemberRoleRequestSchema
 >;
+export type UpdateOrganizationRequest = z.infer<typeof UpdateOrganizationRequestSchema>;
+export type PublicOrganization = z.infer<typeof PublicOrganizationSchema>;
+export type OpportunityStage = z.infer<typeof OpportunityStageSchema>;
+export type OpportunityStatus = z.infer<typeof OpportunityStatusSchema>;
+export type OpportunityVisibility = z.infer<typeof OpportunityVisibilitySchema>;
+export type CreateOpportunityDraftRequest = z.infer<typeof CreateOpportunityDraftRequestSchema>;
+export type UpdateOpportunityRequest = z.infer<typeof UpdateOpportunityRequestSchema>;
+export type OpportunityLifecycleActionRequest = z.infer<
+  typeof OpportunityLifecycleActionRequestSchema
+>;
+export type OpportunitySummary = z.infer<typeof OpportunitySummarySchema>;
+export type OpportunityDetail = z.infer<typeof OpportunityDetailSchema>;
+export type OpportunityListResponse = z.infer<typeof OpportunityListResponseSchema>;
+
 export type MemoryKind = z.infer<typeof MemoryKindSchema>;
 export type Sensitivity = z.infer<typeof SensitivitySchema>;
 export type DisplayAudience = z.infer<typeof DisplayAudienceSchema>;

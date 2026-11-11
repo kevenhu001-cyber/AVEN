@@ -43,6 +43,8 @@
     "agent:verify": "pnpm build && tsx scripts/agent-verify.ts",
     "agent:maintain": "pnpm build:packages && tsx scripts/agent-maintenance.ts",
     "action:verify": "pnpm build && tsx scripts/action-verify.ts",
+    "opportunity:verify": "pnpm build && tsx scripts/opportunity-verify.ts",
+    "opportunity:maintain": "pnpm build:packages && tsx scripts/opportunity-maintenance.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",

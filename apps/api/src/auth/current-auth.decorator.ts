@@ -9,3 +9,10 @@ export const CurrentAuth = createParamDecorator(
     return request.auth;
   },
 );
+
+export const OptionalAuth = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): AuthContext | undefined => {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    return request.auth;
+  },
+);

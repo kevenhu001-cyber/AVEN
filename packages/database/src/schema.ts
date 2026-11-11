@@ -345,3 +345,80 @@ export const platformRoleAssignments = pgTable(
       .where(sql`${table.status} = 'active'`),
   ],
 );
+
+export const opportunityStage = pgEnum('opportunity_stage', [
+  'undergraduate',
+  'master',
+  'phd',
+  'postdoc',
+  'any',
+]);
+
+export const opportunityStatus = pgEnum('opportunity_status', [
+  'draft',
+  'open',
+  'paused',
+  'closed',
+  'expired',
+]);
+
+export const opportunityVisibility = pgEnum('opportunity_visibility', [
+  'organization',
+  'campus',
+  'public',
+]);
+
+export const opportunities = pgTable(
+  'opportunities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    description: text('description').notNull(),
+    domains: text('domains')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    requirements: text('requirements')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    stage: opportunityStage('stage').notNull().default('any'),
+    commitmentHoursPerWeek: integer('commitment_hours_per_week'),
+    location: text('location'),
+    remoteOk: boolean('remote_ok').notNull().default(false),
+    headcount: integer('headcount').notNull().default(1),
+    deadline: timestamp('deadline', { withTimezone: true }),
+    status: opportunityStatus('status').notNull().default('draft'),
+    visibility: opportunityVisibility('visibility').notNull().default('campus'),
+    version: integer('version').notNull().default(1),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    contactUserId: uuid('contact_user_id').references(() => users.id),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    check('chk_opportunity_title', sql`length(trim(${table.title})) between 1 and 200`),
+    check('chk_opportunity_summary', sql`length(trim(${table.summary})) between 1 and 2000`),
+    check(
+      'chk_opportunity_description',
+      sql`length(trim(${table.description})) between 1 and 20000`,
+    ),
+    check('chk_opportunity_headcount', sql`${table.headcount} between 1 and 100`),
+    check(
+      'chk_opportunity_hours',
+      sql`${table.commitmentHoursPerWeek} is null or (${table.commitmentHoursPerWeek} between 1 and 40)`,
+    ),
+    index('idx_opportunities_org_status').on(table.organizationId, table.status),
+    index('idx_opportunities_open_deadline')
+      .on(table.deadline)
+      .where(sql`${table.status} = 'open'`),
+    index('idx_opportunities_visibility_status').on(table.visibility, table.status),
+  ],
+);

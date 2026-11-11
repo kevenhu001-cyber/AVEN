@@ -8,6 +8,7 @@ import {
   OrganizationListResponseSchema,
   OrganizationMemberListResponseSchema,
   OrganizationMemberSchema,
+  PublicOrganizationSchema,
   type AcceptOrganizationInvitationResponse,
   type CreateOrganizationRequest,
   type InviteOrganizationMemberRequest,
@@ -17,6 +18,8 @@ import {
   type OrganizationListResponse,
   type OrganizationMember,
   type OrganizationMemberListResponse,
+  type PublicOrganization,
+  type UpdateOrganizationRequest,
 } from '@aven/contracts';
 import { createApplicationPool, withRequestContext, type DatabasePool } from '@aven/database';
 import { MAILER } from '../auth/auth.constants.js';
@@ -280,6 +283,54 @@ export class OrganizationService implements OnModuleDestroy {
     await withRequestContext(this.getPool(), this.context(auth), async (client) =>
       client.query('SELECT app.leave_organization($1)', [organizationId]),
     );
+  }
+
+  async update(
+    auth: AuthContext,
+    id: string,
+    input: UpdateOrganizationRequest,
+  ): Promise<OrganizationDetail> {
+    await withRequestContext(this.getPool(), this.context(auth), async (client) =>
+      client.query('SELECT * FROM app.update_organization($1, $2, $3, $4, $5)', [
+        id,
+        input.name ?? null,
+        input.description ?? null,
+        input.websiteUrl ?? null,
+        input.logoUrl ?? null,
+      ]),
+    );
+    return this.get(auth, id);
+  }
+
+  async getPublic(id: string): Promise<PublicOrganization> {
+    const result = await withRequestContext(this.getPool(), {}, async (client) =>
+      client.query<{
+        organization_id: string;
+        name: string;
+        slug: string;
+        description: string | null;
+        type: 'lab' | 'research_group' | 'club' | 'department' | 'company' | 'other';
+        campus_id: string | null;
+        website_url: string | null;
+        logo_url: string | null;
+        verification_status: 'unverified' | 'pending' | 'verified' | 'rejected';
+        created_at: Date;
+      }>('SELECT * FROM app.get_public_organization($1)', [id]),
+    );
+    const row = result.rows[0];
+    if (!row) throw new NotFoundException();
+    return PublicOrganizationSchema.parse({
+      id: row.organization_id,
+      name: row.name,
+      slug: row.slug,
+      description: row.description,
+      type: row.type,
+      campusId: row.campus_id,
+      websiteUrl: row.website_url,
+      logoUrl: row.logo_url,
+      verificationStatus: row.verification_status,
+      createdAt: row.created_at.toISOString(),
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
