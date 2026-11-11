@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ActionConfirmRequestSchema,
+  ActionCreateRequestSchema,
+  ActionSchema,
   AgentRunEventSchema,
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
@@ -344,5 +347,44 @@ describe('public engineering contracts', () => {
         createdAt: '2026-11-11T00:00:00.000Z',
       }).success,
     ).toBe(false);
+  });
+  it('validates action drafts and one-time confirmation requests', () => {
+    const parsed = ActionCreateRequestSchema.parse({
+      actionType: 'memory.create',
+      payload: { kind: 'skill', title: '行动技能', content: '行动正文' },
+    });
+    expect(parsed.expiresInSeconds).toBe(600);
+    expect(parsed.payload.allowedUses).toEqual([]);
+    expect(
+      ActionCreateRequestSchema.safeParse({
+        actionType: 'memory.create',
+        payload: { kind: 'skill', title: '', content: 'x' },
+      }).success,
+    ).toBe(false);
+    expect(
+      ActionCreateRequestSchema.safeParse({
+        actionType: 'memory.create',
+        payload: { kind: 'skill', title: 'x', content: 'x' },
+        expiresInSeconds: 0,
+      }).success,
+    ).toBe(false);
+    expect(ActionConfirmRequestSchema.safeParse({ expectedDraftVersion: 1 }).success).toBe(false);
+    expect(
+      ActionSchema.parse({
+        id: requestId,
+        actionType: 'memory.create',
+        status: 'pending_confirmation',
+        draftVersion: 1,
+        runId: null,
+        organizationId: null,
+        preview: { title: '行动技能' },
+        expiresAt: '2026-11-11T00:00:00.000Z',
+        confirmedAt: null,
+        executedAt: null,
+        result: null,
+        createdAt: '2026-11-11T00:00:00.000Z',
+        updatedAt: '2026-11-11T00:00:00.000Z',
+      }).status,
+    ).toBe('pending_confirmation');
   });
 });

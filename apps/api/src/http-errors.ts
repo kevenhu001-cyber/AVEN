@@ -80,6 +80,16 @@ export function formatException(
       code: 'IDEMPOTENCY_CONFLICT',
       message: 'The idempotency key was reused with a different request.',
     },
+    P0004: {
+      status: 403,
+      code: 'ACTION_TOKEN_INVALID',
+      message: 'The action confirmation token is invalid.',
+    },
+    P0005: {
+      status: 409,
+      code: 'VERSION_CONFLICT',
+      message: 'The action draft version is stale.',
+    },
   };
   if (error instanceof ApiCodeException) {
     code = error.code;

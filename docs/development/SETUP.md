@@ -69,6 +69,7 @@ corepack pnpm memory:maintain # 到期失效、正文保留清理与审计事件
 corepack pnpm ai:verify      # Mock/OpenAI-compatible Provider 与工具权限/超时/重试/审计检查
 corepack pnpm agent:verify   # Agent turn/SSE 重放/取消/来源复核/过期清理检查
 corepack pnpm agent:maintain # Agent 事件 24 小时保留清理
+corepack pnpm action:verify  # 行动草稿/预览/token/确认/幂等/取消/过期检查
 ```
 
 - `db:verify`：重建 `aven_test`，验证空库迁移、已有库升级、seed 幂等、RLS 与约束。
@@ -83,6 +84,7 @@ corepack pnpm agent:maintain # Agent 事件 24 小时保留清理
 - `ai:verify`：Mock/OpenAI-compatible Provider、结构化输出校验、工具权限/数据用途/参数伪造/超时/重试/审计检查；不连接真实 Provider，不需要密钥。
 - `agent:verify`：Agent turn 幂等、run 状态、SSE 事件/游标/重放、来源失效拒绝、排队/运行中取消、实时流、24 小时过期与事件清理检查。
 - `agent:maintain`：调用 `app.purge_agent_run_events` 清理过期 Agent 事件；保留小时数由 `AGENT_EVENT_RETENTION_HOURS` 配置。
+- `action:verify`：行动草稿/预览、一次性 token、版本/过期/错误 token、确认执行、重复确认不重复写入、取消/过期与跨用户检查。
 - `test:e2e` 的测试服务器故意使用不可用依赖，验证就绪失败不会被渲染为成功。
 
 ## 故障处理

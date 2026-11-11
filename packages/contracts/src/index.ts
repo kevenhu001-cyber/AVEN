@@ -24,6 +24,9 @@ export const ApiErrorCodeSchema = z.enum([
   'EVENT_HISTORY_EXPIRED',
   'INVALID_EVENT_CURSOR',
   'SOURCE_INVALIDATED',
+  'ACTION_NOT_CONFIRMABLE',
+  'ACTION_EXPIRED',
+  'ACTION_TOKEN_INVALID',
   'RELATIONSHIP_EXISTS',
   'RATE_LIMITED',
   'PROVIDER_UNAVAILABLE',
@@ -670,6 +673,58 @@ export const AgentCancelResponseSchema = z
   })
   .strict();
 
+export const ActionTypeSchema = z.enum(['memory.create']);
+export const ActionStatusSchema = z.enum([
+  'draft',
+  'pending_confirmation',
+  'executing',
+  'succeeded',
+  'failed',
+  'cancelled',
+  'expired',
+]);
+
+export const ActionCreateRequestSchema = z
+  .object({
+    actionType: ActionTypeSchema,
+    payload: CreateMemoryRequestSchema,
+    runId: z.uuid().optional(),
+    expiresInSeconds: z.number().int().min(1).max(3600).default(600),
+  })
+  .strict();
+
+export const ActionSchema = z
+  .object({
+    id: z.uuid(),
+    actionType: ActionTypeSchema,
+    status: ActionStatusSchema,
+    draftVersion: z.number().int().positive(),
+    runId: z.uuid().nullable(),
+    organizationId: z.uuid().nullable(),
+    preview: z.record(z.string(), z.unknown()),
+    expiresAt: z.iso.datetime(),
+    confirmedAt: z.iso.datetime().nullable(),
+    executedAt: z.iso.datetime().nullable(),
+    result: z.record(z.string(), z.unknown()).nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const ActionCreateResponseSchema = ActionSchema.extend({
+  confirmationToken: z.string().min(1).max(200),
+}).strict();
+
+export const ActionConfirmRequestSchema = z
+  .object({
+    expectedDraftVersion: z.number().int().min(1),
+    confirmationToken: z.string().min(1).max(200),
+  })
+  .strict();
+
+export const ActionConfirmResponseSchema = ActionSchema;
+export const ActionCancelResponseSchema = ActionSchema;
+
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type LivenessResponse = z.infer<typeof LivenessResponseSchema>;
@@ -749,3 +804,11 @@ export type AgentTurnResponse = z.infer<typeof AgentTurnResponseSchema>;
 export type AgentRun = z.infer<typeof AgentRunSchema>;
 export type AgentRunEvent = z.infer<typeof AgentRunEventSchema>;
 export type AgentCancelResponse = z.infer<typeof AgentCancelResponseSchema>;
+export type ActionType = z.infer<typeof ActionTypeSchema>;
+export type ActionStatus = z.infer<typeof ActionStatusSchema>;
+export type ActionCreateRequest = z.infer<typeof ActionCreateRequestSchema>;
+export type Action = z.infer<typeof ActionSchema>;
+export type ActionCreateResponse = z.infer<typeof ActionCreateResponseSchema>;
+export type ActionConfirmRequest = z.infer<typeof ActionConfirmRequestSchema>;
+export type ActionConfirmResponse = z.infer<typeof ActionConfirmResponseSchema>;
+export type ActionCancelResponse = z.infer<typeof ActionCancelResponseSchema>;

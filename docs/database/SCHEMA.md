@@ -768,6 +768,8 @@ erDiagram
 
 索引：`idx_actions_principal_status`；`idx_actions_expires`。
 
+状态枚举：`draft`、`pending_confirmation`、`executing`、`succeeded`、`failed`、`cancelled`、`expired`。M3-06 启用 `memory.create`：草稿创建为 `pending_confirmation`，`draft_version=1`；确认时校验所有者、token 哈希、版本、有效期与幂等键，在同一事务内创建记忆并写入 `succeeded`/`confirmed_at`/`executed_at`/`result`。`confirmation_token_hash` 只存 SHA-256，明文 token 只在创建响应返回一次；`draft_payload` 是受限业务数据，不进入日志/Outbox。`actions` 表 FORCE RLS，普通池只能读本人，写操作只通过受控函数。
+
 ### 9.5 `outbox_events`
 
 | 列 | 类型 | 说明 |

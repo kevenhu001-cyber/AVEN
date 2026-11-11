@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('fifteen migrations are recorded', migrations.rows[0]?.count === '15');
+    check('seventeen migrations are recorded', migrations.rows[0]?.count === '17');
     const seed = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.development_seed_runs',
     );
@@ -117,13 +117,13 @@ async function main(): Promise<void> {
          'outbox_events','job_receipts','memory_items','memory_sources',
          'context_field_policies','memory_events','conversations',
          'conversation_members','messages','agent_runs','agent_run_events',
-         'agent_run_sources','idempotency_keys'
+         'agent_run_sources','idempotency_keys','actions'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '29');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '30');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),
@@ -816,6 +816,56 @@ async function main(): Promise<void> {
          )`,
     );
     check('agent integrity indexes exist', agentIndexes.rows[0]?.count === '3');
+
+    const actionFunctions = await migrator.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = 'app'
+         AND p.proname IN (
+           'create_action','get_action','confirm_memory_create_action','cancel_action'
+         )
+         AND p.proowner = 'aven_function_owner'::regrole`,
+    );
+    check(
+      'four action functions are owned by the function owner',
+      actionFunctions.rows[0]?.count === '4',
+    );
+    check(
+      'app cannot create an action without context',
+      await appError(
+        "SELECT * FROM app.create_action('memory.create', '{}'::jsonb, null, 600, repeat('a', 64))",
+      ),
+    );
+    check(
+      'app cannot insert actions directly',
+      await appError(
+        "INSERT INTO public.actions (principal_id, action_type, draft_payload, confirmation_token_hash, expires_at) VALUES ('00000000-0000-4000-8000-000000000000', 'memory.create', '{}'::jsonb, repeat('a', 64), now() + interval '1 hour')",
+      ),
+    );
+    check(
+      'app cannot confirm an action without context',
+      await appError(
+        "SELECT * FROM app.confirm_memory_create_action('00000000-0000-4000-8000-000000000000', 1, repeat('a', 64), 'probe', 'POST', '/probe', 'hash')",
+      ),
+    );
+    await app.query('BEGIN');
+    try {
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userOne]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userOne]);
+      const createdAction = await app.query<{ id: string }>(
+        'SELECT id FROM app.create_action(\'memory.create\', \'{"kind":"skill","title":"验证行动","content":"验证内容","sensitivity":"normal","displayAudience":"owner","discoverable":false,"allowedUses":["self_ai"]}\'::jsonb, null, 600, repeat(\'a\', 64))',
+      );
+      const actionId = createdAction.rows[0]?.id;
+      check('action creation returns an id', Boolean(actionId));
+      const ownerAction = await app.query(`SELECT * FROM app.get_action('${actionId}')`);
+      check('owner can read the action', ownerAction.rows.length === 1);
+      await app.query("SELECT set_config('app.user_id', $1, true)", [seedIds.userTwo]);
+      await app.query("SELECT set_config('app.principal_id', $1, true)", [seedIds.userTwo]);
+      const otherAction = await app.query(`SELECT * FROM app.get_action('${actionId}')`);
+      check('another user cannot read the action', otherAction.rows.length === 0);
+    } finally {
+      await app.query('ROLLBACK');
+    }
 
     check('app cannot read credentials', await appError('SELECT * FROM public.credentials'));
     check(
