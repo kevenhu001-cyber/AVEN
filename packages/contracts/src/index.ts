@@ -966,7 +966,12 @@ export const MatchCandidateListResponseSchema = z
   })
   .strict();
 
-export const ConsentPurposeSchema = z.enum(['referral', 'relationship_context', 'advisory']);
+export const ConsentPurposeSchema = z.enum([
+  'referral',
+  'relationship_context',
+  'advisory',
+  'event_coordination',
+]);
 export const ConsentItemStatusSchema = z.enum(['active', 'revoked', 'expired', 'stale']);
 
 export const CreateConsentPreviewRequestSchema = z
@@ -1370,6 +1375,35 @@ export const AvailabilityWindowResponseSchema = z
   })
   .strict();
 
+export const AvailabilityShareDirectionSchema = z.enum(['granted', 'received']);
+
+export const CreateAvailabilityShareRequestSchema = z
+  .object({
+    granteePrincipalId: z.uuid(),
+    expiresAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const AvailabilityShareSchema = z
+  .object({
+    id: z.uuid(),
+    grantorPrincipalId: z.uuid(),
+    granteePrincipalId: z.uuid(),
+    purpose: z.literal('event_coordination'),
+    status: z.enum(['active', 'revoked', 'expired']),
+    expiresAt: z.iso.datetime(),
+    version: z.number().int().positive(),
+    createdAt: z.iso.datetime(),
+    direction: AvailabilityShareDirectionSchema,
+  })
+  .strict();
+
+export const AvailabilityShareListResponseSchema = z
+  .object({
+    data: z.array(AvailabilityShareSchema),
+  })
+  .strict();
+
 export const CreateEventDraftRequestSchema = z
   .object({
     title: z.string().trim().min(1).max(160),
@@ -1491,6 +1525,10 @@ export type AvailabilityBlockListResponse = z.infer<typeof AvailabilityBlockList
 export type QueryAvailabilityWindowRequest = z.infer<typeof QueryAvailabilityWindowRequestSchema>;
 export type AvailabilityWindowItem = z.infer<typeof AvailabilityWindowItemSchema>;
 export type AvailabilityWindowResponse = z.infer<typeof AvailabilityWindowResponseSchema>;
+export type AvailabilityShareDirection = z.infer<typeof AvailabilityShareDirectionSchema>;
+export type CreateAvailabilityShareRequest = z.infer<typeof CreateAvailabilityShareRequestSchema>;
+export type AvailabilityShare = z.infer<typeof AvailabilityShareSchema>;
+export type AvailabilityShareListResponse = z.infer<typeof AvailabilityShareListResponseSchema>;
 export type CreateEventDraftRequest = z.infer<typeof CreateEventDraftRequestSchema>;
 export type ProposeEventTimeRequest = z.infer<typeof ProposeEventTimeRequestSchema>;
 export type RespondEventParticipantRequest = z.infer<typeof RespondEventParticipantRequestSchema>;

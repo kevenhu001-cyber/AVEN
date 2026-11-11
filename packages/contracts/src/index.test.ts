@@ -31,6 +31,9 @@ import {
   CreateOpportunityDraftRequestSchema,
   OpportunityDetailSchema,
   UpdateProfileRequestSchema,
+  CreateAvailabilityShareRequestSchema,
+  AvailabilityShareSchema,
+  AvailabilityShareListResponseSchema,
 } from './index';
 
 const requestId = 'b434644d-d195-4978-b457-765c6d9b755e';
@@ -502,5 +505,43 @@ describe('public engineering contracts', () => {
     });
     expect(updated.expectedVersion).toBe(1);
     expect(updated.title).toBe('更新标题');
+  });
+
+  it('validates availability share requests and metadata', () => {
+    const request = CreateAvailabilityShareRequestSchema.parse({
+      granteePrincipalId: requestId,
+      expiresAt: '2026-11-20T00:00:00.000Z',
+    });
+    expect(request.granteePrincipalId).toBe(requestId);
+
+    expect(() =>
+      CreateAvailabilityShareRequestSchema.parse({
+        granteePrincipalId: requestId,
+        expiresAt: 'not-a-date',
+      }),
+    ).toThrow();
+    expect(() =>
+      CreateAvailabilityShareRequestSchema.parse({
+        granteePrincipalId: requestId,
+        expiresAt: '2026-11-20T00:00:00.000Z',
+        extra: true,
+      }),
+    ).toThrow();
+
+    const share = AvailabilityShareSchema.parse({
+      id: requestId,
+      grantorPrincipalId: requestId,
+      granteePrincipalId: requestId,
+      purpose: 'event_coordination',
+      status: 'active',
+      expiresAt: '2026-11-20T00:00:00.000Z',
+      version: 1,
+      createdAt: '2026-11-11T00:00:00.000Z',
+      direction: 'granted',
+    });
+    expect(share.purpose).toBe('event_coordination');
+
+    const list = AvailabilityShareListResponseSchema.parse({ data: [share] });
+    expect(list.data).toHaveLength(1);
   });
 });

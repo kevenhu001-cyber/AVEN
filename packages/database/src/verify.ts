@@ -77,10 +77,138 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twenty-seven migrations are recorded', migrations.rows[0]?.count === '27');
+    check('twenty-nine migrations are recorded', migrations.rows[0]?.count === '29');
+    const availabilityContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
+    await app.query('BEGIN');
+    try {
+      await app.query(
+        "SELECT set_config('app.principal_id', $1, true), set_config('app.user_id', $1, true)",
+        [seedIds.userOne],
+      );
+      await app.query(
+        "SELECT * FROM app.upsert_availability_block(now(), now() + interval '1 hour')",
+      );
+      const own = await app.query(
+        "SELECT * FROM app.query_availability_window(ARRAY[$1::uuid], now() - interval '1 hour', now() + interval '2 hours')",
+        [seedIds.userOne],
+      );
+      check('availability owner can read own projection', own.rows.length > 0);
+    } finally {
+      await app.query('ROLLBACK');
+    }
+    check(
+      'availability rejects another user even in a mixed request',
+      await appError(
+        `SELECT * FROM app.query_availability_window(ARRAY['${seedIds.userOne}'::uuid, '${seedIds.userTwo}'::uuid], now(), now() + interval '1 hour')`,
+        availabilityContext,
+      ),
+    );
+    check(
+      'availability rejects a null target',
+      await appError(
+        `SELECT * FROM app.query_availability_window(ARRAY[NULL::uuid], now(), now() + interval '1 hour')`,
+        availabilityContext,
+      ),
+    );
+    check(
+      'availability rejects missing identity',
+      await appError(
+        `SELECT * FROM app.query_availability_window(ARRAY['${seedIds.userOne}'::uuid], now(), now() + interval '1 hour')`,
+      ),
+    );
     const ownerContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
     const otherContext = { principalId: seedIds.userTwo, userId: seedIds.userTwo };
     const providerSave = `SELECT * FROM app.save_user_ai_provider('https://ai.example.test/v1', 'model', 'encrypted-test-value', 0)`;
+    const shareCreate = `SELECT app.create_availability_share('${seedIds.userTwo}'::uuid, now() + interval '1 day') AS share`;
+    check('availability share requires identity', await appError(shareCreate));
+    check(
+      'availability share rejects a self grant',
+      await appError(
+        `SELECT app.create_availability_share('${seedIds.userOne}'::uuid, now() + interval '1 day')`,
+        ownerContext,
+      ),
+    );
+    check(
+      'availability share rejects an expired horizon',
+      await appError(
+        `SELECT app.create_availability_share('${seedIds.userTwo}'::uuid, now() - interval '1 day')`,
+        ownerContext,
+      ),
+    );
+    check(
+      'availability share rejects a horizon beyond the maximum',
+      await appError(
+        `SELECT app.create_availability_share('${seedIds.userTwo}'::uuid, now() + interval '365 days')`,
+        ownerContext,
+      ),
+    );
+    check(
+      'availability share rejects an unknown grantee',
+      await appError(
+        `SELECT app.create_availability_share('00000000-0000-0000-0000-000000000000'::uuid, now() + interval '1 day')`,
+        ownerContext,
+      ),
+    );
+    const shareRow = (await appQuery(shareCreate, ownerContext)).rows[0]?.share as
+      Record<string, unknown> | undefined;
+    const shareId = String(shareRow?.id ?? '');
+    check(
+      'availability share records the event coordination purpose',
+      Boolean(shareId) &&
+        shareRow?.purpose === 'event_coordination' &&
+        shareRow?.status === 'active',
+      JSON.stringify(shareRow ?? {}),
+    );
+    check(
+      'availability share rejects a duplicate active grant',
+      await appError(shareCreate, ownerContext),
+    );
+    check(
+      'availability share is visible to the grantee',
+      (await appQuery('SELECT app.list_availability_shares() AS shares', otherContext)).rows[0]
+        ?.shares !== undefined,
+    );
+    check(
+      'granted principal may read the owner availability projection',
+      await appQuery(
+        `SELECT * FROM app.upsert_availability_block(now() + interval '10 minutes', now() + interval '70 minutes')`,
+        ownerContext,
+      )
+        .then(() =>
+          appQuery(
+            `SELECT * FROM app.query_availability_window(ARRAY['${seedIds.userOne}'::uuid], now() - interval '1 hour', now() + interval '2 hours')`,
+            otherContext,
+          ),
+        )
+        .then((result) => result.rows.length > 0),
+    );
+    check(
+      'availability share does not grant reverse access',
+      await appError(
+        `SELECT * FROM app.query_availability_window(ARRAY['${seedIds.userTwo}'::uuid], now() - interval '1 hour', now() + interval '2 hours')`,
+        ownerContext,
+      ),
+    );
+    check(
+      'only the grantor can revoke an availability share',
+      await appError(`SELECT app.revoke_availability_share('${shareId}')`, otherContext),
+    );
+    check(
+      'grantor revokes the availability share',
+      (
+        await appQuery(
+          `SELECT app.revoke_availability_share('${shareId}') AS revoked`,
+          ownerContext,
+        )
+      ).rows[0]?.revoked === true,
+    );
+    check(
+      'revoked share blocks the projection immediately',
+      await appError(
+        `SELECT * FROM app.query_availability_window(ARRAY['${seedIds.userOne}'::uuid], now() - interval '1 hour', now() + interval '2 hours')`,
+        otherContext,
+      ),
+    );
     check('provider config requires identity', await appError(providerSave));
     const savedProvider = await appQuery(providerSave, ownerContext);
     check(

@@ -14,7 +14,10 @@ import {
 import {
   AvailabilityBlockListResponseSchema,
   AvailabilityBlockSchema,
+  AvailabilityShareListResponseSchema,
+  AvailabilityShareSchema,
   AvailabilityWindowResponseSchema,
+  CreateAvailabilityShareRequestSchema,
   QueryAvailabilityWindowRequestSchema,
   RequestIdSchema,
   TimeIntersectionRequestSchema,
@@ -72,6 +75,27 @@ export class AvailabilityController {
     const input = parse(QueryAvailabilityWindowRequestSchema, body);
     const items = await this.availability.queryWindow(auth, input);
     return AvailabilityWindowResponseSchema.parse({ data: items });
+  }
+
+  @Post('shares')
+  @HttpCode(200)
+  async createShare(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    const input = parse(CreateAvailabilityShareRequestSchema, body);
+    const share = await this.availability.createShare(auth, input);
+    return AvailabilityShareSchema.parse(share);
+  }
+
+  @Get('shares')
+  async listShares(@CurrentAuth() auth: AuthContext) {
+    const shares = await this.availability.listShares(auth);
+    return AvailabilityShareListResponseSchema.parse({ data: shares });
+  }
+
+  @Delete('shares/:id')
+  @HttpCode(200)
+  async revokeShare(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
+    const revoked = await this.availability.revokeShare(auth, parseId(id));
+    return { revoked };
   }
 
   @Post('intersection')

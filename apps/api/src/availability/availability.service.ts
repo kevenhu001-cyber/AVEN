@@ -2,9 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { OnModuleDestroy } from '@nestjs/common';
 import {
   AvailabilityBlockSchema,
+  AvailabilityShareSchema,
   type AvailabilityBlock,
+  type AvailabilityShare,
   type AvailabilityStatus,
   type AvailabilityWindowItem,
+  type CreateAvailabilityShareRequest,
   type QueryAvailabilityWindowRequest,
   type TimeIntersectionRequest,
   type TimeSlot,
@@ -71,7 +74,10 @@ export class AvailabilityService implements OnModuleDestroy {
     }
   }
 
-  async upsertBlock(auth: AuthContext, input: UpsertAvailabilityBlockRequest): Promise<AvailabilityBlock> {
+  async upsertBlock(
+    auth: AuthContext,
+    input: UpsertAvailabilityBlockRequest,
+  ): Promise<AvailabilityBlock> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       const res = await client.query<AvailabilityBlockRow>(
         'SELECT * FROM app.upsert_availability_block($1, $2, $3, $4::public.availability_status, $5, $6)',
@@ -110,7 +116,10 @@ export class AvailabilityService implements OnModuleDestroy {
     });
   }
 
-  async queryWindow(auth: AuthContext, input: QueryAvailabilityWindowRequest): Promise<AvailabilityWindowItem[]> {
+  async queryWindow(
+    auth: AuthContext,
+    input: QueryAvailabilityWindowRequest,
+  ): Promise<AvailabilityWindowItem[]> {
     return withRequestContext(this.getPool(), this.context(auth), async (client) => {
       const res = await client.query<AvailabilityWindowRow>(
         'SELECT * FROM app.query_availability_window($1::uuid[], $2, $3)',
@@ -125,7 +134,57 @@ export class AvailabilityService implements OnModuleDestroy {
     });
   }
 
-  async computeIntersection(auth: AuthContext, input: TimeIntersectionRequest): Promise<TimeSlot[]> {
+  async createShare(
+    auth: AuthContext,
+    input: CreateAvailabilityShareRequest,
+  ): Promise<AvailabilityShare> {
+    return withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      const res = await client.query<{ create_availability_share: Record<string, unknown> }>(
+        'SELECT app.create_availability_share($1, $2) AS create_availability_share',
+        [input.granteePrincipalId, new Date(input.expiresAt)],
+      );
+      const raw = res.rows[0]?.create_availability_share;
+      if (!raw) throw new NotFoundException('Failed to create availability share.');
+      return AvailabilityShareSchema.parse({
+        ...raw,
+        expiresAt: new Date(String(raw.expiresAt)).toISOString(),
+        createdAt: new Date(String(raw.createdAt)).toISOString(),
+        direction: 'granted',
+      });
+    });
+  }
+
+  async listShares(auth: AuthContext): Promise<AvailabilityShare[]> {
+    return withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      const res = await client.query<{ list_availability_shares: unknown }>(
+        'SELECT app.list_availability_shares() AS list_availability_shares',
+      );
+      const raw = res.rows[0]?.list_availability_shares;
+      const items = Array.isArray(raw) ? (raw as Record<string, unknown>[]) : [];
+      return items.map((item) =>
+        AvailabilityShareSchema.parse({
+          ...item,
+          expiresAt: new Date(String(item.expiresAt)).toISOString(),
+          createdAt: new Date(String(item.createdAt)).toISOString(),
+        }),
+      );
+    });
+  }
+
+  async revokeShare(auth: AuthContext, shareId: string): Promise<boolean> {
+    return withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      const res = await client.query<{ revoke_availability_share: boolean }>(
+        'SELECT app.revoke_availability_share($1) AS revoke_availability_share',
+        [shareId],
+      );
+      return Boolean(res.rows[0]?.revoke_availability_share);
+    });
+  }
+
+  async computeIntersection(
+    auth: AuthContext,
+    input: TimeIntersectionRequest,
+  ): Promise<TimeSlot[]> {
     // 1. Fetch busy intervals of all participants within requested window
     const busyBlocks = await this.queryWindow(auth, {
       principalIds: input.principalIds,

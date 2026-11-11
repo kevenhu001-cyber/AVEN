@@ -200,7 +200,11 @@ async function main(): Promise<void> {
       },
     });
     const orgId = String(nested(orgRes.body, ['id']));
-    check('organization created', orgRes.status === 201 && Boolean(orgId), JSON.stringify(orgRes.body));
+    check(
+      'organization created',
+      orgRes.status === 201 && Boolean(orgId),
+      JSON.stringify(orgRes.body),
+    );
 
     const oppRes = await client2.call(`/api/v1/organizations/${orgId}/opportunities`, {
       method: 'POST',
@@ -267,7 +271,11 @@ async function main(): Promise<void> {
       body: { referralId },
     });
     const relationshipId = String(nested(relRes.body, ['id']));
-    check('prerequisite: relationship established', relRes.status === 201 && Boolean(relationshipId), JSON.stringify(relRes.body));
+    check(
+      'prerequisite: relationship established',
+      relRes.status === 201 && Boolean(relationshipId),
+      JSON.stringify(relRes.body),
+    );
 
     // =========================================================================
     // M6-01: Availability Blocks (个人日程与忙闲块录入)
@@ -292,7 +300,10 @@ async function main(): Promise<void> {
         source: 'manual',
       },
     });
-    check('M6-01: user one creates availability block', block1Res.status === 200 && Boolean(nested(block1Res.body, ['id'])));
+    check(
+      'M6-01: user one creates availability block',
+      block1Res.status === 200 && Boolean(nested(block1Res.body, ['id'])),
+    );
 
     const block2Res = await client2.call('/api/v1/availability/blocks', {
       method: 'POST',
@@ -304,11 +315,17 @@ async function main(): Promise<void> {
         source: 'manual',
       },
     });
-    check('M6-01: user two creates availability block', block2Res.status === 200 && Boolean(nested(block2Res.body, ['id'])));
+    check(
+      'M6-01: user two creates availability block',
+      block2Res.status === 200 && Boolean(nested(block2Res.body, ['id'])),
+    );
 
     const myBlocksRes = await client1.call('/api/v1/availability/me');
     const myBlocks = (nested(myBlocksRes.body, ['data']) as Record<string, unknown>[]) ?? [];
-    check('M6-01: user one lists own availability blocks', myBlocks.some((b) => b.id === nested(block1Res.body, ['id'])));
+    check(
+      'M6-01: user one lists own availability blocks',
+      myBlocks.some((b) => b.id === nested(block1Res.body, ['id'])),
+    );
 
     // =========================================================================
     // M6-01/02: Privacy-Preserving Busy/Free Projection Window
@@ -318,28 +335,28 @@ async function main(): Promise<void> {
 
     const windowRes = await client2.call('/api/v1/availability/window', {
       method: 'POST',
-      body: {
-        principalIds: [user1Id, user2Id],
-        startAt: windowStart,
-        endAt: windowEnd,
-      },
+      body: { principalIds: [user2Id], startAt: windowStart, endAt: windowEnd },
     });
     const windowItems = (nested(windowRes.body, ['data']) as Record<string, unknown>[]) ?? [];
     check(
-      'M6-01/02: availability window projection returns busy statuses for both participants',
-      windowItems.some((w) => w.principalId === user1Id && w.status === 'busy') &&
+      'M6-01: owner can query own availability',
+      windowRes.status === 200 &&
         windowItems.some((w) => w.principalId === user2Id && w.status === 'busy'),
-      JSON.stringify(windowRes.body),
     );
     check(
-      'M6-01/02: projection strictly omits private event titles and notes',
+      'M6-01: projection omits private details',
       windowItems.every((w) => !('title' in w) && !('description' in w) && !('notes' in w)),
     );
-
-    // =========================================================================
-    // M6-03: Multi-party Availability Intersection Calculation
-    // =========================================================================
-    const intersectionRes = await client2.call('/api/v1/availability/intersection', {
+    const foreignWindow = await client2.call('/api/v1/availability/window', {
+      method: 'POST',
+      body: { principalIds: [user1Id, user2Id], startAt: windowStart, endAt: windowEnd },
+    });
+    check(
+      'M6-01: cross-user availability is denied',
+      foreignWindow.status === 403,
+      JSON.stringify(foreignWindow.body),
+    );
+    const foreignIntersection = await client2.call('/api/v1/availability/intersection', {
       method: 'POST',
       body: {
         principalIds: [user1Id, user2Id],
@@ -349,12 +366,110 @@ async function main(): Promise<void> {
         workingHoursOnly: false,
       },
     });
-    const slots = (nested(intersectionRes.body, ['availableSlots']) as { startAt: string; endAt: string }[]) ?? [];
-    check('M6-03: availability intersection solver finds valid slots', intersectionRes.status === 200 && slots.length > 0, JSON.stringify(intersectionRes.body));
-
-    // Verify chosen slot is strictly outside both user1 (10-12) and user2 (14-16) busy blocks
+    check(
+      'M6-03: cross-user intersection is denied',
+      foreignIntersection.status === 403,
+      JSON.stringify(foreignIntersection.body),
+    );
+    const intersectionRes = await client2.call('/api/v1/availability/intersection', {
+      method: 'POST',
+      body: {
+        principalIds: [user2Id],
+        windowStart,
+        windowEnd,
+        durationMinutes: 60,
+        workingHoursOnly: false,
+      },
+    });
+    const slots =
+      (nested(intersectionRes.body, ['availableSlots']) as { startAt: string; endAt: string }[]) ??
+      [];
+    check(
+      'M6-03: own availability intersection finds slots',
+      intersectionRes.status === 200 && slots.length > 0,
+    );
     const chosenSlot = slots[0];
-    check('M6-03: valid candidate slot selected for proposal', Boolean(chosenSlot?.startAt && chosenSlot?.endAt));
+    check(
+      'M6-03: candidate slot selected for proposal',
+      Boolean(chosenSlot?.startAt && chosenSlot?.endAt),
+    );
+
+    // =========================================================================
+    // M6-01R: Purpose-bound availability sharing (grant, direction, revocation)
+    // =========================================================================
+    const shareExpiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const shareRes = await client1.call('/api/v1/availability/shares', {
+      method: 'POST',
+      body: { granteePrincipalId: user2Id, expiresAt: shareExpiresAt },
+    });
+    const shareId = String(nested(shareRes.body, ['id']));
+    check(
+      'M6-01R: owner creates availability share for another principal',
+      shareRes.status === 200 && Boolean(shareId),
+      JSON.stringify(shareRes.body),
+    );
+
+    const shareListRes = await client2.call('/api/v1/availability/shares');
+    const receivedShares = (nested(shareListRes.body, ['data']) as Record<string, unknown>[]) ?? [];
+    check(
+      'M6-01R: grantee sees the received share',
+      shareListRes.status === 200 &&
+        receivedShares.some((s) => s.id === shareId && s.direction === 'received'),
+      JSON.stringify(shareListRes.body),
+    );
+
+    const reverseWindow = await client1.call('/api/v1/availability/window', {
+      method: 'POST',
+      body: { principalIds: [user2Id], startAt: windowStart, endAt: windowEnd },
+    });
+    check(
+      'M6-01R: share is directional and does not leak the other way',
+      reverseWindow.status === 403,
+      JSON.stringify(reverseWindow.body),
+    );
+
+    const sharedWindow = await client2.call('/api/v1/availability/window', {
+      method: 'POST',
+      body: { principalIds: [user1Id, user2Id], startAt: windowStart, endAt: windowEnd },
+    });
+    const sharedItems = (nested(sharedWindow.body, ['data']) as Record<string, unknown>[]) ?? [];
+    check(
+      'M6-01R: granted principal may read the busy/free projection',
+      sharedWindow.status === 200 &&
+        sharedItems.some((w) => w.principalId === user1Id && w.status === 'busy') &&
+        sharedItems.some((w) => w.principalId === user2Id && w.status === 'busy'),
+      JSON.stringify(sharedWindow.body),
+    );
+    check(
+      'M6-01R: shared projection still omits private details',
+      sharedItems.every((w) => !('title' in w) && !('description' in w) && !('notes' in w)),
+    );
+
+    const sharedIntersection = await client2.call('/api/v1/availability/intersection', {
+      method: 'POST',
+      body: {
+        principalIds: [user1Id, user2Id],
+        windowStart,
+        windowEnd,
+        durationMinutes: 60,
+        workingHoursOnly: false,
+      },
+    });
+    const sharedSlots =
+      (nested(sharedIntersection.body, ['availableSlots']) as {
+        startAt: string;
+        endAt: string;
+      }[]) ?? [];
+    check(
+      'M6-03: multi-party intersection works once the share is granted',
+      sharedIntersection.status === 200 && sharedSlots.length > 0,
+      JSON.stringify(sharedIntersection.body),
+    );
+    const sharedSlot = sharedSlots[0];
+    check(
+      'M6-03: multi-party candidate slot selected for proposal',
+      Boolean(sharedSlot?.startAt && sharedSlot?.endAt),
+    );
 
     // =========================================================================
     // M6-04: Event Creation, Time Proposal, and Multi-party Confirmation
@@ -372,14 +487,18 @@ async function main(): Promise<void> {
       },
     });
     const eventId = String(nested(eventDraftRes.body, ['id']));
-    check('M6-04: event draft created with status draft', eventDraftRes.status === 201 && nested(eventDraftRes.body, ['status']) === 'draft', JSON.stringify(eventDraftRes.body));
+    check(
+      'M6-04: event draft created with status draft',
+      eventDraftRes.status === 201 && nested(eventDraftRes.body, ['status']) === 'draft',
+      JSON.stringify(eventDraftRes.body),
+    );
 
     // Step 2: Propose event time using calculated intersection slot
     const proposalRes = await client2.call(`/api/v1/events/${eventId}/proposals`, {
       method: 'POST',
       body: {
-        startAt: chosenSlot?.startAt,
-        endAt: chosenSlot?.endAt,
+        startAt: sharedSlot?.startAt ?? chosenSlot?.startAt,
+        endAt: sharedSlot?.endAt ?? chosenSlot?.endAt,
         timezone: 'Asia/Shanghai',
         expectedVersion: 1,
       },
@@ -394,7 +513,10 @@ async function main(): Promise<void> {
     const user1EventsRes = await client1.call('/api/v1/events/me');
     const user1Events = (nested(user1EventsRes.body, ['data']) as Record<string, unknown>[]) ?? [];
     const targetEvent = user1Events.find((e) => e.id === eventId);
-    check('M6-04: invited attendee lists event in pending confirmation', Boolean(targetEvent && targetEvent.status === 'pending_confirmation'));
+    check(
+      'M6-04: invited attendee lists event in pending confirmation',
+      Boolean(targetEvent && targetEvent.status === 'pending_confirmation'),
+    );
 
     // Step 4: User One accepts proposal
     const acceptEventRes = await client1.call(`/api/v1/events/${eventId}/responses`, {
@@ -422,8 +544,55 @@ async function main(): Promise<void> {
       method: 'POST',
       body: { reason: '课题组临时调整' },
     });
-    check('M6-04: participant cancels event', cancelRes.status === 200 && nested(cancelRes.body, ['status']) === 'cancelled');
+    check(
+      'M6-04: participant cancels event',
+      cancelRes.status === 200 && nested(cancelRes.body, ['status']) === 'cancelled',
+    );
 
+    // Step 7: Revoke the availability share and confirm the access is withdrawn
+    const revokeShareRes = await client1.call(`/api/v1/availability/shares/${shareId}`, {
+      method: 'DELETE',
+    });
+    check(
+      'M6-01R: owner revokes the availability share',
+      revokeShareRes.status === 200 && nested(revokeShareRes.body, ['revoked']) === true,
+      JSON.stringify(revokeShareRes.body),
+    );
+
+    const revokedWindow = await client2.call('/api/v1/availability/window', {
+      method: 'POST',
+      body: { principalIds: [user1Id, user2Id], startAt: windowStart, endAt: windowEnd },
+    });
+    check(
+      'M6-01R: revoked share blocks the projection immediately',
+      revokedWindow.status === 403,
+      JSON.stringify(revokedWindow.body),
+    );
+
+    const revokedIntersection = await client2.call('/api/v1/availability/intersection', {
+      method: 'POST',
+      body: {
+        principalIds: [user1Id, user2Id],
+        windowStart,
+        windowEnd,
+        durationMinutes: 60,
+        workingHoursOnly: false,
+      },
+    });
+    check(
+      'M6-03: revoked share blocks multi-party intersection immediately',
+      revokedIntersection.status === 403,
+      JSON.stringify(revokedIntersection.body),
+    );
+
+    const shareListAfterRes = await client1.call('/api/v1/availability/shares');
+    const sharesAfter =
+      (nested(shareListAfterRes.body, ['data']) as Record<string, unknown>[]) ?? [];
+    check(
+      'M6-01R: revoked share is reported as revoked',
+      sharesAfter.some((s) => s.id === shareId && s.status === 'revoked'),
+      JSON.stringify(shareListAfterRes.body),
+    );
   } finally {
     await app.close();
     await pool.end();

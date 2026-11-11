@@ -13,6 +13,7 @@
 | [ADR-007](0007-authorization-boundaries.md) | 字段用途、独立引荐、最小权限与撤销语义 | 已接受，未实现；取代 ADR-004 |
 | [ADR-008](0008-progressive-delivery.md) | 按需扩展、双端设计与真实数据准入 | 已接受，未验证；部分取代 ADR-003 |
 | [ADR-009](0009-authentication-implementation.md) | Argon2id、不透明会话、CSRF、限流与认证函数边界 | 已接受，M2-01 实现验证；补充 ADR-002 |
+| [ADR-010](0010-availability-authorization.md) | 忙闲用途授权共享、默认拒绝与撤销即时生效 | 已接受，M6-01R 实现验证；补充 ADR-007 |
 
 新增 ADR 时：
 
