@@ -1,0 +1,2282 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AVEN · 产品界面设计 v0.2</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #0b0b0b;
+        --foreground: #f3f3f1;
+        --muted: #a8a8a8;
+        --card: #111;
+        --popover: #282828;
+        --secondary: #202020;
+        --border: #303030;
+        --ring: #89a795;
+        --primary: #f2f2f0;
+        --accent: #89a795;
+        --destructive: #e39595;
+        --warning: #d8b06a;
+        --success: #8fbf9f;
+        --info: #9db6c9;
+        --control: #707781;
+        --on-primary: #171717;
+        --radius: 18px;
+        --font-sans:
+          Inter, Geist, ui-sans-serif, system-ui, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei',
+          sans-serif;
+      }
+      [data-theme='light'] {
+        color-scheme: light;
+        --background: #fff;
+        --foreground: #202020;
+        --muted: #62625d;
+        --card: #f7f7f5;
+        --popover: #fff;
+        --secondary: #f0f0ee;
+        --border: #dededb;
+        --ring: #526b5f;
+        --primary: #202020;
+        --accent: #526b5f;
+        --destructive: #a33d3d;
+        --warning: #80601e;
+        --success: #356847;
+        --info: #365c76;
+        --control: #85857f;
+        --on-primary: #fff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 16px;
+      }
+      body {
+        margin: 0;
+        color: var(--foreground);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button,
+      a,
+      input,
+      select,
+      textarea {
+        -webkit-tap-highlight-color: transparent;
+      }
+      button {
+        cursor: pointer;
+      }
+      button {
+        border: 0;
+        background: none;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 3px;
+      }
+      button:hover:not(:disabled) {
+        background: var(--secondary);
+      }
+      a {
+        color: var(--accent);
+      }
+      svg {
+        width: 21px;
+        height: 21px;
+        stroke-width: 1.65;
+        flex: none;
+        vertical-align: middle;
+      }
+      button svg {
+        pointer-events: none;
+      }
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .skip {
+        position: absolute;
+        z-index: 50;
+        top: -100px;
+        left: 12px;
+        padding: 12px;
+        background: var(--popover);
+      }
+      .skip:focus {
+        top: 10px;
+      }
+      .app {
+        height: 820px;
+        max-height: 20000px;
+        min-height: 600px;
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr);
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        font-size: 0.9375rem;
+        line-height: 1.6;
+      }
+      .sidebar {
+        background: var(--card);
+        padding: 18px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        min-width: 0;
+        z-index: 12;
+      }
+      .brandbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-left: 12px;
+      }
+      .wordmark {
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+      }
+      .icon-button {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        padding: 0;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .nav button,
+      .history button {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        min-height: 46px;
+        padding: 10px 12px;
+        border-radius: 10px;
+      }
+      .nav button.active {
+        background: var(--secondary);
+        font-weight: 500;
+      }
+      .nav .newchat {
+        background: var(--secondary);
+        margin-bottom: 14px;
+      }
+      .nav-count {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .section-label {
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin: 0 12px 8px;
+      }
+      .history {
+        margin-top: 6px;
+        overflow: auto;
+      }
+      .history button {
+        font-size: 0.875rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        position: relative;
+      }
+      .profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 12px;
+        text-align: left;
+      }
+      .avatar {
+        background: var(--secondary);
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-size: 0.8rem;
+        flex: none;
+      }
+      .profile-name {
+        font-weight: 500;
+      }
+      .profile-sub {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .profile-chevron {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .workspace {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--background);
+        position: relative;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 72px;
+        padding: 12px 28px;
+        flex-shrink: 0;
+      }
+      .topbar-left,
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .top-title {
+        font-size: 1.0625rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .top-title span {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 400;
+        margin-left: 12px;
+      }
+      .badge {
+        font-size: 0.75rem;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 3px 9px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .mobile-toggle {
+        display: none;
+      }
+      .scroll {
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+      }
+      .content {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 38px 40px 48px;
+      }
+      .page-intro {
+        margin-bottom: 30px;
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: 1.8rem;
+        line-height: 1.35;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+      }
+      h2 {
+        font-size: 1.125rem;
+        font-weight: 500;
+        line-height: 1.45;
+      }
+      h3 {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+      p {
+        line-height: 1.8;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
+      .page-intro .sub {
+        margin-top: 10px;
+      }
+      .eyebrow {
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+        letter-spacing: 0.04em;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .between {
+        justify-content: space-between;
+      }
+      .wrap {
+        flex-wrap: wrap;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        white-space: normal;
+      }
+      .btn.primary {
+        background: var(--primary);
+        color: var(--on-primary);
+        font-weight: 500;
+      }
+      .btn.primary:hover {
+        opacity: 0.88;
+        background: var(--primary);
+      }
+      .btn.secondary {
+        border: 1px solid var(--control);
+      }
+      .btn.danger {
+        color: var(--destructive);
+        border: 1px solid var(--control);
+      }
+      .text-link {
+        color: var(--muted);
+        padding: 8px 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.875rem;
+        min-height: 44px;
+      }
+      .pill {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font-size: 0.8125rem;
+        min-height: 38px;
+      }
+      .pill.selected {
+        border-color: var(--control);
+        background: var(--secondary);
+        color: var(--foreground);
+      }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 24px 0;
+      }
+      .label {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .notice {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 18px;
+        font-size: 0.875rem;
+      }
+      .notice .row {
+        align-items: flex-start;
+      }
+      .notice svg {
+        color: var(--accent);
+        margin-top: 3px;
+      }
+      .quiet-box {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 22px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .accent {
+        color: var(--accent);
+      }
+      .danger-text {
+        color: var(--destructive);
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .meta {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 0.8125rem;
+        margin-top: 10px;
+      }
+      .meta span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .meta svg {
+        width: 15px;
+        height: 15px;
+      }
+      .list-row {
+        padding: 24px 0;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .list-row:first-child {
+        padding-top: 8px;
+      }
+      .list-row .row-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .list-row h2 {
+        margin-bottom: 8px;
+      }
+      .list-row .sub {
+        max-width: 60ch;
+      }
+      .list-row .icon-button {
+        margin-top: 4px;
+      }
+      .status-text {
+        font-size: 0.75rem;
+        color: var(--accent);
+      }
+      .chat-screen {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-width: 840px;
+        margin: auto;
+        padding: 0 36px 22px;
+      }
+      .chat-hero {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-height: 250px;
+        padding: 24px 0;
+      }
+      .chat-hero h1 {
+        font-size: 2rem;
+        font-weight: 400;
+        letter-spacing: -0.035em;
+      }
+      .chat-hero p {
+        margin-top: 14px;
+        max-width: 30em;
+        font-size: 0.875rem;
+        color: var(--muted);
+      }
+      .chat-messages {
+        padding: 32px 0 24px;
+        flex: 1;
+        overflow: auto;
+        min-height: 180px;
+      }
+      .message {
+        margin-bottom: 30px;
+        max-width: 96%;
+      }
+      .message.user {
+        margin-left: auto;
+        max-width: 85%;
+        padding: 12px 20px;
+        border-radius: 22px;
+        background: var(--secondary);
+        width: fit-content;
+      }
+      .message.assistant {
+        padding: 0 4px;
+      }
+      .message .message-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .message p {
+        font-size: 0.9375rem;
+        white-space: pre-wrap;
+      }
+      .message .notice {
+        margin-top: 18px;
+      }
+      .suggestions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .suggestions button {
+        font-size: 0.8125rem;
+        color: var(--muted);
+        padding: 9px 14px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        min-height: 42px;
+      }
+      .composer {
+        border-radius: 24px;
+        background: var(--secondary);
+        padding: 16px 14px 10px;
+        box-shadow: 0 0 0 1px var(--border);
+      }
+      .composer textarea {
+        display: block;
+        resize: none;
+        width: 100%;
+        height: 54px;
+        max-height: 150px;
+        background: none;
+        border: 0;
+        outline: none;
+        padding: 0 8px;
+        color: var(--foreground);
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+      .composer textarea::placeholder {
+        color: var(--muted);
+      }
+      .composer:focus-within {
+        box-shadow: 0 0 0 1px var(--control);
+      }
+      .composer textarea:focus-visible {
+        outline: none;
+      }
+      .composer-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .composer .context-button {
+        font-size: 0.75rem;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        min-height: 44px;
+        padding: 6px 8px;
+        border-radius: 10px;
+        color: var(--muted);
+      }
+      .composer .context-button svg {
+        width: 16px;
+      }
+      .send-button {
+        background: var(--primary);
+        color: var(--on-primary);
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        margin-left: 4px;
+      }
+      .send-button:hover:not(:disabled) {
+        background: var(--primary);
+        opacity: 0.85;
+      }
+      .chat-footnote {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.6875rem;
+        padding: 12px 0 0;
+      }
+      .chat-tabs {
+        display: flex;
+        gap: 3px;
+        background: var(--card);
+        padding: 3px;
+        border-radius: 999px;
+      }
+      .chat-tabs button {
+        padding: 6px 18px;
+        border-radius: 999px;
+        min-height: 36px;
+        font-size: 0.8125rem;
+        color: var(--muted);
+      }
+      .chat-tabs button.active {
+        background: var(--secondary);
+        color: var(--foreground);
+      }
+      .search-field {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px;
+        min-height: 48px;
+        border: 1px solid var(--control);
+        border-radius: 14px;
+        margin-bottom: 16px;
+      }
+      .search-field input {
+        width: 100%;
+        border: 0;
+        background: none;
+        outline: none;
+        min-width: 0;
+        padding: 10px 0;
+      }
+      .search-field:focus-within {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 28px;
+      }
+      .org-mark {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .org-mark svg {
+        width: 22px;
+      }
+      .detail-header {
+        margin: 20px 0 28px;
+      }
+      .detail-header h1 {
+        margin-top: 16px;
+        max-width: 24em;
+      }
+      .detail-section {
+        margin-top: 28px;
+      }
+      .detail-section p {
+        margin-top: 12px;
+        font-size: 0.9375rem;
+      }
+      .detail-section ul {
+        padding-left: 20px;
+        margin: 12px 0;
+        line-height: 2.1;
+      }
+      .detail-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        border-block: 1px solid var(--border);
+        padding: 20px 0;
+        margin: 24px 0;
+      }
+      .detail-stats strong {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        margin-top: 5px;
+      }
+      .sticky-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+      .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .check-row input {
+        accent-color: var(--accent);
+        margin-top: 5px;
+        width: 18px;
+        height: 18px;
+        flex: none;
+      }
+      .check-row .field-body {
+        flex: 1;
+      }
+      .field-title {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        font-weight: 500;
+        gap: 8px;
+      }
+      .field-value {
+        font-size: 0.875rem;
+        color: var(--muted);
+        margin-top: 6px;
+        line-height: 1.8;
+      }
+      .field-tag {
+        font-size: 0.6875rem;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .input-label {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 0.875rem;
+      }
+      .select {
+        border: 1px solid var(--control);
+        background: var(--background);
+        padding: 10px 12px;
+        border-radius: 10px;
+        max-width: 100%;
+        min-height: 44px;
+      }
+      .timeline {
+        margin-top: 24px;
+      }
+      .timeline-item {
+        border-left: 1px solid var(--border);
+        padding: 0 0 28px 22px;
+        margin-left: 8px;
+      }
+      .timeline-item:last-child {
+        border: 0;
+      }
+      .timeline-item strong {
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+      .timeline-item p {
+        margin-top: 4px;
+        font-size: 0.8125rem;
+        color: var(--muted);
+      }
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: 32px;
+        margin-top: 30px;
+      }
+      .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .settings-nav button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-align: left;
+        padding: 10px 12px;
+        min-height: 46px;
+        border-radius: 10px;
+        font-size: 0.875rem;
+      }
+      .settings-nav button.active {
+        background: var(--secondary);
+      }
+      .settings-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--border);
+        gap: 20px;
+      }
+      .settings-row h3 {
+        font-size: 0.875rem;
+      }
+      .settings-row p {
+        margin-top: 4px;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .settings-row select {
+        max-width: 150px;
+      }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 74px;
+        border: 1px solid var(--control);
+        border-radius: 999px;
+        font-size: 0.75rem;
+      }
+      .toggle[aria-pressed='true'] {
+        background: var(--secondary);
+        color: var(--accent);
+      }
+      .memory-card {
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .memory-card h3 {
+        margin-bottom: 6px;
+      }
+      .memory-card .meta {
+        margin-top: 14px;
+      }
+      .profile-menu {
+        position: absolute;
+        bottom: 72px;
+        left: 0;
+        width: 260px;
+        max-width: calc(100% + 12px);
+        padding: 8px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--popover);
+        box-shadow: 0 12px 36px #0004;
+        z-index: 20;
+      }
+      .profile-menu button {
+        width: 100%;
+        padding: 11px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 46px;
+        border-radius: 10px;
+        text-align: left;
+        font-size: 0.875rem;
+      }
+      .profile-menu .divider {
+        margin: 8px;
+      }
+      .profile-menu .menu-caption {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .bottom-nav {
+        display: none;
+        background: var(--background);
+        border-top: 1px solid var(--border);
+        padding: 6px 6px max(8px, env(safe-area-inset-bottom));
+        flex-shrink: 0;
+      }
+      .bottom-nav button {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 3px;
+        color: var(--muted);
+        font-size: 0.6875rem;
+        border-radius: 10px;
+        min-height: 50px;
+      }
+      .bottom-nav button.active {
+        color: var(--foreground);
+      }
+      .bottom-nav button.active svg {
+        stroke-width: 2;
+      }
+      .drawer-shade {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: #0008;
+        z-index: 11;
+      }
+      .app.collapsed {
+        grid-template-columns: 68px minmax(0, 1fr);
+      }
+      .app.collapsed .sidebar {
+        padding-inline: 8px;
+      }
+      .app.collapsed .sidebar .nav-label,
+      .app.collapsed .section-label,
+      .app.collapsed .history,
+      .app.collapsed .brandbar .wordmark,
+      .app.collapsed .profile-detail,
+      .app.collapsed .profile-chevron,
+      .app.collapsed .nav-count {
+        display: none;
+      }
+      .app.collapsed .brandbar {
+        padding: 0;
+      }
+      .app.collapsed .nav button {
+        padding: 10px;
+        justify-content: center;
+      }
+      .app.collapsed .profile {
+        padding: 8px;
+      }
+      .app.collapsed .profile-menu {
+        position: fixed;
+        left: 76px;
+        bottom: 22px;
+        width: 240px;
+        max-width: none;
+      }
+      .review-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 12px 16px;
+        color: var(--muted);
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .review-bar summary {
+        cursor: pointer;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .review-bar details {
+        position: relative;
+      }
+      .review-options {
+        position: absolute;
+        right: 0;
+        bottom: 40px;
+        z-index: 25;
+        background: var(--popover);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        min-width: 250px;
+        box-shadow: 0 8px 24px #0004;
+      }
+      .review-options label {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .review-options select {
+        max-width: 130px;
+      }
+      .toast {
+        position: absolute;
+        left: 50%;
+        bottom: 26px;
+        transform: translateX(-50%);
+        max-width: calc(100% - 32px);
+        border: 1px solid var(--border);
+        background: var(--popover);
+        padding: 12px 20px;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px #0004;
+        z-index: 30;
+        font-size: 0.8125rem;
+      }
+      .state-screen {
+        min-height: 380px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 32px;
+      }
+      .state-screen h1 {
+        font-size: 1.4rem;
+        margin: 18px 0 12px;
+      }
+      .state-screen p {
+        font-size: 0.875rem;
+        color: var(--muted);
+        max-width: 28em;
+      }
+      .state-screen .btn {
+        margin-top: 22px;
+      }
+      .state-screen svg {
+        width: 28px;
+        height: 28px;
+        color: var(--muted);
+      }
+      .skeleton {
+        height: 14px;
+        border-radius: 6px;
+        background: var(--secondary);
+        margin: 16px auto;
+        width: 240px;
+        max-width: 100%;
+      }
+      .skeleton.short {
+        width: 160px;
+      }
+      .modal {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--popover);
+        color: var(--foreground);
+        padding: 28px;
+        max-width: min(500px, calc(100% - 32px));
+        max-height: 720px;
+        overflow: auto;
+        margin: auto;
+        box-shadow: 0 18px 60px #0006;
+      }
+      .modal::backdrop {
+        background: #0009;
+      }
+      .modal h2 {
+        font-size: 1.25rem;
+        margin-bottom: 12px;
+      }
+      .modal .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 24px;
+        flex-wrap: wrap;
+      }
+      .modal .detail-pair {
+        margin-top: 14px;
+        font-size: 0.875rem;
+      }
+      .modal .detail-pair span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+      }
+      .modal textarea {
+        width: 100%;
+        border: 1px solid var(--control);
+        background: var(--background);
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 12px;
+        min-height: 90px;
+        resize: vertical;
+      }
+      .app:has(dialog[open]) .toast {
+        display: none;
+      }
+      @media (min-width: 561px) and (max-width: 1023px) {
+        .app {
+          grid-template-columns: 68px minmax(0, 1fr);
+        }
+        .sidebar {
+          padding-inline: 8px;
+        }
+        .sidebar .nav-label,
+        .sidebar .section-label,
+        .sidebar .history,
+        .brandbar .wordmark,
+        .sidebar .profile-detail,
+        .sidebar .profile-chevron,
+        .sidebar .nav-count {
+          display: none;
+        }
+        .brandbar {
+          padding: 0;
+        }
+        .nav button {
+          padding: 10px;
+          justify-content: center;
+        }
+        .profile {
+          padding: 8px;
+        }
+        .profile-menu {
+          position: fixed;
+          left: 76px;
+          bottom: 56px;
+          width: 240px;
+          max-width: none;
+        }
+        .topbar {
+          padding-inline: 20px;
+        }
+        .content {
+          padding-inline: 28px;
+        }
+        .chat-screen {
+          padding-inline: 28px;
+        }
+      }
+      @media (max-width: 560px) {
+        .app,
+        .app.collapsed {
+          display: block;
+          height: 820px;
+        }
+        .workspace {
+          height: 100%;
+        }
+        .sidebar {
+          display: none;
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: min(300px, 84%);
+          padding: 18px 12px 12px;
+          border-right: 1px solid var(--border);
+        }
+        .app.drawer-open .sidebar {
+          display: flex;
+        }
+        .app.drawer-open .drawer-shade {
+          display: block;
+        }
+        .mobile-toggle {
+          display: inline-flex;
+        }
+        .topbar {
+          padding: 10px 12px;
+          min-height: 64px;
+          gap: 4px;
+        }
+        .top-title {
+          font-size: 1rem;
+        }
+        .top-title span,
+        .topbar .desktop-only,
+        .desktop-only {
+          display: none;
+        }
+        .chat-tabs button {
+          padding: 6px 13px;
+        }
+        .chat-tabs {
+          margin-left: auto;
+        }
+        .topbar-right {
+          gap: 2px;
+        }
+        .topbar .badge {
+          font-size: 0.625rem;
+        }
+        .topbar-left {
+          gap: 0;
+        }
+        .bottom-nav {
+          display: flex;
+        }
+        .content {
+          padding: 24px 20px 36px;
+        }
+        .page-intro {
+          margin-bottom: 24px;
+        }
+        h1 {
+          font-size: 1.6rem;
+        }
+        .chat-screen {
+          padding: 0 16px 12px;
+        }
+        .chat-hero {
+          min-height: 270px;
+        }
+        .chat-hero h1 {
+          font-size: 1.75rem;
+        }
+        .chat-hero p {
+          font-size: 0.8125rem;
+          padding-inline: 20px;
+        }
+        .chat-screen .suggestions {
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+        .suggestions button {
+          font-size: 0.75rem;
+          padding: 8px 12px;
+        }
+        .composer {
+          padding: 14px 10px 8px;
+        }
+        .composer textarea {
+          font-size: 1rem;
+          height: 56px;
+        }
+        .composer .context-button {
+          font-size: 0.6875rem;
+          gap: 4px;
+          padding-inline: 4px;
+        }
+        .chat-footnote {
+          font-size: 0.625rem;
+          padding-top: 10px;
+        }
+        .detail-stats {
+          grid-template-columns: 1fr 1fr;
+          gap: 18px;
+        }
+        .sticky-action {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .sticky-action .btn {
+          width: 100%;
+        }
+        .list-row {
+          gap: 12px;
+          padding: 22px 0;
+        }
+        .list-row h2 {
+          font-size: 1rem;
+        }
+        .list-row .org-mark {
+          width: 34px;
+          height: 34px;
+        }
+        .list-row > .icon-button {
+          width: 32px;
+          min-width: 32px;
+        }
+        .meta {
+          gap: 8px;
+          font-size: 0.75rem;
+        }
+        .settings-layout {
+          display: block;
+          margin-top: 20px;
+        }
+        .settings-nav {
+          display: flex;
+          flex-direction: row;
+          overflow: auto;
+          margin-bottom: 24px;
+          padding-bottom: 8px;
+          gap: 8px;
+        }
+        .settings-nav button {
+          white-space: nowrap;
+          padding: 8px 12px;
+          flex-shrink: 0;
+        }
+        .settings-nav button svg {
+          width: 18px;
+        }
+        .settings-row {
+          gap: 12px;
+        }
+        .quiet-box {
+          padding: 18px;
+        }
+        .modal {
+          padding: 22px;
+        }
+        .toast {
+          bottom: 88px;
+        }
+        .profile-menu {
+          max-width: none;
+          width: 270px;
+          left: 0;
+        }
+        .app.collapsed .sidebar .nav-label,
+        .app.collapsed .sidebar .profile-detail,
+        .app.collapsed .brandbar .wordmark {
+          display: initial;
+        }
+        .app.collapsed .profile-menu {
+          position: absolute;
+          left: 0;
+          bottom: 72px;
+          max-width: 100%;
+        }
+        .review-bar {
+          font-size: 0.6875rem;
+        }
+        .review-options {
+          right: 0;
+        }
+        .row.wrap .btn {
+          flex-grow: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+      .mobile-settings-back {
+        display: none;
+      }
+      @media (max-width: 560px) {
+        .settings-nav {
+          flex-direction: column;
+          overflow: visible;
+          gap: 6px;
+        }
+        .settings-nav button {
+          width: 100%;
+          min-height: 54px;
+          text-align: left;
+          padding: 12px;
+        }
+        .settings-layout:not(.detail-open) #settings-panel {
+          display: none;
+        }
+        .settings-layout.detail-open .settings-nav {
+          display: none;
+        }
+        .mobile-settings-back {
+          display: flex;
+          margin-bottom: 16px;
+        }
+        .mobile-settings-back svg {
+          transform: rotate(180deg);
+        }
+      }
+      .composer-toolbar {
+        flex-wrap: wrap;
+      }
+      .message p {
+        overflow-wrap: anywhere;
+      }
+      .chat-screen {
+        min-width: 0;
+      }
+      .scroll:focus-visible {
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#main-content" class="skip">跳到主要内容</a>
+    <div class="app" id="app">
+      <button class="drawer-shade" id="drawer-shade" aria-label="关闭导航"></button>
+      <aside class="sidebar" id="sidebar" aria-label="主导航">
+        <div class="brandbar">
+          <span class="wordmark">AVEN</span
+          ><button
+            class="icon-button"
+            id="collapse"
+            aria-label="收起导航"
+            data-icon="panel-left"
+          ></button>
+        </div>
+        <nav class="nav" id="nav"></nav>
+        <div class="history">
+          <p class="section-label">最近对话 · 样例</p>
+          <button data-action="history">寻找适合我的科研方向</button
+          ><button data-action="history">整理我的机器人项目经历</button>
+          <p class="section-label" style="margin-top: 28px">最近空间 · 样例</p>
+          <button data-route="space">机器人学习合作</button>
+        </div>
+        <div class="sidebar-footer">
+          <div id="profile-menu" class="profile-menu" hidden></div>
+          <button class="profile" id="profile" aria-expanded="false" aria-controls="profile-menu">
+            <span class="avatar">林</span
+            ><span class="profile-detail"
+              ><span class="profile-name">林同学</span><br /><span class="profile-sub"
+                >个人空间</span
+              ></span
+            ><span class="profile-chevron" data-icon="chevrons-up-down"></span>
+          </button>
+        </div>
+      </aside>
+      <section class="workspace" aria-label="AVEN 工作区">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button
+              class="icon-button mobile-toggle"
+              id="open-drawer"
+              aria-label="打开导航"
+              data-icon="panel-left"
+            ></button>
+            <div class="top-title" id="top-title"></div>
+          </div>
+          <div class="topbar-right" id="top-actions"></div>
+        </header>
+        <main class="scroll" id="main-content" tabindex="-1"></main>
+        <nav class="bottom-nav" id="bottom-nav" aria-label="移动端主导航"></nav>
+      </section>
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    </div>
+    <footer class="review-bar">
+      <span>AVEN · 设计原型 v0.2 · 全部为样例数据</span>
+      <details>
+        <summary>设计检查 <span data-icon="sliders-horizontal"></span></summary>
+        <div class="review-options">
+          <label
+            >页面状态<select id="review-state" class="select">
+              <option value="success">默认</option>
+              <option value="loading">加载中</option>
+              <option value="empty">空状态</option>
+              <option value="error">失败</option>
+              <option value="denied">无权限</option>
+              <option value="disabled">不可操作</option>
+            </select></label
+          ><label
+            >外观<select id="review-theme" class="select">
+              <option value="dark">深色</option>
+              <option value="light">浅色</option>
+            </select></label
+          >
+        </div>
+      </details>
+    </footer>
+    <dialog id="modal" class="modal" aria-labelledby="modal-title">
+      <h2 id="modal-title"></h2>
+      <div id="modal-body"></div>
+      <div class="actions">
+        <button class="btn" id="modal-cancel">取消</button
+        ><button class="btn primary" id="modal-confirm">确认</button>
+      </div>
+    </dialog>
+    <script>
+      const ICONS = {
+        'panel-left':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-panel-left"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <rect width="18" height="18" x="3" y="3" rx="2" />\n  <path d="M9 3v18" />\n</svg>\n',
+        'chevrons-up-down':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-chevrons-up-down"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="m7 15 5 5 5-5" />\n  <path d="m7 9 5-5 5 5" />\n</svg>\n',
+        sun: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-sun"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="12" r="4" />\n  <path d="M12 2v2" />\n  <path d="M12 20v2" />\n  <path d="m4.93 4.93 1.41 1.41" />\n  <path d="m17.66 17.66 1.41 1.41" />\n  <path d="M2 12h2" />\n  <path d="M20 12h2" />\n  <path d="m6.34 17.66-1.41 1.41" />\n  <path d="m19.07 4.93-1.41 1.41" />\n</svg>\n',
+        compass:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-compass"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />\n  <circle cx="12" cy="12" r="10" />\n</svg>\n',
+        layers:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-layers"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />\n  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />\n  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />\n</svg>\n',
+        'message-circle':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-message-circle"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />\n</svg>\n',
+        'square-pen':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-square-pen"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />\n  <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />\n</svg>\n',
+        send: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-send"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />\n  <path d="m21.854 2.147-10.94 10.939" />\n</svg>\n',
+        'book-open':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-book-open"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 7v14" />\n  <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />\n</svg>\n',
+        'building-2':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-building-2"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />\n  <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />\n  <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />\n  <path d="M10 6h4" />\n  <path d="M10 10h4" />\n  <path d="M10 14h4" />\n  <path d="M10 18h4" />\n</svg>\n',
+        'settings-2':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-settings-2"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M20 7h-9" />\n  <path d="M14 17H5" />\n  <circle cx="17" cy="17" r="3" />\n  <circle cx="7" cy="7" r="3" />\n</svg>\n',
+        'arrow-up-right':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-arrow-up-right"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M7 7h10v10" />\n  <path d="M7 17 17 7" />\n</svg>\n',
+        'arrow-right':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-arrow-right"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M5 12h14" />\n  <path d="m12 5 7 7-7 7" />\n</svg>\n',
+        'shield-check':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-shield-check"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />\n  <path d="m9 12 2 2 4-4" />\n</svg>\n',
+        'chevron-down':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-chevron-down"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="m6 9 6 6 6-6" />\n</svg>\n',
+        plus: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-plus"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M5 12h14" />\n  <path d="M12 5v14" />\n</svg>\n',
+        mic: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-mic"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />\n  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />\n  <line x1="12" x2="12" y1="19" y2="22" />\n</svg>\n',
+        'arrow-up':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-arrow-up"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="m5 12 7-7 7 7" />\n  <path d="M12 19V5" />\n</svg>\n',
+        square:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-square"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <rect width="18" height="18" x="3" y="3" rx="2" />\n</svg>\n',
+        bot: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-bot"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 8V4H8" />\n  <rect width="16" height="12" x="4" y="8" rx="2" />\n  <path d="M2 14h2" />\n  <path d="M20 14h2" />\n  <path d="M15 13v2" />\n  <path d="M9 13v2" />\n</svg>\n',
+        component:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-component"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z" />\n  <path d="M2.297 11.293a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0z" />\n  <path d="M8.916 17.912a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0z" />\n  <path d="M8.916 4.674a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z" />\n</svg>\n',
+        'chart-no-axes-combined':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-chart-no-axes-combined"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 16v5" />\n  <path d="M16 14v7" />\n  <path d="M20 10v11" />\n  <path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15" />\n  <path d="M4 18v3" />\n  <path d="M8 14v7" />\n</svg>\n',
+        inbox:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-inbox"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />\n  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />\n</svg>\n',
+        'lock-keyhole':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-lock-keyhole"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="16" r="1" />\n  <rect x="3" y="10" width="18" height="12" rx="2" />\n  <path d="M7 10V7a5 5 0 0 1 10 0v3" />\n</svg>\n',
+        'shield-off':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-shield-off"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="m2 2 20 20" />\n  <path d="M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71" />\n  <path d="M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264" />\n</svg>\n',
+        'sun-moon':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-sun-moon"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4" />\n  <path d="M12 2v2" />\n  <path d="M12 20v2" />\n  <path d="m4.9 4.9 1.4 1.4" />\n  <path d="m17.7 17.7 1.4 1.4" />\n  <path d="M2 12h2" />\n  <path d="M20 12h2" />\n  <path d="m6.3 17.7-1.4 1.4" />\n  <path d="m19.1 4.9-1.4 1.4" />\n</svg>\n',
+        bell: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-bell"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M10.268 21a2 2 0 0 0 3.464 0" />\n  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />\n</svg>\n',
+        'bell-off':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-bell-off"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M10.268 21a2 2 0 0 0 3.464 0" />\n  <path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742" />\n  <path d="m2 2 20 20" />\n  <path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05" />\n</svg>\n',
+        'sliders-horizontal':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-sliders-horizontal"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <line x1="21" x2="14" y1="4" y2="4" />\n  <line x1="10" x2="3" y1="4" y2="4" />\n  <line x1="21" x2="12" y1="12" y2="12" />\n  <line x1="8" x2="3" y1="12" y2="12" />\n  <line x1="21" x2="16" y1="20" y2="20" />\n  <line x1="12" x2="3" y1="20" y2="20" />\n  <line x1="14" x2="14" y1="2" y2="6" />\n  <line x1="8" x2="8" y1="10" y2="14" />\n  <line x1="16" x2="16" y1="18" y2="22" />\n</svg>\n',
+        info: '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-info"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="12" r="10" />\n  <path d="M12 16v-4" />\n  <path d="M12 8h.01" />\n</svg>\n',
+        check:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-check"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M20 6 9 17l-5-5" />\n</svg>\n',
+        'loader-circle':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-loader-circle"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M21 12a9 9 0 1 1-6.219-8.56" />\n</svg>\n',
+        'wifi-off':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-wifi-off"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M12 20h.01" />\n  <path d="M8.5 16.429a5 5 0 0 1 7 0" />\n  <path d="M5 12.859a10 10 0 0 1 5.17-2.69" />\n  <path d="M19 12.859a10 10 0 0 0-2.007-1.523" />\n  <path d="M2 8.82a15 15 0 0 1 4.177-2.643" />\n  <path d="M22 8.82a15 15 0 0 0-11.288-3.764" />\n  <path d="m2 2 20 20" />\n</svg>\n',
+        'circle-pause':
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-circle-pause"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="12" r="10" />\n  <line x1="10" x2="10" y1="15" y2="9" />\n  <line x1="14" x2="14" y1="15" y2="9" />\n</svg>\n',
+        circle:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-circle"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="12" r="10" />\n</svg>\n',
+        search:
+          '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg aria-hidden="true"\n  class="lucide lucide-search"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="11" cy="11" r="8" />\n  <path d="m21 21-4.3-4.3" />\n</svg>\n',
+      };
+      const $ = (s) => document.querySelector(s);
+      const icon = (name) => ICONS[name] || ICONS['circle'];
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"']/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+        );
+      const state = {
+        route: 'ai',
+        identity: 'personal',
+        variant: 'success',
+        filter: '全部',
+        query: '',
+        sent: false,
+        withdrawn: false,
+        accepted: false,
+        revoked: false,
+        relationRevoked: false,
+        relation: false,
+        consentFields: ['name', 'skills'],
+        context: false,
+        settings: 'general',
+        settingDetail: false,
+        enterSend: true,
+        notification: false,
+        pendingMemories: 2,
+        reviewed: false,
+        messages: [],
+        generating: false,
+      };
+      const primaryNav = [
+        ['today', 'sun', '今日'],
+        ['discover', 'compass', '发现'],
+        ['space', 'layers', '空间'],
+        ['ai', 'message-circle', '我的 AI'],
+      ];
+      const names = {
+        ai: '我的 AI',
+        today: '今日',
+        discover: '发现机会',
+        detail: '机会详情',
+        consent: '授权预览',
+        referrals: '我的引荐',
+        inbox: '组织收件箱',
+        space: '关系空间',
+        privacy: '隐私与授权',
+        memory: '我的记忆',
+        settings: '设置',
+      };
+      const opportunities = [
+        {
+          id: 'robot',
+          title: '机器人学习与具身智能 · 本科生科研助理',
+          org: '机器人学习实验室',
+          domain: '机器人',
+          desc: '参与机器人感知与控制的小型研究项目，从复现实验走向真实问题。',
+          time: '每周 6–8 小时',
+          reason: '你允许匹配的 Python 技能，与项目的数据处理要求相关。',
+        },
+        {
+          id: 'design',
+          title: '让校园信息更容易被找到',
+          org: '校园产品研究小组',
+          domain: '产品设计',
+          desc: '用访谈和原型改进科研机会的发现体验，欢迎对人和产品感兴趣的同学。',
+          time: '每周 4–6 小时',
+          reason: '按领域与时间条件找到，尚无足够资料生成个性化依据。',
+        },
+        {
+          id: 'data',
+          title: '面向真实问题的开放数据研究',
+          org: '计算与社会研究小组',
+          domain: '数据科学',
+          desc: '与不同专业的同学一起，用公开数据探索校园与城市中的小问题。',
+          time: '每周 4–8 小时',
+          reason: '你已确认的数据分析项目经历，与该机会的研究方法相关。',
+        },
+      ];
+      let selectedOpportunity = opportunities[0];
+      let dialogAction = null,
+        dialogTrigger = null,
+        timer = null,
+        toastTimer = null;
+      function hydrate() {
+        document.querySelectorAll('[data-icon]').forEach((e) => {
+          e.innerHTML = icon(e.dataset.icon);
+          e.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+        });
+      }
+      function btn(text, action, cls = 'secondary', ico = '') {
+        return `<button class="btn ${cls}" data-action="${action}">${ico ? icon(ico) : ''}${text}</button>`;
+      }
+      function link(text, route) {
+        return `<button class="text-link" data-route="${route}">${text}${icon('arrow-up-right')}</button>`;
+      }
+      function intro(title, sub = '', eyebrow = '') {
+        return `<div class="page-intro">${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}<h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>`;
+      }
+      function notice(text, ico = 'shield-check') {
+        return `<div class="notice"><div class="row">${icon(ico)}<p>${text}</p></div></div>`;
+      }
+      function navigate(route) {
+        if (
+          state.identity === 'organization' &&
+          [
+            'ai',
+            'today',
+            'discover',
+            'detail',
+            'consent',
+            'referrals',
+            'memory',
+            'privacy',
+          ].includes(route)
+        ) {
+          state.identity = 'personal';
+          toast('已切换到个人空间。');
+        }
+        closeMenu();
+        closeDrawer();
+        if (state.generating) stopGeneration();
+        state.variant = 'success';
+        $('#review-state').value = 'success';
+        state.route = route;
+        location.hash = route;
+        render();
+        $('#main-content').scrollTop = 0;
+        $('#main-content').focus({ preventScroll: true });
+      }
+      function renderNav() {
+        const activeRoute = ['detail', 'consent'].includes(state.route) ? 'discover' : state.route;
+        let entries =
+          state.identity === 'organization'
+            ? [
+                ['inbox', 'inbox', '引荐收件箱'],
+                ['space', 'layers', '关系空间'],
+              ]
+            : primaryNav;
+        $('#nav').innerHTML =
+          `<button class="newchat" data-action="newchat" aria-label="新对话">${icon('square-pen')}<span class="nav-label">新对话</span></button>` +
+          entries
+            .map(
+              ([r, i, n]) =>
+                `<button data-route="${r}" class="${activeRoute === r ? 'active' : ''}" ${activeRoute === r ? 'aria-current="page"' : ''} aria-label="${n}">${icon(i)}<span class="nav-label">${n}</span></button>`,
+            )
+            .join('') +
+          (state.identity === 'personal'
+            ? `<div class="divider" style="margin:14px 12px"></div><button data-route="referrals" aria-label="我的引荐">${icon('send')}<span class="nav-label">我的引荐</span>${state.sent && !state.withdrawn ? '<span class="nav-count">1</span>' : ''}</button><button data-route="memory" aria-label="我的记忆">${icon('book-open')}<span class="nav-label">我的记忆</span></button>`
+            : '');
+        $('#bottom-nav').innerHTML = entries
+          .map(
+            ([r, i, n]) =>
+              `<button data-route="${r}" class="${activeRoute === r ? 'active' : ''}" ${activeRoute === r ? 'aria-current="page"' : ''}>${icon(i)}${n}</button>`,
+          )
+          .join('');
+        $('.profile-sub').textContent =
+          state.identity === 'personal' ? '个人空间' : selectedOpportunity.org;
+        $('#profile-menu').innerHTML =
+          `<p class="menu-caption">当前身份 · ${state.identity === 'personal' ? '林同学' : selectedOpportunity.org}</p><button data-action="switch-identity">${icon('building-2')}切换到${state.identity === 'personal' ? '组织' : '个人'}空间</button><div class="divider"></div><button data-route="memory">${icon('book-open')}我的记忆</button><button data-route="privacy">${icon('shield-check')}隐私与授权</button><button data-route="settings">${icon('settings-2')}设置</button><div class="divider"></div><p class="menu-caption">设计演示，未连接真实账号</p>`;
+      }
+      function render() {
+        renderNav();
+        $('#top-title').innerHTML =
+          esc(names[state.route]) +
+          (state.identity === 'organization' ? `<span>${esc(selectedOpportunity.org)}</span>` : '');
+        $('#top-actions').innerHTML =
+          state.route === 'ai'
+            ? `<div class="chat-tabs" aria-label="AI 视图"><button class="active" aria-current="page" data-route="ai">对话</button><button data-route="memory">记忆</button></div><button class="icon-button" data-action="newchat" aria-label="新对话">${icon('square-pen')}</button>`
+            : `<span class="badge">${state.identity === 'organization' ? '组织身份' : '个人身份'}</span><button class="icon-button" data-route="settings" aria-label="设置">${icon('settings-2')}</button>`;
+        $('#main-content').innerHTML =
+          state.variant !== 'success'
+            ? renderState()
+            : (
+                {
+                  ai: chat,
+                  today: today,
+                  discover: discover,
+                  detail: detail,
+                  consent: consent,
+                  referrals: referrals,
+                  inbox: inbox,
+                  space: space,
+                  privacy: privacy,
+                  memory: memory,
+                  settings: settings,
+                }[state.route] || chat
+              )();
+        if (state.route === 'consent' && state.variant === 'success') {
+          const send = $('[data-action="send-referral"]');
+          if (send) send.disabled = !state.consentFields.length;
+        }
+        hydrate();
+      }
+      function renderState() {
+        const variants = {
+          loading: [
+            'loader-circle',
+            '正在加载',
+            '正在获取当前页面的最新内容。加载期间不显示受授权的缓存资料。',
+            '完成加载',
+          ],
+          empty: [
+            'inbox',
+            '这里还没有内容',
+            '没有合适的结果时，我们会如实留白。你可以发现机会，或完善已确认资料。',
+            '返回默认状态',
+          ],
+          error: [
+            'wifi-off',
+            '暂时无法加载',
+            '网络连接未确认。请重试；授权和发送操作不会在重试时自动执行。',
+            '重试加载',
+          ],
+          denied: [
+            'lock-keyhole',
+            '当前身份无法查看',
+            '权限不足或会话已失效。受限内容已隐藏，请返回个人空间。',
+            '返回个人空间',
+          ],
+          disabled: [
+            'circle-pause',
+            '当前操作不可用',
+            '对象已关闭、授权已失效，或内容版本发生变化。请重新查看详情。',
+            '重新查看',
+          ],
+        };
+        const [i, t, d, b] = variants[state.variant];
+        return `<div class="state-screen"><div>${icon(i)}<h1>${t}</h1><p>${d}</p>${state.variant === 'loading' ? '<div class="skeleton"></div><div class="skeleton short"></div>' : ''}${btn(b, 'recover', 'secondary')}</div></div>`;
+      }
+      function chat() {
+        return `<div class="chat-screen">${state.messages.length ? `<div class="chat-messages" id="messages">${state.messages.map((m) => `<div class="message ${m.role}">${m.role === 'assistant' ? `<div class="message-label">AVEN <span class="badge">Mock 演示</span></div>` : ''}<p>${esc(m.text)}</p>${m.role === 'assistant' ? `<div class="notice"><p class="sub">只使用当前选择的上下文。申请或共享前，仍需要你确认。</p>${link('查看样例机会', 'discover')}</div>` : ''}</div>`).join('')}${state.generating ? '<p class="sub" role="status">正在准备演示回复…</p>' : ''}</div>` : `<div class="chat-hero"><div><h1>让连接，从理解你开始。</h1><p>聊聊你的想法，或先发现一个值得参与的机会。</p></div></div>`}<div class="suggestions"><button data-action="suggest">寻找适合我的科研机会</button><button data-route="memory">整理我的兴趣与经历</button></div><form id="chat-form" class="composer"><label class="sr" for="prompt">向 AVEN 提问</label><textarea id="prompt" placeholder="和 AVEN 聊聊…" maxlength="2000" rows="2"></textarea><div class="composer-toolbar"><button type="button" class="icon-button" disabled title="附件上传尚未开放" aria-label="附件上传尚未开放">${icon('plus')}</button><button type="button" class="context-button" data-action="context" aria-pressed="${state.context}">${icon('shield-check')}${state.context ? '已选择确认资料' : '仅本次输入'}${icon('chevron-down')}</button><span class="spacer"></span><span class="label">Mock</span><button type="button" class="icon-button" disabled title="语音尚未开放" aria-label="语音尚未开放">${icon('mic')}</button><button type="${state.generating ? 'button' : 'submit'}" class="send-button" ${state.generating ? 'data-action="stop"' : ''} aria-label="${state.generating ? '停止演示回复' : '发送演示消息'}">${icon(state.generating ? 'square' : 'arrow-up')}</button></div></form><p class="chat-footnote">设计演示，不连接真实模型。发送前，你可以选择使用哪些资料。</p></div>`;
+      }
+      function today() {
+        return `<div class="content">${intro('今天，从一件小事开始。', '把想法变成下一步，也让每一次共享都有清楚的边界。', '林同学 · 个人空间')}<div class="quiet-box"><div class="row between"><span class="label">需要你确认</span><span class="status-text">样例待办</span></div><h2 style="margin-top:14px">${state.sent ? '引荐已发送，等待组织回应' : '你的经历里，有 2 条值得留下的记忆'}</h2><p class="sub" style="margin-top:10px">${state.sent ? '你可以随时检查共享清单和授权期限。' : '确认后才会进入你选择的用途，不会自动对外共享。'}</p><div style="margin-top:16px">${link(state.sent ? '查看引荐进展' : '复核我的记忆', state.sent ? 'referrals' : 'memory')}</div></div><div class="row between" style="margin-top:38px"><h2>值得看看的机会</h2>${link('查看全部', 'discover')}</div>${opportunityRow(opportunities[0])}<div class="row between" style="margin-top:32px"><p class="sub">还有一个没想清楚的想法？</p>${link('和我的 AI 聊聊', 'ai')}</div></div>`;
+      }
+      function opportunityRow(o) {
+        return `<article class="list-row"><div class="org-mark">${icon(o.domain === '机器人' ? 'bot' : o.domain === '产品设计' ? 'component' : 'chart-no-axes-combined')}</div><div class="row-body"><p class="eyebrow">${o.org} · 未认证</p><h2>${esc(o.title)}</h2><p class="sub">${esc(o.desc)}</p><div class="meta"><span>${o.domain}</span><span>${o.time}</span><span>2026-12-15 截止 · UTC+8</span></div><p class="sub" style="margin-top:14px">${esc(o.reason)}</p></div><button class="icon-button" data-opportunity="${o.id}" aria-label="查看${o.title}">${icon('arrow-up-right')}</button></article>`;
+      }
+      function discover() {
+        return `<div class="content">${intro('发现，值得开始的连接。', '先看看机会。申请时，再决定分享什么。')}<label class="search-field">${icon('search')}<span class="sr">搜索机会</span><input id="opportunity-search" type="search" placeholder="搜索领域、机会或组织" value="${esc(state.query)}"></label><div class="filters" aria-label="领域筛选">${['全部', '机器人', '产品设计', '数据科学'].map((f) => `<button class="pill ${state.filter === f ? 'selected' : ''}" data-filter="${f}" aria-pressed="${state.filter === f}">${f}</button>`).join('')}</div><div class="row between"><span class="label">样例机会 · 可解释依据</span><span class="label">按相关条件展示</span></div><div id="opportunity-results">${results()}</div></div>`;
+      }
+      function results() {
+        const items = opportunities.filter(
+          (o) =>
+            (state.filter === '全部' || state.filter === o.domain) &&
+            (!state.query ||
+              `${o.title}${o.org}${o.domain}`.toLowerCase().includes(state.query.toLowerCase())),
+        );
+        return items.length
+          ? items.map(opportunityRow).join('')
+          : `<div class="state-screen"><div>${icon('search')}<h2>没有找到合适的机会</h2><p style="margin-top:12px">试试其他关键词，或放宽筛选条件。</p>${btn('清除筛选', 'clear-search', 'secondary')}</div></div>`;
+      }
+      function detail() {
+        let o = selectedOpportunity;
+        return `<div class="content">${link('返回机会列表', 'discover')}<div class="detail-header"><div class="row"><span class="org-mark">${icon('building-2')}</span><div><p>${o.org}</p><p class="sub">组织认证：未认证 · 公开样例</p></div></div><h1>${o.title}</h1></div><div class="detail-stats"><div><span class="label">投入时间</span><strong>${o.time}</strong></div><div><span class="label">参与方式</span><strong>校内协作 · 可部分远程</strong></div><div><span class="label">截止时间</span><strong>2026-12-15 · UTC+8</strong></div></div><section class="detail-section"><h2>一起研究一个真实的问题</h2><p>${o.desc} 你将与项目成员一起明确问题、阅读资料，并完成一个可以复查的小型成果。无需已有论文经历，愿意持续学习更重要。</p></section><section class="detail-section"><h2>我们期待你</h2><ul><li>对${o.domain}感兴趣，能够每周稳定投入。</li><li>愿意记录过程，和不同背景的成员讨论。</li><li>有基础项目经验，或可以说明自己的学习计划。</li></ul></section><section class="detail-section">${notice(`<strong>为什么你会看到它</strong><br>${o.reason}<br><span class="sub">依据：已确认的样例资料 v2 · 仅用于匹配</span>`)}</section><div class="sticky-action"><p class="sub">申请前，你会看到完整共享清单。</p>${btn('预览并申请引荐', 'apply', 'primary', 'arrow-right')}</div></div>`;
+      }
+      const fields = {
+        name: ['显示名', '林同学'],
+        skills: ['技能', 'Python、数据分析'],
+        project: ['项目摘要', '基于公开数据完成机器人控制实验分析。'],
+      };
+      function consent() {
+        return `<div class="content">${link('返回机会详情', 'detail')}${intro('先看清楚，再分享。', '只有你确认的内容，才会在本次引荐中共享。', '授权预览 · 样例')}<div class="quiet-box"><p class="label">接收方</p><h2 style="margin-top:8px">${selectedOpportunity.org}</h2><p class="sub" style="margin-top:8px">组织中当前有代表权限的成员可读；并非仅当前管理员一人。</p></div><section class="detail-section"><h2>引荐用途 · 选择本次共享字段</h2><p class="sub" style="margin-top:6px">实际快照值如下。取消勾选即不共享。</p>${Object.entries(
+          fields,
+        )
+          .map(
+            ([k, [n, v]]) =>
+              `<label class="check-row"><input type="checkbox" data-field="${k}" ${state.consentFields.includes(k) ? 'checked' : ''}><span class="field-body"><span class="field-title">${n}<span class="field-tag">样例资料 v2</span></span><span class="field-value">${v}</span></span></label>`,
+          )
+          .join(
+            '',
+          )}</section><section class="detail-section"><label class="input-label">引荐授权期限<select id="consent-expiry" class="select"><option value="7">发送后 7 天</option><option value="30">发送后 30 天</option></select></label></section><section class="detail-section"><label class="check-row"><input type="checkbox" id="relation-consent" ${state.relation ? 'checked' : ''}><span class="field-body"><span class="field-title">同时准备关系用途授权<span class="field-tag">可选</span></span><span class="field-value">双方接受后，向关系空间共享选中的同一批字段；授权独立，期限 7 天。不勾选也可发送引荐。</span></span></label></section><section class="detail-section">${notice('不会共享：邮箱、私人对话、未选中的记忆、日历标题与备注。关系用途没有勾选时，关系空间的共享上下文保持为空。')}</section><div class="sticky-action"><p id="consent-summary" class="sub">已选择 ${state.consentFields.length} 个字段 · 用途：引荐</p>${btn('确认共享并发送', 'send-referral', 'primary', 'send')}</div></div>`;
+      }
+      function referrals() {
+        return `<div class="content">${intro('我的引荐', '每一次发送、回应与授权，都有清楚的去向。')}${state.sent ? `<div class="quiet-box"><div class="row between wrap"><span class="label">${selectedOpportunity.org}</span><span class="status-text">${state.withdrawn ? '已撤回' : state.accepted ? '已接受' : '等待组织回应'}</span></div><h2 style="margin-top:14px">${selectedOpportunity.title}</h2><p class="sub" style="margin-top:10px">引荐与关系用途分别授权，你可以在隐私页检查。</p></div><div class="timeline"><div class="timeline-item"><strong>你已确认并发送</strong><p>已选字段的不可变快照用于本次引荐。</p></div><div class="timeline-item"><strong>${state.withdrawn ? '本次引荐已撤回' : state.accepted ? '组织已接受' : '等待组织决定'}</strong><p>${state.withdrawn ? '样例授权已失效，新的读取将被拒绝。' : '组织可以接受、拒绝或请求补充资料。'}</p></div></div><div class="row wrap">${link('查看授权清单', 'privacy')}${!state.withdrawn && !state.accepted ? btn('撤回引荐', 'withdraw', 'secondary') : ''}${state.accepted ? link('进入关系空间', 'space') : ''}</div>` : `<div class="state-screen"><div>${icon('send')}<h2>你的下一次连接，还没开始</h2><p style="margin-top:12px">先找到值得参与的机会，再决定分享什么。</p>${btn('发现机会', 'go-discover', 'primary')}</div></div>`}</div>`;
+      }
+      function inbox() {
+        return `<div class="content">${intro('让合适的连接，有个回应。', `当前代表：${selectedOpportunity.org} · 样例管理员`, '组织收件箱')}${notice('仅展示已发送引荐与获授权字段，不展示私人候选或未发送的匹配证据。')}<div class="list-row" style="margin-top:24px"><span class="avatar">林</span><div class="row-body"><div class="row between"><h2>林同学</h2><span class="status-text">${state.accepted ? '已接受' : '待处理 · 样例'}</span></div><p class="sub">申请：${selectedOpportunity.title}</p><div class="meta"><span>${state.sent && state.revoked ? '引荐授权已撤销' : '引荐授权有效'}</span><span>版本 1</span></div></div></div><section class="detail-section"><h2>本次获授权资料</h2>${state.sent && state.revoked ? '<div class="notice" style="margin-top:16px">引荐授权已撤销，受限资料已隐藏。</div>' : (state.sent ? state.consentFields : ['name', 'skills']).map((k) => `<div class="memory-card"><p class="label">${fields[k][0]}</p><p>${fields[k][1]}</p></div>`).join('')}<p class="sub" style="margin-top:16px">其余私人资料未获授权，不予展示。</p></section><div class="sticky-action">${state.accepted ? btn('查看关系空间', 'go-space', 'primary') : btn('接受并建立关系', 'accept', 'primary', 'check')}<div class="row wrap">${btn('请求补充', 'request-more', 'secondary')}${btn('拒绝', 'reject', 'secondary')}</div></div></div>`;
+      }
+      function space() {
+        const shared = state.accepted && state.relation && !state.relationRevoked;
+        return `<div class="content">${intro('机器人学习合作', `林同学 × ${selectedOpportunity.org}`, '关系空间 · 样例')}<div class="row wrap" style="margin-bottom:28px"><span class="badge">${state.accepted ? '已建立' : '既有空间样例'}</span><span class="sub">参与者 2 方 · 共同目标：明确首次合作方向</span></div><div class="quiet-box"><p class="label">下一步</p><h2 style="margin-top:12px">从一个清楚的合作目标开始</h2><p class="sub" style="margin-top:10px">双方可以先确认研究主题、投入时间和预期产出。</p><button class="btn secondary" style="margin-top:18px" disabled>关系会话尚未开放</button></div><section class="detail-section"><div class="row between"><h2>共享上下文</h2>${link('管理授权', 'privacy')}</div><div class="notice" style="margin-top:16px">${shared ? `<p class="label">关系用途 · 独立授权 · 7 天</p>${state.consentFields.map((k) => `<p style="margin-top:12px">${fields[k][0]}：${fields[k][1]}</p>`).join('')}` : `<div class="row">${icon(state.revoked ? 'shield-off' : 'lock-keyhole')}<div><h3>${state.relationRevoked ? '关系授权已撤销' : '尚未共享资料'}</h3><p class="sub" style="margin-top:6px">${state.relationRevoked ? '新的授权读取已被阻断，受影响内容已隐藏。' : '引荐用途不会自动升级为关系用途。你可以先建立联系，再单独决定是否共享。'}</p></div></div>`}</div></section></div>`;
+      }
+      function grantCard(relationship = false) {
+        const revoked = relationship ? state.relationRevoked : state.revoked;
+        return `<div class="list-row"><div class="org-mark">${icon('building-2')}</div><div class="row-body"><h3>${selectedOpportunity.org}</h3><p class="sub" style="margin-top:8px">用途：${relationship ? '关系上下文' : '引荐'}</p><p class="sub">字段：${state.consentFields.map((k) => fields[k][0]).join('、')}</p><p class="sub">状态：${revoked ? '已撤销' : `有效 · ${relationship ? '建立后 7' : state.expiry || '7'} 天（样例）`}</p><div class="row wrap" style="margin-top:14px">${btn('查看快照', relationship ? 'view-relation-snapshot' : 'view-snapshot', 'secondary')}${!revoked ? btn('撤销此授权', relationship ? 'revoke-relation' : 'revoke', 'danger') : ''}</div></div></div>`;
+      }
+      function privacy() {
+        const has = state.sent && !state.withdrawn;
+        return `<div class="content">${intro('你决定，什么可以被看见。', '展示、匹配、本人 AI 和对外共享是独立的用途。', '隐私与授权')}<div class="quiet-box"><div class="row between"><h2>资料的处理用途</h2>${link('查看记忆', 'memory')}</div><p class="sub" style="margin-top:12px">样例技能可用于匹配。对外共享仍须逐次预览与确认，不会因公开而默认发送给 AI。</p></div><section class="detail-section"><h2>对外授权</h2>${has ? grantCard() + (state.relation && state.accepted ? grantCard(true) : '') : `<div class="notice" style="margin-top:18px"><p>暂无有效的对外授权。</p><p class="sub">浏览公开机会不需要共享私人记忆。</p></div>`}</section><section class="detail-section">${notice('撤销后系统拒绝新的授权读取。已送达内容或系统外副本无法收回；其他独立授权可能仍然有效。')}</section></div>`;
+      }
+      function memory() {
+        return `<div class="content">${intro('留下重要的，保留决定权。', 'AI 提取仅生成候选。由你确认、修改或拒绝后，才进入选择的用途。', '我的记忆')}<div class="filters"><button class="pill selected" data-action="memory-confirmed">已确认</button><button class="pill" data-action="review-memory">待复核 ${state.pendingMemories}</button></div><article class="memory-card"><div class="row between"><h2>Python 与数据分析</h2><span class="status-text">已确认</span></div><p class="sub" style="margin-top:10px">熟悉 Python，使用公开数据完成过实验结果分析。</p><div class="meta"><span>${icon('lock-keyhole')}仅本人展示</span><span>用途：匹配</span><span>手工确认 · v2</span></div>${link('检查用途与授权', 'privacy')}</article><article class="memory-card"><div class="row between"><h2>希望参与机器人相关研究</h2><span class="status-text">已确认</span></div><p class="sub" style="margin-top:10px">每周可以投入 6–8 小时，希望先从基础项目开始。</p><div class="meta"><span>${icon('lock-keyhole')}仅本人展示</span><span>用途：本人 AI</span><span>手工确认 · v1</span></div></article>${state.reviewed ? '<article class="memory-card"><h2>每周可投入 6–8 小时</h2><p class="sub">已由你复核确认 · 仅用于本人 AI · 样例</p></article>' : ''}<div style="margin-top:24px">${notice('这些是设计样例。此页面不会读取或修改你的真实记忆。')}</div></div>`;
+      }
+      const settingTabs = [
+        ['general', 'settings-2', '常规'],
+        ['appearance', 'sun-moon', '外观'],
+        ['notifications', 'bell', '通知'],
+        ['privacy', 'shield-check', '数据与隐私'],
+        ['provider', 'sliders-horizontal', 'AI 服务'],
+      ];
+      function settings() {
+        return `<div class="content">${intro('设置', '让 AVEN 以你习惯的方式工作。')}<div class="settings-layout ${state.settingDetail ? 'detail-open' : ''}"><nav class="settings-nav" aria-label="设置分类">${settingTabs.map(([k, i, n]) => `<button data-setting="${k}" class="${state.settings === k ? 'active' : ''}" ${state.settings === k ? 'aria-current="page"' : ''}>${icon(i)}${n}</button>`).join('')}</nav><div id="settings-panel"><button class="text-link mobile-settings-back" data-action="settings-back">${icon('arrow-right')}返回设置</button>${settingsPanel()}</div></div></div>`;
+      }
+      function settingsPanel() {
+        switch (state.settings) {
+          case 'appearance':
+            return `<h2>外观</h2><div class="settings-row"><div><h3>主题</h3><p>仅切换此设计原型的外观。</p></div><label><span class="sr">主题</span><select id="theme-select" class="select"><option value="dark" ${document.documentElement.dataset.theme === 'dark' ? 'selected' : ''}>深色</option><option value="light" ${document.documentElement.dataset.theme === 'light' ? 'selected' : ''}>浅色</option></select></label></div><div class="settings-row"><div><h3>减少动态</h3><p>遵循系统偏好，原型不使用持续动画。</p></div><span class="sub">跟随系统</span></div>`;
+          case 'notifications':
+            return `<h2>通知</h2><div class="settings-row"><div><h3>引荐与关系提醒</h3><p>仅演示偏好开关，不会投递通知。</p></div><button class="toggle" data-action="notification" aria-pressed="${state.notification}">${state.notification ? '已开启' : '已关闭'}</button></div><div style="margin-top:20px">${notice('站内通知与移动推送尚未实现。偏好仅保留在本次原型演示中。', 'bell-off')}</div>`;
+          case 'privacy':
+            return `<h2>数据与隐私</h2><div class="settings-row"><div><h3>管理对外授权</h3><p>检查接收方、用途、字段和期限。</p></div>${link('查看', 'privacy')}</div><div class="settings-row"><div><h3>管理记忆</h3><p>查看已确认信息与使用范围。</p></div>${link('查看', 'memory')}</div>`;
+          case 'provider':
+            return `<h2>AI 服务</h2><div class="settings-row"><div><h3>当前演示模式</h3><p>不向外部模型发送任何数据。</p></div><span class="badge">Mock</span></div><div style="margin-top:20px">${notice('用户级模型配置 API 已存在，但尚未接入 Worker 与产品界面。本稿不采集 API 密钥，也不提供真实连接测试。', 'info')}</div>`;
+          default:
+            return `<h2>常规</h2><div class="settings-row"><div><h3>语言</h3><p>界面与默认内容语言。</p></div><span class="sub">简体中文</span></div><div class="settings-row"><div><h3>按 Enter 发送</h3><p>中文输入法组合态不会触发发送。</p></div><button class="toggle" data-action="enter-send" aria-pressed="${state.enterSend}">${state.enterSend ? '已开启' : '已关闭'}</button></div><div class="settings-row"><div><h3>当前身份</h3><p>${state.identity === 'personal' ? '林同学 · 个人空间' : '机器人学习实验室 · 组织空间'}</p></div>${btn('切换', 'switch-identity', 'secondary')}</div>`;
+        }
+      }
+      function toast(text) {
+        clearTimeout(toastTimer);
+        $('#toast').textContent = text;
+        $('#toast').hidden = false;
+        toastTimer = setTimeout(() => ($('#toast').hidden = true), 5000);
+      }
+      function openDialog(title, body, confirm, action, danger = false) {
+        dialogTrigger = document.activeElement;
+        dialogAction = action;
+        $('#modal-title').textContent = title;
+        $('#modal-body').innerHTML = body;
+        $('#modal-confirm').textContent = confirm;
+        $('#modal-confirm').className = 'btn ' + (danger ? 'danger' : 'primary');
+        $('#modal').showModal();
+        $('#modal-cancel').focus();
+      }
+      function closeDialog() {
+        if ($('#modal').open) $('#modal').close();
+        dialogAction = null;
+        if (dialogTrigger?.isConnected) dialogTrigger.focus();
+        else $('#main-content').focus({ preventScroll: true });
+      }
+      function closeMenu() {
+        $('#profile-menu').hidden = true;
+        $('#profile').setAttribute('aria-expanded', 'false');
+      }
+      function closeDrawer() {
+        $('#app').classList.remove('drawer-open');
+        $('#open-drawer').setAttribute('aria-expanded', 'false');
+        if (matchMedia('(max-width:560px)').matches) {
+          $('#sidebar').inert = true;
+          $('#main-content').inert = false;
+          $('#bottom-nav').inert = false;
+        }
+      }
+      function openDrawer() {
+        $('#app').classList.add('drawer-open');
+        $('#sidebar').inert = false;
+        $('#main-content').inert = true;
+        $('#bottom-nav').inert = true;
+        $('#open-drawer').setAttribute('aria-expanded', 'true');
+        $('#collapse').focus();
+      }
+      function stopGeneration() {
+        clearTimeout(timer);
+        state.generating = false;
+      }
+      function sendMessage() {
+        const prompt = $('#prompt');
+        const text = prompt?.value.trim();
+        if (!text || state.generating) return;
+        state.messages.push({ role: 'user', text });
+        state.generating = true;
+        render();
+        timer = setTimeout(() => {
+          state.generating = false;
+          state.messages.push({
+            role: 'assistant',
+            text: '我们可以从你想参与的研究方向、每周能投入的时间，以及希望获得的经验开始。\n\n这里有一组用于设计演示的科研机会。你可以先浏览，找到感兴趣的项目后，再逐项确认需要共享的资料。',
+          });
+          render();
+          $('#messages').scrollTop = $('#messages').scrollHeight;
+        }, 900);
+      }
+      const actions = {
+        newchat: () => {
+          stopGeneration();
+          state.messages = [];
+          navigate('ai');
+          $('#prompt')?.focus();
+        },
+        history: () => {
+          state.messages = [
+            { role: 'user', text: '我想从一个小项目开始，探索机器人方向。' },
+            {
+              role: 'assistant',
+              text: '可以先考虑基础数据分析或复现实验。下面的机会是设计样例，你可以查看要求，并在申请前决定共享范围。',
+            },
+          ];
+          navigate('ai');
+        },
+        suggest: () => {
+          $('#prompt').value = '帮我寻找每周投入 6–8 小时的机器人科研机会。';
+          $('#prompt').focus();
+        },
+        context: () =>
+          openDialog(
+            '选择本次 AI 上下文',
+            `<p class="sub">默认仅使用本次输入。选择后只演示加入明确允许本人 AI 的样例资料，不扩大对外共享范围。</p><label class="check-row"><input id="context-check" type="checkbox" ${state.context ? 'checked' : ''}><span>希望参与机器人相关研究<br><span class="sub">已确认 · 允许本人 AI · v1</span></span></label>`,
+            '使用所选范围',
+            () => {
+              state.context = $('#context-check').checked;
+              render();
+            },
+          ),
+        stop: () => {
+          stopGeneration();
+          render();
+          toast('已停止演示回复，没有执行业务行动。');
+        },
+        apply: () => {
+          state.consentFields = ['name', 'skills'];
+          state.relation = false;
+          navigate('consent');
+        },
+        'send-referral': () => {
+          if (!state.consentFields.length) return;
+          const expiry = $('#consent-expiry').value;
+          const chosen = state.consentFields
+            .map((k) => fields[k][0] + '：' + fields[k][1])
+            .join('<br>');
+          openDialog(
+            '确认本次共享',
+            `<p>接收方：${esc(selectedOpportunity.org)}</p><p class="sub">组织中当前有代表权限的成员可读。</p><div class="detail-pair"><span>引荐用途 · ${expiry} 天</span>${chosen}</div>${state.relation ? `<div class="detail-pair"><span>独立关系用途 · 建立后 7 天</span>${chosen}</div>` : '<p class="sub" style="margin-top:16px">未授权关系用途。建立关系后，共享上下文为空。</p>'}<p class="sub" style="margin-top:16px">此处仅演示确认流程，不发送真实引荐。</p>`,
+            '确认演示发送',
+            () => {
+              state.sent = true;
+              state.accepted = false;
+              state.withdrawn = false;
+              state.revoked = false;
+              state.relationRevoked = false;
+              state.expiry = expiry;
+              navigate('referrals');
+              toast('样例引荐已发送，等待组织回应。');
+            },
+          );
+        },
+        withdraw: () =>
+          openDialog(
+            '撤回此引荐？',
+            '<p>此样例引荐将停止处理，其引荐授权同步失效。再次申请需要新的预览与确认。</p>',
+            '确认撤回',
+            () => {
+              state.withdrawn = true;
+              state.revoked = true;
+              render();
+              toast('样例引荐已撤回。');
+            },
+            true,
+          ),
+        accept: () => {
+          if (state.sent && state.revoked) {
+            toast('引荐授权已撤销，请重新取得有效授权。');
+            return;
+          }
+          openDialog(
+            '接受并建立关系空间？',
+            `<p>你正代表${esc(selectedOpportunity.org)}处理此样例引荐。双方接受后建立唯一关系空间；没有独立关系用途授权时，共享上下文为空。</p>`,
+            '接受并建立',
+            () => {
+              state.accepted = true;
+              navigate('space');
+              toast('样例关系已建立。');
+            },
+          );
+        },
+        'request-more': () =>
+          openDialog(
+            '请求补充资料',
+            '<p class="sub">说明需要补充的内容与用途。补充资料仍需对方重新预览与授权。</p><label class="input-label">补充说明<textarea id="decision-note" maxlength="500" placeholder="例如：请补充每周可投入的时间"></textarea></label>',
+            '发送演示请求',
+            () => {
+              toast('样例请求已记录，未投递真实通知。');
+            },
+          ),
+        reject: () =>
+          openDialog(
+            '拒绝此引荐？',
+            '<p>此处仅演示组织决定。拒绝后不建立关系空间。</p>',
+            '确认拒绝',
+            () => {
+              state.variant = 'empty';
+              render();
+              toast('样例引荐已拒绝。');
+            },
+            true,
+          ),
+        'view-snapshot': () =>
+          openDialog(
+            '此授权的快照',
+            state.revoked
+              ? '<p>授权已撤销，受限快照已隐藏。</p>'
+              : `<p class="sub">接收方：${esc(selectedOpportunity.org)} · 用途：引荐</p>${state.consentFields.map((k) => `<div class="detail-pair"><span>${fields[k][0]}</span>${fields[k][1]}</div>`).join('')}`,
+            '知道了',
+            () => {},
+          ),
+        revoke: () =>
+          openDialog(
+            '撤销此引荐授权？',
+            `<p>接收方：${esc(selectedOpportunity.org)}</p><div class="detail-pair"><span>用途：引荐</span>字段：${state.consentFields.map((k) => fields[k][0]).join('、')}</div><p class="sub" style="margin-top:16px">系统将拒绝此授权的新读取。已送达内容或系统外副本无法收回；独立的关系用途授权不受此操作影响。</p>`,
+            '确认撤销',
+            () => {
+              state.revoked = true;
+              render();
+              toast('此授权已撤销，系统将拒绝新的授权读取；已送达内容或系统外副本无法收回。');
+            },
+            true,
+          ),
+        'view-relation-snapshot': () =>
+          openDialog(
+            '关系用途快照',
+            state.relationRevoked
+              ? '<p>关系用途授权已撤销，快照已隐藏。</p>'
+              : `<p class="sub">用途：关系上下文 · 独立授权</p>${state.consentFields.map((k) => `<div class="detail-pair"><span>${fields[k][0]}</span>${fields[k][1]}</div>`).join('')}`,
+            '知道了',
+            () => {},
+          ),
+        'revoke-relation': () =>
+          openDialog(
+            '撤销关系用途授权？',
+            `<p>接收方：${esc(selectedOpportunity.org)}</p><p>用途：关系上下文 · 字段：${state.consentFields.map((k) => fields[k][0]).join('、')}</p><p class="sub" style="margin-top:16px">关系空间的受限快照将被隐藏。独立的引荐授权不受影响，已送达内容或系统外副本无法收回。</p>`,
+            '确认撤销',
+            () => {
+              state.relationRevoked = true;
+              render();
+              toast('关系用途授权已撤销，引荐授权保持原状。');
+            },
+            true,
+          ),
+        'switch-identity': () => {
+          state.identity = state.identity === 'personal' ? 'organization' : 'personal';
+          state.settings = 'general';
+          navigate(state.identity === 'organization' ? 'inbox' : 'today');
+        },
+        'settings-back': () => {
+          state.settingDetail = false;
+          render();
+        },
+        recover: () => {
+          state.identity = 'personal';
+          navigate(state.variant === 'denied' ? 'today' : state.route);
+        },
+        'go-discover': () => navigate('discover'),
+        'go-space': () => navigate('space'),
+        'clear-search': () => {
+          state.query = '';
+          state.filter = '全部';
+          render();
+        },
+        'enter-send': () => {
+          state.enterSend = !state.enterSend;
+          render();
+        },
+        notification: () => {
+          state.notification = !state.notification;
+          render();
+        },
+        'memory-confirmed': () => toast('当前展示已确认的样例记忆。'),
+        'review-memory': () =>
+          state.pendingMemories
+            ? openDialog(
+                '复核候选记忆',
+                '<p>候选：希望每周稳定投入 6–8 小时参与研究。</p><p class="sub" style="margin-top:12px">来源：样例对话。确认后仅用于本人 AI；不自动参与匹配或共享。</p>',
+                '确认样例记忆',
+                () => {
+                  state.pendingMemories--;
+                  state.reviewed = true;
+                  render();
+                  toast('样例候选已确认；未修改真实记忆。');
+                },
+              )
+            : toast('待复核样例已全部处理。'),
+      };
+      document.addEventListener('click', (e) => {
+        const t = e.target.closest('button');
+        if (!t) return;
+        if (t.dataset.route) {
+          navigate(t.dataset.route);
+          return;
+        }
+        if (t.dataset.opportunity) {
+          selectedOpportunity = opportunities.find((o) => o.id === t.dataset.opportunity);
+          navigate('detail');
+          return;
+        }
+        if (t.dataset.filter) {
+          state.filter = t.dataset.filter;
+          render();
+          return;
+        }
+        if (t.dataset.setting) {
+          state.settings = t.dataset.setting;
+          state.settingDetail = true;
+          render();
+          return;
+        }
+        if (t.dataset.action) {
+          actions[t.dataset.action]?.();
+        }
+      });
+      document.addEventListener('input', (e) => {
+        if (e.target.id === 'opportunity-search') {
+          state.query = e.target.value;
+          $('#opportunity-results').innerHTML = results();
+        }
+      });
+      document.addEventListener('change', (e) => {
+        if (e.target.dataset.field) {
+          state.consentFields = [...document.querySelectorAll('[data-field]:checked')].map(
+            (i) => i.dataset.field,
+          );
+          $('#consent-summary').textContent =
+            `已选择 ${state.consentFields.length} 个字段 · 用途：引荐`;
+          const send = $('[data-action="send-referral"]');
+          send.disabled = !state.consentFields.length;
+        }
+        if (e.target.id === 'relation-consent') state.relation = e.target.checked;
+        if (['theme-select', 'review-theme'].includes(e.target.id)) {
+          document.documentElement.dataset.theme = e.target.value;
+          $('#review-theme').value = e.target.value;
+        }
+        if (e.target.id === 'review-state') {
+          state.variant = e.target.value;
+          render();
+        }
+      });
+      document.addEventListener('submit', (e) => {
+        if (e.target.id === 'chat-form') {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      let composing = false;
+      document.addEventListener('compositionstart', () => (composing = true));
+      document.addEventListener('compositionend', () => (composing = false));
+      document.addEventListener('keydown', (e) => {
+        if (
+          e.target.id === 'prompt' &&
+          e.key === 'Enter' &&
+          !e.shiftKey &&
+          !e.isComposing &&
+          !composing &&
+          state.enterSend
+        ) {
+          e.preventDefault();
+          sendMessage();
+        }
+        if (e.key === 'Escape') {
+          const wasMenuOpen = !$('#profile-menu').hidden;
+          closeMenu();
+          if (wasMenuOpen) $('#profile').focus();
+          if ($('#app').classList.contains('drawer-open')) {
+            closeDrawer();
+            $('#open-drawer').focus();
+          }
+        }
+        if (e.key === 'Tab' && $('#app').classList.contains('drawer-open') && !$('#modal').open) {
+          const nodes = [...$('#sidebar').querySelectorAll('button:not(:disabled)')].filter(
+            (n) => n.getClientRects().length,
+          );
+          const first = nodes[0],
+            last = nodes.at(-1);
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      });
+      $('#profile').addEventListener('click', () => {
+        const open = $('#profile-menu').hidden;
+        $('#profile-menu').hidden = !open;
+        $('#profile').setAttribute('aria-expanded', String(open));
+        if (open) $('#profile-menu button').focus();
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.sidebar-footer')) closeMenu();
+      });
+      $('#open-drawer').addEventListener('click', openDrawer);
+      $('#drawer-shade').addEventListener('click', () => {
+        closeDrawer();
+        $('#open-drawer').focus();
+      });
+      $('#collapse').addEventListener('click', () => {
+        if (matchMedia('(max-width:560px)').matches) {
+          closeDrawer();
+          $('#open-drawer').focus();
+        } else {
+          const collapsed = $('#app').classList.toggle('collapsed');
+          $('#collapse').setAttribute('aria-label', collapsed ? '展开导航' : '收起导航');
+        }
+      });
+      $('#modal-cancel').addEventListener('click', closeDialog);
+      $('#modal-confirm').addEventListener('click', () => {
+        const action = dialogAction;
+        closeDialog();
+        action?.();
+      });
+      $('#modal').addEventListener('cancel', (e) => {
+        e.preventDefault();
+        closeDialog();
+      });
+      matchMedia('(max-width:560px)').addEventListener('change', () => {
+        closeDrawer();
+        if (!matchMedia('(max-width:560px)').matches) $('#sidebar').inert = false;
+      });
+      window.addEventListener('hashchange', () => {
+        const r = location.hash.slice(1);
+        if (names[r] && r !== state.route) {
+          state.route = r;
+          state.variant = 'success';
+          render();
+        }
+      });
+      if (names[location.hash.slice(1)]) state.route = location.hash.slice(1);
+      render();
+      closeDrawer();
+    </script>
+  </body>
+</html>
