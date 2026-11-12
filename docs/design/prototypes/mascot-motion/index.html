@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AVEN · 小圆的八种心情</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --font-sans: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        --background: light-dark(#ffffff, #101010);
+        --foreground: light-dark(#171717, #ededed);
+        --muted: light-dark(#6b6b6b, #a1a1a1);
+        --card: light-dark(#f5f5f4, #202020);
+        --secondary: light-dark(#eeeeec, #292929);
+        --border: light-dark(#ddddda, #414141);
+        --primary: light-dark(#151515, #ededed);
+        --primary-foreground: light-dark(#ffffff, #111111);
+        --ring: light-dark(#526b5f, #a3c9b1);
+        --radius: 28px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        color: var(--foreground);
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 4px;
+      }
+      .motion-lab {
+        max-width: 600px;
+        margin-inline: auto;
+      }
+      .stage {
+        padding: 18px 16px 20px;
+        border-radius: var(--radius);
+        background: #ffffff;
+        color: #111111;
+        text-align: center;
+      }
+      .stage-button {
+        display: block;
+        width: min(240px, 100%);
+        padding: 0;
+        margin: 0 auto;
+        aspect-ratio: 1;
+        border: 0;
+        background: transparent;
+        border-radius: 50%;
+        touch-action: manipulation;
+      }
+      .stage-button svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .current-name {
+        font-size: 16px;
+        font-weight: 500;
+        margin: 4px 0 6px;
+      }
+      .current-description {
+        min-height: 22px;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #6b6b6b;
+      }
+      .hint {
+        font-size: 12px;
+        color: #6b6b6b;
+        margin: 10px 0 0;
+      }
+      .state-list {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .state-button {
+        border-radius: 999px;
+        min-height: 44px;
+        padding: 8px 5px;
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        background: transparent;
+        font-size: 13px;
+      }
+      .state-button:hover {
+        background: var(--secondary);
+      }
+      .state-button[aria-pressed='true'] {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary);
+      }
+      .controls {
+        display: flex;
+        gap: 10px 16px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 12px 0 0;
+      }
+      .pause-button {
+        min-height: 40px;
+        min-width: 70px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        font-size: 13px;
+      }
+      .check-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 40px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .check-control input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--primary);
+      }
+      .footer-note {
+        color: var(--muted);
+        text-align: center;
+        font-size: 11px;
+        line-height: 1.7;
+        margin: 10px 0 0;
+      }
+      @media (max-width: 380px) {
+        .state-list {
+          gap: 6px;
+        }
+        .state-button {
+          font-size: 12px;
+        }
+        .controls {
+          gap: 4px 12px;
+        }
+        .stage-button {
+          width: 216px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="motion-lab" aria-label="AVEN 圆形角色动效预览">
+      <section class="stage" aria-label="角色预览">
+        <button
+          id="stage-button"
+          class="stage-button"
+          type="button"
+          aria-label="点击小圆，切换到开心表情"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="aven-mascot"
+            id="mascot"
+            viewBox="0 0 200 200"
+            width="200"
+            height="200"
+            data-motion="hello"
+            data-paused="false"
+            data-reduced="false"
+            role="img"
+            aria-label="AVEN 圆形角色：打个招呼"
+          >
+            <style>
+              .aven-mascot {
+                overflow: visible;
+              }
+              .aven-mascot .float,
+              .aven-mascot .tilt,
+              .aven-mascot .pulse {
+                transform-box: view-box;
+                transform-origin: 100px 100px;
+              }
+              .aven-mascot .eye,
+              .aven-mascot .lid {
+                transform-box: fill-box;
+                transform-origin: center;
+              }
+              .aven-mascot .look {
+                transform: translate(var(--look-x, 0px), var(--look-y, 0px));
+                transition: transform 160ms ease-out;
+              }
+              .aven-mascot .lid {
+                animation: aven-blink 5.4s infinite;
+              }
+              .aven-mascot[data-motion='idle'] .float {
+                animation: aven-float 3.6s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='idle'] .pulse {
+                animation: aven-breathe 3.6s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='blink'] .lid {
+                animation: aven-double-blink 2.5s infinite;
+              }
+              .aven-mascot[data-motion='blink'] .tilt {
+                animation: aven-tiny-nod 2.5s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='curious'] .expression {
+                animation: aven-looking 4s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='curious'] .tilt {
+                animation: aven-curious 4s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='curious'] .eye-right {
+                transform: scale(1, 0.78);
+              }
+              .aven-mascot[data-motion='happy'] .float {
+                animation: aven-hop 2s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='happy'] .tilt {
+                animation: aven-happy-tilt 2s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='happy'] .eye-left {
+                transform: rotate(-14deg) scale(1.15, 0.35);
+              }
+              .aven-mascot[data-motion='happy'] .eye-right {
+                transform: rotate(14deg) scale(1.15, 0.35);
+              }
+              .aven-mascot[data-motion='happy'] .lid {
+                animation: none;
+              }
+              .aven-mascot[data-motion='thinking'] .tilt {
+                animation: aven-think 4.2s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='thinking'] .expression {
+                transform: translate(-5px, -5px);
+              }
+              .aven-mascot[data-motion='thinking'] .eye-left {
+                transform: scale(0.78, 0.78);
+              }
+              .aven-mascot[data-motion='surprise'] .float {
+                animation: aven-surprise-hop 3.2s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='surprise'] .pulse {
+                animation: aven-surprise-pulse 3.2s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='surprise'] .eye {
+                transform: scale(1.25, 1.15);
+              }
+              .aven-mascot[data-motion='sleepy'] .eye {
+                transform: scale(1.05, 0.17);
+              }
+              .aven-mascot[data-motion='sleepy'] .lid {
+                animation: none;
+              }
+              .aven-mascot[data-motion='sleepy'] .float {
+                animation: aven-float 4.8s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='sleepy'] .tilt {
+                animation: aven-sleep 4.8s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='hello'] .tilt {
+                animation: aven-hello 2.8s ease-in-out infinite;
+              }
+              .aven-mascot[data-motion='hello'] .lid {
+                animation: aven-double-blink 2.8s infinite;
+              }
+              .aven-mascot[data-paused='true'] * {
+                animation-play-state: paused !important;
+                transition: none !important;
+              }
+              .aven-mascot[data-reduced='true'] * {
+                animation: none !important;
+                transition: none !important;
+              }
+              .aven-mascot .eye {
+                transform: rotate(7deg);
+              }
+              .aven-mascot .happy-eye {
+                display: none;
+              }
+              .aven-mascot[data-motion='happy'] .eye {
+                transform: none;
+              }
+              .aven-mascot[data-motion='happy'] .normal-eye {
+                display: none;
+              }
+              .aven-mascot[data-motion='happy'] .happy-eye {
+                display: inline;
+              }
+              @keyframes aven-float {
+                0%,
+                100% {
+                  transform: translateY(1px);
+                }
+                50% {
+                  transform: translateY(-3px);
+                }
+              }
+              @keyframes aven-breathe {
+                0%,
+                100% {
+                  transform: scale(1);
+                }
+                50% {
+                  transform: scale(1.014);
+                }
+              }
+              @keyframes aven-blink {
+                0%,
+                40%,
+                45%,
+                100% {
+                  transform: scaleY(1);
+                }
+                42%,
+                43% {
+                  transform: scaleY(0.08);
+                }
+              }
+              @keyframes aven-double-blink {
+                0%,
+                14%,
+                29%,
+                100% {
+                  transform: scaleY(1);
+                }
+                18%,
+                20%,
+                25%,
+                26% {
+                  transform: scaleY(0.08);
+                }
+                23% {
+                  transform: scaleY(1);
+                }
+              }
+              @keyframes aven-tiny-nod {
+                0%,
+                36%,
+                100% {
+                  transform: rotate(0);
+                }
+                19% {
+                  transform: rotate(4deg);
+                }
+              }
+              @keyframes aven-curious {
+                0%,
+                100% {
+                  transform: rotate(0);
+                }
+                30%,
+                55% {
+                  transform: rotate(-9deg);
+                }
+                75% {
+                  transform: rotate(5deg);
+                }
+              }
+              @keyframes aven-looking {
+                0%,
+                100% {
+                  transform: translate(0, 0);
+                }
+                30%,
+                55% {
+                  transform: translate(-6px, -2px);
+                }
+                75% {
+                  transform: translate(4px, 0);
+                }
+              }
+              @keyframes aven-hop {
+                0%,
+                14%,
+                45%,
+                70%,
+                100% {
+                  transform: translateY(0);
+                }
+                29% {
+                  transform: translateY(-11px);
+                }
+                56% {
+                  transform: translateY(-6px);
+                }
+              }
+              @keyframes aven-happy-tilt {
+                0%,
+                100% {
+                  transform: rotate(0);
+                }
+                29% {
+                  transform: rotate(-6deg);
+                }
+                56% {
+                  transform: rotate(5deg);
+                }
+              }
+              @keyframes aven-think {
+                0%,
+                100% {
+                  transform: rotate(-3deg);
+                }
+                35%,
+                70% {
+                  transform: rotate(-9deg);
+                }
+              }
+              @keyframes aven-surprise-hop {
+                0%,
+                14%,
+                55%,
+                100% {
+                  transform: translateY(0);
+                }
+                30% {
+                  transform: translateY(-9px);
+                }
+              }
+              @keyframes aven-surprise-pulse {
+                0%,
+                14%,
+                55%,
+                100% {
+                  transform: scale(1);
+                }
+                30% {
+                  transform: scale(1.055);
+                }
+              }
+              @keyframes aven-sleep {
+                0%,
+                100% {
+                  transform: rotate(-5deg);
+                }
+                50% {
+                  transform: rotate(3deg);
+                }
+              }
+              @keyframes aven-hello {
+                0%,
+                15%,
+                78%,
+                100% {
+                  transform: rotate(0);
+                }
+                28%,
+                52% {
+                  transform: rotate(-10deg);
+                }
+                40%,
+                64% {
+                  transform: rotate(10deg);
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .aven-mascot * {
+                  animation: none !important;
+                  transition: none !important;
+                }
+              }
+            </style>
+            <g class="float">
+              <g class="tilt">
+                <g class="pulse">
+                  <circle class="body" cx="100" cy="100" r="79" fill="#000000" />
+                  <g class="look">
+                    <g class="expression">
+                      <g class="eye eye-left">
+                        <g class="lid">
+                          <rect
+                            class="normal-eye"
+                            x="71"
+                            y="57"
+                            width="18"
+                            height="39"
+                            rx="9"
+                            fill="#ffffff"
+                          />
+                          <path
+                            class="happy-eye"
+                            d="M71 78 Q80 65 89 78"
+                            fill="none"
+                            stroke="#ffffff"
+                            stroke-width="7"
+                            stroke-linecap="round"
+                          />
+                        </g>
+                      </g>
+                      <g class="eye eye-right">
+                        <g class="lid">
+                          <rect
+                            class="normal-eye"
+                            x="107"
+                            y="59"
+                            width="18"
+                            height="39"
+                            rx="9"
+                            fill="#ffffff"
+                          />
+                          <path
+                            class="happy-eye"
+                            d="M107 80 Q116 67 125 80"
+                            fill="none"
+                            stroke="#ffffff"
+                            stroke-width="7"
+                            stroke-linecap="round"
+                          />
+                        </g>
+                      </g>
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </button>
+        <p id="current-name" class="current-name">打个招呼</p>
+        <p id="current-description" class="current-description" role="status" aria-live="polite">
+          没有手也没关系，轻轻摇一摇就算打招呼。
+        </p>
+        <p class="hint">点一下它，或者把鼠标移近一点。</p>
+      </section>
+      <div id="state-list" class="state-list" role="group" aria-label="选择小圆的表情">
+        <button type="button" class="state-button" data-state="idle" aria-pressed="false">
+          轻轻呼吸</button
+        ><button type="button" class="state-button" data-state="blink" aria-pressed="false">
+          眨眨眼</button
+        ><button type="button" class="state-button" data-state="curious" aria-pressed="false">
+          好奇看看</button
+        ><button type="button" class="state-button" data-state="happy" aria-pressed="false">
+          开心蹦蹦</button
+        ><button type="button" class="state-button" data-state="thinking" aria-pressed="false">
+          认真思考</button
+        ><button type="button" class="state-button" data-state="surprise" aria-pressed="false">
+          惊喜一下</button
+        ><button type="button" class="state-button" data-state="sleepy" aria-pressed="false">
+          困困了</button
+        ><button type="button" class="state-button" data-state="hello" aria-pressed="true">
+          打个招呼
+        </button>
+      </div>
+      <div class="controls">
+        <button id="pause" class="pause-button" type="button" aria-pressed="false">暂停</button
+        ><label class="check-control"><input id="follow" type="checkbox" checked />眼神跟随</label
+        ><label class="check-control"><input id="autoplay" type="checkbox" />自动换表情</label>
+      </div>
+      <p id="motion-note" class="footer-note">正圆轮廓 · 没有手脚 · 支持系统“减少动态”设置</p>
+    </main>
+    <script>
+      const mascot = document.querySelector('#mascot');
+      const stage = document.querySelector('#stage-button');
+      const nameNode = document.querySelector('#current-name');
+      const description = document.querySelector('#current-description');
+      const pause = document.querySelector('#pause');
+      const autoplay = document.querySelector('#autoplay');
+      const follow = document.querySelector('#follow');
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      const states = {
+        idle: ['轻轻呼吸', '安静待在你身边，偶尔眨一下眼。'],
+        blink: ['眨眨眼', '眨一下，再眨一下，好像有话想说。'],
+        curious: ['好奇看看', '歪一点脑袋，悄悄看看你在做什么。'],
+        happy: ['开心蹦蹦', '眼睛笑弯一点，轻轻跳两下。'],
+        thinking: ['认真思考', '眼神望向一边，小脑袋正在转呀转。'],
+        surprise: ['惊喜一下', '眼睛亮起来，忍不住轻轻跳一下。'],
+        sleepy: ['困困了', '眼睛慢慢眯起来，陪你安静一会儿。'],
+        hello: ['打个招呼', '没有手也没关系，轻轻摇一摇就算打招呼。'],
+      };
+      let motion = 'hello';
+      let paused = false;
+      let autoTimer;
+      let lookFrame;
+      let pendingLook = [0, 0];
+      function resetLook() {
+        cancelAnimationFrame(lookFrame);
+        mascot.style.setProperty('--look-x', '0px');
+        mascot.style.setProperty('--look-y', '0px');
+      }
+      function canMove() {
+        return !paused && !reducedMotion.matches && !document.hidden;
+      }
+      function updatePlayback() {
+        const reduced = reducedMotion.matches;
+        mascot.dataset.reduced = String(reduced);
+        mascot.dataset.paused = String(paused || document.hidden);
+        pause.textContent = reduced ? '静态模式' : paused ? '播放' : '暂停';
+        pause.setAttribute('aria-pressed', String(paused));
+        pause.disabled = reduced;
+        follow.disabled = reduced;
+        autoplay.disabled = reduced;
+        if (!canMove()) resetLook();
+        document.querySelector('#motion-note').textContent = reduced
+          ? '已遵循“减少动态”：保留表情，关闭位移、缩放和眨眼。'
+          : '正圆轮廓 · 没有手脚 · 支持系统“减少动态”设置';
+        clearInterval(autoTimer);
+        if (autoplay.checked && canMove())
+          autoTimer = setInterval(() => {
+            const names = Object.keys(states);
+            setMotion(names[(names.indexOf(motion) + 1) % names.length]);
+          }, 5000);
+      }
+      function setMotion(next) {
+        if (!states[next]) return;
+        motion = next;
+        mascot.dataset.motion = next;
+        mascot.setAttribute('aria-label', `AVEN 圆形角色：${states[next][0]}`);
+        nameNode.textContent = states[next][0];
+        description.textContent = states[next][1];
+        document
+          .querySelectorAll('[data-state]')
+          .forEach((button) =>
+            button.setAttribute('aria-pressed', String(button.dataset.state === next)),
+          );
+        resetLook();
+      }
+      document.querySelector('#state-list').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-state]');
+        if (button) {
+          setMotion(button.dataset.state);
+          updatePlayback();
+        }
+      });
+      document.querySelector('#state-list').addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        const buttons = [...document.querySelectorAll('[data-state]')];
+        const current = buttons.indexOf(document.activeElement);
+        if (current < 0) return;
+        event.preventDefault();
+        const next =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? buttons.length - 1
+              : (current + (event.key === 'ArrowLeft' ? -1 : 1) + buttons.length) % buttons.length;
+        buttons[next].focus();
+        setMotion(buttons[next].dataset.state);
+        updatePlayback();
+      });
+      stage.addEventListener('click', () => {
+        setMotion('happy');
+        updatePlayback();
+      });
+      stage.addEventListener('pointermove', (event) => {
+        if (!follow.checked || !canMove() || event.pointerType !== 'mouse') return;
+        const bounds = stage.getBoundingClientRect();
+        pendingLook = [
+          Math.max(
+            -6,
+            Math.min(6, ((event.clientX - bounds.left - bounds.width / 2) / bounds.width) * 12),
+          ),
+          Math.max(
+            -5,
+            Math.min(5, ((event.clientY - bounds.top - bounds.height / 2) / bounds.height) * 10),
+          ),
+        ];
+        cancelAnimationFrame(lookFrame);
+        lookFrame = requestAnimationFrame(() => {
+          mascot.style.setProperty('--look-x', `${pendingLook[0]}px`);
+          mascot.style.setProperty('--look-y', `${pendingLook[1]}px`);
+        });
+      });
+      stage.addEventListener('pointerleave', resetLook);
+      follow.addEventListener('change', resetLook);
+      pause.addEventListener('click', () => {
+        paused = !paused;
+        updatePlayback();
+      });
+      autoplay.addEventListener('change', updatePlayback);
+      reducedMotion.addEventListener('change', updatePlayback);
+      document.addEventListener('visibilitychange', updatePlayback);
+      window.addEventListener('pageshow', updatePlayback);
+      window.addEventListener('pagehide', () => {
+        clearInterval(autoTimer);
+        cancelAnimationFrame(lookFrame);
+      });
+      updatePlayback();
+    </script>
+  </body>
+</html>

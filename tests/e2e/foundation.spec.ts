@@ -5,12 +5,12 @@ test('foundation page is honest, responsive, and reaches the live probe through 
 }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
-  await page.goto('/');
+  await page.goto('/diagnostics');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('从可靠的连接开始。');
   await expect(page.getByText('本页不是 MVP，也不是核心产品 UI。')).toBeVisible();
   await expect(page.getByText('页面与双端设计评审尚未完成。', { exact: false })).toBeVisible();
   await expect(
-    page.getByText('语义召回、AI 协调、活动通知与移动推送尚未实现。', { exact: false }),
+    page.getByText('语义召回、真实 AI 与移动推送尚未实现。', { exact: false }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: '检查连接' })).toBeEnabled();
   await page.getByRole('button', { name: '检查连接' }).click();
@@ -26,7 +26,7 @@ test('readiness failure is not rendered as a successful connection', async ({ pa
   const body = await response.json();
   expect(body.error.code).toBe('SERVICE_NOT_READY');
   expect(body.error.retryable).toBe(true);
-  await page.goto('/');
+  await page.goto('/diagnostics');
   await expect(page.getByText('尚未检查。请先在另一个终端启动 API。')).toBeVisible();
   await page.getByRole('button', { name: '检查依赖' }).click();
   await expect(page.getByText('依赖尚未就绪')).toBeVisible();
@@ -34,7 +34,7 @@ test('readiness failure is not rendered as a successful connection', async ({ pa
 });
 
 test('no horizontal overflow at the mobile viewport', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/diagnostics');
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );

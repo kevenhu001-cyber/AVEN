@@ -1,5 +1,72 @@
 # v0.3 原型自检
 
+## v0.4 图片对齐检查（2026-11-12）
+
+final result: passed（限定为设计原型的视觉与交互自检；正式评审仍为 REVIEW）。完整结论见仓库根目录 [design-qa.md](../../../../design-qa.md)。
+
+依据用户 `1000038450.jpg`（Gmail）与 `1000038451.jpg`（Outlook），把原图 899px 宽按 390px CSS 宽度归一；分别打开原图、渲染图，并生成同尺寸并排图与连接器局部对照。系统状态栏不作为应用 UI，聊天历史内容、品牌与语言不同，不对整张图宣称像素一致。
+
+本轮主要变化：浅色画布与气泡会话、黑色用户消息、26px 气泡/28px 卡片、圆形与胶囊按钮、约 44px 高单行输入栏，SVG 内部矩形圆角与线条端点/连接同步调整。Gmail 卡片在 390px 视口下约 315×109px，Outlook 约 236×123px；附图对应的 CSS 尺寸约 317×102px、234×121px。高度差来自中文说明与刻意加大的圆角，品牌版本、无验证徽章和更可读的辅助字色属于记录的适配差异，不代表已取得用户认可。
+
+修复迭代：Gmail 初版卡片偏宽（358px），调整到约 315px；授权按钮横向内边距从 14px 收到 11px；Outlook 从通用白卡改为灰色堆叠和整行关联按钮，并补齐后续消息气泡。修复关闭未打开面板时意外聚焦输入框；避免这个焦点导致输入边框在默认截图中过重。修复后重新捕获同状态卡片并比较。
+
+实际执行：
+
+```bash
+PLAYWRIGHT_CHANNEL=chrome node scripts/design-prototype-verify.mjs
+node node_modules/eslint/bin/eslint.js . --max-warnings=0
+node node_modules/prettier/bin/prettier.cjs --check --ignore-path /dev/null package.json scripts/design-prototype-verify.mjs docs/design/prototypes/m1-07-v3/index.html docs/design/prototypes/m1-07-v3/checks.js docs/design/prototypes/m1-07-v3/connector-checks.js docs/design/prototypes/m1-07-v3/interaction-checks.js
+git diff --check
+```
+
+Chrome/Playwright 直接读取本地文件；未安装依赖或启动服务器。五个宽度 320/390/768/1024/1440px：既有 412 次与新增连接器 145 次断言合计 **557 次通过、0 失败、0 控制台/运行时错误**。额外以真实点击完成授权预览→明确确认→模拟已连接→断开确认；键盘菜单、Tab/Shift+Tab、Escape、手机抽屉通过。覆盖 SVG 圆头/圆连接/内部圆角、单行输入高度、图片加载、提供方独立状态、取消/离线禁用、200% 文字回流。检查的是内存原型，非 OAuth 集成测试。
+
+同状态局部比较：`/tmp/aven-v4-final-card-compare-gmail.png`、`/tmp/aven-v4-final-card-compare-outlook.png`。整屏与权限/深色补充证据：`/tmp/aven-v4-final-gmail.png`、`/tmp/aven-v4-final-outlook.png`、`/tmp/aven-v4-final-desktop.png`、`/tmp/aven-v4-permissions.png`、`/tmp/aven-v4-dark.png`。临时路径仅当前机器可用；可重复命令会生成新的截图目录。
+
+未执行：真实 OAuth/邮箱/Provider、产品组件 E2E、数据库回归、原生真机与完整屏幕阅读器验收。没有产品 UI、API、Schema 或迁移变更，未宣称完整应用构建或阶段完成。下方是历史版本的检查记录，视觉方向以 v0.4 为准。
+
+## v0.3.1 本轮检查（2026-11-12）
+
+结论：原型交互检查通过；M1-07 正式双端评审仍为 REVIEW，未进入产品 UI 编码。保留既有圆角、中性色、字体和无光影约束；本轮没有新增视觉资产或重新设计信息架构。
+
+修复与新增：
+
+- 插件/上下文选择、回复到达时不丢草稿；模拟终端各自保留内存草稿，不跨终端显示，刷新清空。
+- 多行输入自适应至 156px，接近 2000 字上限显示计数；空白禁发、中文组合态 Enter 不误发、Shift + Enter 换行。
+- 离线禁发，恢复不自动发送；演示回复失败可手动重试或继续输入，重试不重复用户消息或执行外部行动，停止后无延迟回复。
+- 向上阅读时保持位置，提供回到最新入口；打开共享预览时定位到卡片开头，避免只看到确认按钮而漏看接收方与用途。
+- 模态侧面板隔离主区、侧栏、顶栏与设计控件；焦点循环包括 MCP 输入框，Escape 恢复入口；能力菜单支持方向键/Home/End/Escape。
+- 手机首页用正常流布局保留底部输入区，建议不会被增长的输入框覆盖；提示消息移至顶部，不遮住输入控件。
+- 共享预览实时显示已选字段数，接收方离线隐藏授权资料；更正个人连接消息后端与组织关系会话的区别。
+
+实际检查环境为 Linux 本机 Chrome 无头浏览器，直接打开 `file://` 原型，视口高度 960px，宽度 320/390/768/1024/1440px。共享 Preview 浏览器返回 `unsupported-protocol: file:`，故使用现有 Playwright 与已安装 Chrome；未安装浏览器或新增依赖。页面标题、输入区非空、运行时/控制台错误、截图及交互均检查。
+
+实际命令：
+
+```bash
+PLAYWRIGHT_CHANNEL=chrome node scripts/design-prototype-verify.mjs
+node node_modules/eslint/bin/eslint.js . --max-warnings=0
+node node_modules/prettier/bin/prettier.cjs --check --ignore-path /dev/null package.json scripts/design-prototype-verify.mjs docs/design/prototypes/m1-07-v3/index.html docs/design/prototypes/m1-07-v3/interaction-checks.js
+git diff --check
+```
+
+共享命令入口为 `corepack pnpm design:verify`；本轮直接执行上方 Node 命令，避免包管理器触发无关依赖安装。检查器自动将截图写入系统临时目录，并打印证据路径；不提交截图或生成报告。
+
+原有 `checks.js` 在五个宽度合计 272 次断言通过，新增 `interaction-checks.js` 每个宽度 28 次（合计 140）通过，总计 **412 次断言，0 失败，0 运行时/控制台错误**。跨宽度重复计入，不能当作独立业务测试。另实际使用 Playwright 键盘验证 Shift + Enter、菜单 End/Escape、MCP 输入框与按钮的正反 Tab 循环、关闭恢复和手机抽屉焦点。
+
+补充人工视觉复查：分别打开既有桌面参考图与最新桌面/手机渲染截图；检查连接卡片、共享预览、首页、失败恢复和浅色状态。修正共享预览顶端被自动滚动裁切、提示覆盖输入框两处问题后，重新执行同一套检查。临时截图位于本机 `/tmp/aven-ui-*.png`；此路径不是跨机器或长期证据。
+
+适用状态：
+
+| 表面 | 本轮已覆盖 | 范围限制 |
+|---|---|---|
+| 输入区 | 空白、多行、组合态、发送中/停止、离线、失败/重试、接近字数上限 | 固定 Mock 回复，无真实流式网络请求 |
+| 连接共享 | 预览、零字段禁发、取消、等待、接受/拒绝、撤销、接收方离线隐藏 | 内存模拟；真实 API 授权、过期/版本冲突验收另做 |
+| 面板/菜单 | 打开/关闭、键盘导航、焦点隔离与恢复、长表单滚动 | 未做完整屏幕阅读器或真实设备验收 |
+| 会话阅读 | 长对话、主动上翻、回复到达、回到最新 | 固定尺寸原型画布；未覆盖真机软键盘与短屏高度 |
+
+未执行产品 Web/Android E2E、真实 Provider/插件/消息联调、完整应用构建、数据库检查、真机与完整屏幕阅读器验证；本轮没有 TypeScript、API 或数据库变更。下面保留 v0.3 历史记录，其中关于当时后端缺口的说明仅反映该轮时间点。
+
 日期：2026-11-12 · final result: passed（仅设计模拟；正式评审仍为 REVIEW）
 
 ## 视觉依据与证据

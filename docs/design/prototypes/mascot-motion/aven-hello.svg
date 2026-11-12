@@ -1,0 +1,357 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  class="aven-mascot"
+  viewBox="0 0 200 200"
+  width="200"
+  height="200"
+  data-motion="hello"
+  data-paused="false"
+  data-reduced="false"
+  role="img"
+  aria-label="AVEN 圆形角色：打个招呼"
+>
+  <style>
+    .aven-mascot {
+      overflow: visible;
+    }
+    .aven-mascot .float,
+    .aven-mascot .tilt,
+    .aven-mascot .pulse {
+      transform-box: view-box;
+      transform-origin: 100px 100px;
+    }
+    .aven-mascot .eye,
+    .aven-mascot .lid {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .aven-mascot .look {
+      transform: translate(var(--look-x, 0px), var(--look-y, 0px));
+      transition: transform 160ms ease-out;
+    }
+    .aven-mascot .lid {
+      animation: aven-blink 5.4s infinite;
+    }
+    .aven-mascot[data-motion='idle'] .float {
+      animation: aven-float 3.6s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='idle'] .pulse {
+      animation: aven-breathe 3.6s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='blink'] .lid {
+      animation: aven-double-blink 2.5s infinite;
+    }
+    .aven-mascot[data-motion='blink'] .tilt {
+      animation: aven-tiny-nod 2.5s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='curious'] .expression {
+      animation: aven-looking 4s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='curious'] .tilt {
+      animation: aven-curious 4s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='curious'] .eye-right {
+      transform: scale(1, 0.78);
+    }
+    .aven-mascot[data-motion='happy'] .float {
+      animation: aven-hop 2s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='happy'] .tilt {
+      animation: aven-happy-tilt 2s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='happy'] .eye-left {
+      transform: rotate(-14deg) scale(1.15, 0.35);
+    }
+    .aven-mascot[data-motion='happy'] .eye-right {
+      transform: rotate(14deg) scale(1.15, 0.35);
+    }
+    .aven-mascot[data-motion='happy'] .lid {
+      animation: none;
+    }
+    .aven-mascot[data-motion='thinking'] .tilt {
+      animation: aven-think 4.2s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='thinking'] .expression {
+      transform: translate(-5px, -5px);
+    }
+    .aven-mascot[data-motion='thinking'] .eye-left {
+      transform: scale(0.78, 0.78);
+    }
+    .aven-mascot[data-motion='surprise'] .float {
+      animation: aven-surprise-hop 3.2s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='surprise'] .pulse {
+      animation: aven-surprise-pulse 3.2s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='surprise'] .eye {
+      transform: scale(1.25, 1.15);
+    }
+    .aven-mascot[data-motion='sleepy'] .eye {
+      transform: scale(1.05, 0.17);
+    }
+    .aven-mascot[data-motion='sleepy'] .lid {
+      animation: none;
+    }
+    .aven-mascot[data-motion='sleepy'] .float {
+      animation: aven-float 4.8s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='sleepy'] .tilt {
+      animation: aven-sleep 4.8s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='hello'] .tilt {
+      animation: aven-hello 2.8s ease-in-out infinite;
+    }
+    .aven-mascot[data-motion='hello'] .lid {
+      animation: aven-double-blink 2.8s infinite;
+    }
+    .aven-mascot[data-paused='true'] * {
+      animation-play-state: paused !important;
+      transition: none !important;
+    }
+    .aven-mascot[data-reduced='true'] * {
+      animation: none !important;
+      transition: none !important;
+    }
+    .aven-mascot .eye {
+      transform: rotate(7deg);
+    }
+    .aven-mascot .happy-eye {
+      display: none;
+    }
+    .aven-mascot[data-motion='happy'] .eye {
+      transform: none;
+    }
+    .aven-mascot[data-motion='happy'] .normal-eye {
+      display: none;
+    }
+    .aven-mascot[data-motion='happy'] .happy-eye {
+      display: inline;
+    }
+    @keyframes aven-float {
+      0%,
+      100% {
+        transform: translateY(1px);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+    @keyframes aven-breathe {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.014);
+      }
+    }
+    @keyframes aven-blink {
+      0%,
+      40%,
+      45%,
+      100% {
+        transform: scaleY(1);
+      }
+      42%,
+      43% {
+        transform: scaleY(0.08);
+      }
+    }
+    @keyframes aven-double-blink {
+      0%,
+      14%,
+      29%,
+      100% {
+        transform: scaleY(1);
+      }
+      18%,
+      20%,
+      25%,
+      26% {
+        transform: scaleY(0.08);
+      }
+      23% {
+        transform: scaleY(1);
+      }
+    }
+    @keyframes aven-tiny-nod {
+      0%,
+      36%,
+      100% {
+        transform: rotate(0);
+      }
+      19% {
+        transform: rotate(4deg);
+      }
+    }
+    @keyframes aven-curious {
+      0%,
+      100% {
+        transform: rotate(0);
+      }
+      30%,
+      55% {
+        transform: rotate(-9deg);
+      }
+      75% {
+        transform: rotate(5deg);
+      }
+    }
+    @keyframes aven-looking {
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+      30%,
+      55% {
+        transform: translate(-6px, -2px);
+      }
+      75% {
+        transform: translate(4px, 0);
+      }
+    }
+    @keyframes aven-hop {
+      0%,
+      14%,
+      45%,
+      70%,
+      100% {
+        transform: translateY(0);
+      }
+      29% {
+        transform: translateY(-11px);
+      }
+      56% {
+        transform: translateY(-6px);
+      }
+    }
+    @keyframes aven-happy-tilt {
+      0%,
+      100% {
+        transform: rotate(0);
+      }
+      29% {
+        transform: rotate(-6deg);
+      }
+      56% {
+        transform: rotate(5deg);
+      }
+    }
+    @keyframes aven-think {
+      0%,
+      100% {
+        transform: rotate(-3deg);
+      }
+      35%,
+      70% {
+        transform: rotate(-9deg);
+      }
+    }
+    @keyframes aven-surprise-hop {
+      0%,
+      14%,
+      55%,
+      100% {
+        transform: translateY(0);
+      }
+      30% {
+        transform: translateY(-9px);
+      }
+    }
+    @keyframes aven-surprise-pulse {
+      0%,
+      14%,
+      55%,
+      100% {
+        transform: scale(1);
+      }
+      30% {
+        transform: scale(1.055);
+      }
+    }
+    @keyframes aven-sleep {
+      0%,
+      100% {
+        transform: rotate(-5deg);
+      }
+      50% {
+        transform: rotate(3deg);
+      }
+    }
+    @keyframes aven-hello {
+      0%,
+      15%,
+      78%,
+      100% {
+        transform: rotate(0);
+      }
+      28%,
+      52% {
+        transform: rotate(-10deg);
+      }
+      40%,
+      64% {
+        transform: rotate(10deg);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .aven-mascot * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+  <g class="float">
+    <g class="tilt">
+      <g class="pulse">
+        <circle class="body" cx="100" cy="100" r="79" fill="#000000" />
+        <g class="look">
+          <g class="expression">
+            <g class="eye eye-left">
+              <g class="lid">
+                <rect
+                  class="normal-eye"
+                  x="71"
+                  y="57"
+                  width="18"
+                  height="39"
+                  rx="9"
+                  fill="#ffffff"
+                />
+                <path
+                  class="happy-eye"
+                  d="M71 78 Q80 65 89 78"
+                  fill="none"
+                  stroke="#ffffff"
+                  stroke-width="7"
+                  stroke-linecap="round"
+                />
+              </g>
+            </g>
+            <g class="eye eye-right">
+              <g class="lid">
+                <rect
+                  class="normal-eye"
+                  x="107"
+                  y="59"
+                  width="18"
+                  height="39"
+                  rx="9"
+                  fill="#ffffff"
+                />
+                <path
+                  class="happy-eye"
+                  d="M107 80 Q116 67 125 80"
+                  fill="none"
+                  stroke="#ffffff"
+                  stroke-width="7"
+                  stroke-linecap="round"
+                />
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

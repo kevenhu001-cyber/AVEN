@@ -18,6 +18,8 @@
 | [ADR-012](0012-connection-retention.md) | 个人连接预览/失效正文保留与受控清除 | P2P-03；显式维护，不代表自动调度 |
 | [ADR-013](0013-in-app-connection-notifications.md) | 个人连接站内通知、事务回执与按代数重排 | M6-06A1 后端；活动/推送/UI 待交付 |
 
+| [ADR-017](0017-personal-web-increment.md) | 用户授权的个人 Web 限定接入 | 本轮实施；整体设计门与其他范围保持待验收 |
+
 新增 ADR 时：
 
 1. 使用下一个编号和 `kebab-case` 文件名。

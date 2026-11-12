@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-mode="dark">
+<html lang="zh-CN" data-mode="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -1581,6 +1581,906 @@
           border-radius: 26px;
         }
       }
+
+      /* v0.3.1: quiet hierarchy, readable metadata and predictable input. */
+      .composer-hint {
+        margin: 6px 10px 0;
+        font-size: 0.6875rem;
+        color: var(--muted);
+        text-align: right;
+      }
+      .toast {
+        top: 64px;
+        bottom: auto;
+        pointer-events: none;
+      }
+      [data-mode='light'] {
+        --warning: #80580f;
+      }
+      .draft-count {
+        font-size: 0.6875rem;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .composer textarea {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .composer .send:disabled {
+        background: var(--secondary);
+        color: var(--muted);
+        opacity: 1;
+        cursor: default;
+      }
+      .composer .send:focus-visible {
+        outline-offset: 4px;
+      }
+      .scroll-cue {
+        position: relative;
+        height: 0;
+        z-index: 3;
+        display: flex;
+        justify-content: center;
+      }
+      .scroll-cue .btn {
+        position: absolute;
+        bottom: 8px;
+        background: var(--popover);
+        border: 1px solid var(--border);
+        min-height: 40px;
+      }
+      .scroll-cue svg {
+        transform: rotate(180deg);
+      }
+      .connection-status {
+        color: var(--warning);
+        font-size: 0.75rem;
+        padding: 8px 12px;
+        line-height: 1.7;
+      }
+      .reply-error {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        border-left: 2px solid var(--warning);
+        padding: 2px 0 2px 16px;
+        margin-block: 22px;
+        font-size: 0.8125rem;
+      }
+      .reply-error strong,
+      .reply-error > span {
+        width: 100%;
+      }
+      .reply-error > span {
+        color: var(--muted);
+        line-height: 1.8;
+      }
+      .sheet {
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+      }
+      .sheet-header {
+        position: sticky;
+        top: -20px;
+        padding-block: 16px;
+        margin-top: -16px;
+        background: var(--card);
+        z-index: 1;
+      }
+      .sheet .menu-item small {
+        font-size: 0.75rem;
+        line-height: 1.7;
+      }
+      .menu-item small {
+        line-height: 1.6;
+      }
+      .widget-top {
+        flex-wrap: wrap;
+      }
+      .check-row {
+        border-radius: 12px;
+        padding: 10px 8px;
+      }
+      .check-row:hover {
+        background: var(--secondary);
+      }
+      .check-row:focus-within {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
+      }
+      .check-row small {
+        overflow-wrap: anywhere;
+      }
+      .selection-summary {
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-block: 12px 4px;
+      }
+      .check-row input {
+        accent-color: var(--primary);
+      }
+      .settings-row > div {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .sheet .mcp-server-row {
+        flex-wrap: wrap;
+      }
+      .history-list .sidebar-row.selected {
+        border: 1px solid var(--border);
+      }
+      @media (max-width: 768px) {
+        .send {
+          min-width: 44px;
+          width: 44px;
+          height: 44px;
+        }
+        .widget-actions .btn {
+          min-height: 44px;
+        }
+        .composer-hint {
+          display: none;
+        }
+        .tools-menu {
+          max-height: 360px;
+        }
+        .sheet .menu-item {
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .sheet .menu-item .item-copy {
+          min-width: 140px;
+        }
+        .landing {
+          justify-content: flex-end;
+          gap: 16px;
+        }
+        .landing-hero {
+          position: static;
+          transform: none;
+          margin: auto 0;
+          padding: 0 20px;
+        }
+        .landing .composer-zone {
+          margin-top: 0;
+          order: 1;
+        }
+        .landing .home-suggestions {
+          position: static;
+          order: 0;
+          margin: 0;
+          justify-content: center;
+          padding: 0 16px;
+        }
+        .home-suggestions button:not(:first-child) {
+          display: inline-flex;
+        }
+        .home-suggestions {
+          gap: 4px;
+        }
+        .landing h1 {
+          font-size: clamp(1.25rem, 6vw, 1.75rem);
+        }
+        .footnote {
+          padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+      }
+
+      /* v0.4: measured from user-supplied Gmail / Outlook mobile references. */
+      :root {
+        --radius: 28px;
+        --bubble-radius: 26px;
+        --connector-radius: 28px;
+      }
+      [data-mode='light'] {
+        --background: #fcfcfc;
+        --foreground: #111111;
+        --muted: #858585;
+        --card: #f1f1ef;
+        --popover: #ffffff;
+        --secondary: #ececee;
+        --border: #e8e8e8;
+        --primary: #080808;
+        --on-primary: #ffffff;
+        --user-bubble: #080808;
+        --user-text: #ffffff;
+        --assistant-bubble: #f1f1ef;
+      }
+      [data-mode='dark'] {
+        --user-bubble: #ededed;
+        --user-text: #111111;
+        --assistant-bubble: #242424;
+      }
+      .shell {
+        font-size: 0.9375rem;
+        grid-template-columns: 232px minmax(0, 1fr);
+      }
+      svg {
+        stroke-width: 2.15;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .icon-btn,
+      .btn,
+      .toggle,
+      .send {
+        border-radius: 999px;
+      }
+      .sidebar {
+        gap: 12px;
+        padding: 10px;
+      }
+      .sidebar-row,
+      .menu-item {
+        border-radius: 18px;
+      }
+      .history-list {
+        gap: 2px;
+      }
+      .recent-label {
+        margin-block: 6px;
+      }
+      .topbar {
+        min-height: 72px;
+        padding: 10px 18px;
+        border: 0;
+        gap: 10px;
+      }
+      .topbar-title {
+        background: var(--popover);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        gap: 9px;
+        padding: 5px 12px 5px 5px;
+        font-size: 1.0625rem;
+      }
+      .assistant-mark,
+      .account-mark {
+        background: var(--primary);
+        color: var(--on-primary);
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .assistant-mark svg {
+        width: 21px;
+        height: 21px;
+      }
+      .topbar .icon-btn {
+        background: var(--popover);
+        border: 1px solid var(--border);
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+      }
+      .topbar-title > svg {
+        display: none;
+      }
+      .conversation-label {
+        font-size: 0.75rem;
+      }
+      .thread {
+        max-width: 720px;
+        padding: 14px 24px 16px;
+      }
+      .message {
+        margin-bottom: 12px;
+      }
+      .message p {
+        font-size: 1rem;
+        line-height: 1.55;
+      }
+      .message.user {
+        border-radius: 999px;
+        background: var(--user-bubble);
+        color: var(--user-text);
+        max-width: 88%;
+        padding: 10px 16px;
+      }
+      .message.assistant > p,
+      .message.assistant > .system-line,
+      .message.assistant > .error-note {
+        width: fit-content;
+        max-width: 94%;
+        padding: 11px 16px;
+        border-radius: var(--bubble-radius);
+        background: var(--assistant-bubble);
+      }
+      .assistant-name {
+        display: none;
+      }
+      .turn-actions {
+        margin-top: 4px;
+        gap: 0;
+      }
+      .turn-actions .icon-btn {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+      }
+      .connection-card {
+        border-radius: var(--connector-radius);
+        margin-top: 10px;
+        width: min(100%, 440px);
+        background: var(--popover);
+      }
+      .widget-body {
+        padding: 16px;
+      }
+      .widget-top {
+        margin-bottom: 12px;
+        font-size: 0.6875rem;
+      }
+      .widget-actions {
+        padding: 10px 16px;
+        border-top: 0;
+        gap: 8px;
+      }
+      .widget-actions .btn,
+      .btn {
+        min-height: 38px;
+        padding: 8px 16px;
+      }
+      .connection-card p {
+        margin-top: 10px;
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+      .person {
+        gap: 10px;
+      }
+      .tool-status {
+        margin: 6px 0;
+      }
+      .shared-interests {
+        gap: 5px;
+        margin-top: 8px;
+      }
+      .interest,
+      .badge,
+      .chip {
+        border-radius: 999px;
+      }
+      .widget-notice {
+        margin-top: 10px;
+        line-height: 1.6;
+      }
+      .tool-details {
+        margin-block: 6px 10px;
+      }
+      .check-row {
+        padding: 9px 6px;
+        border-radius: 18px;
+      }
+      .composer-zone {
+        padding: 6px 24px 0;
+      }
+      .composer-wrap {
+        max-width: 720px;
+      }
+      .composer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 5px;
+        background: var(--popover);
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        padding: 6px;
+      }
+      .composer textarea {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+        height: 38px;
+        min-height: 38px;
+        line-height: 26px;
+        padding: 6px 4px;
+        font-size: 1rem;
+        border-radius: 18px;
+      }
+      .composer-add {
+        background: var(--assistant-bubble);
+        width: 36px;
+        min-width: 36px;
+        height: 36px;
+      }
+      .composer-add svg {
+        width: 22px;
+        height: 22px;
+      }
+      .composer-rail {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+      }
+      .voice-button {
+        width: 36px;
+        min-width: 36px;
+        height: 36px;
+        background: var(--assistant-bubble);
+      }
+      .voice-button svg {
+        width: 22px;
+        height: 22px;
+      }
+      .composer .send {
+        width: 36px;
+        min-width: 36px;
+        height: 36px;
+      }
+      .composer .send:disabled {
+        background: var(--primary);
+        color: var(--on-primary);
+      }
+      .composer .send svg {
+        width: 22px;
+        height: 22px;
+      }
+      .composer-chips {
+        order: 4;
+        width: 100%;
+        padding: 2px 8px 4px;
+        gap: 5px;
+      }
+      .composer-chips .chip {
+        min-height: 24px;
+        padding: 2px 8px;
+      }
+      .connector-mode .composer-chips {
+        display: none;
+      }
+      .composer-meta {
+        order: 5;
+        display: flex;
+        width: 100%;
+        padding: 0 8px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .composer-meta .quiet {
+        color: var(--muted);
+        font-size: 0.6875rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 24px;
+      }
+      .composer-meta .quiet svg {
+        width: 12px;
+        height: 12px;
+      }
+      .connector-mode .composer-meta {
+        display: none;
+      }
+      .composer-hint {
+        font-size: 0.625rem;
+        margin-top: 4px;
+      }
+      .footnote {
+        font-size: 0.625rem;
+        padding: 4px 16px 8px;
+      }
+      .tools-menu,
+      .profile-popover {
+        border-radius: 26px;
+        padding: 8px;
+      }
+      .tools-menu {
+        bottom: calc(100% + 8px);
+      }
+      .menu-item {
+        padding: 8px 12px;
+        min-height: 46px;
+      }
+      .sheet {
+        border-radius: 30px 0 0 30px;
+        background: var(--popover);
+        padding: 20px;
+      }
+      .sheet-header {
+        background: var(--popover);
+      }
+      .sheet .plugin-list .menu-item {
+        border-radius: 18px;
+        border: 0;
+        margin-bottom: 3px;
+        background: var(--card);
+        min-height: 60px;
+      }
+      .chat-timestamp {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin: 18px 0;
+      }
+      .intro-message > p {
+        max-width: 94%;
+      }
+      .connector-turn > p {
+        margin: 0 0 12px;
+      }
+      .connector-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        width: min(88%, 440px);
+        min-height: 100px;
+        border: 1px solid var(--border);
+        background: var(--popover);
+        border-radius: var(--connector-radius);
+        margin: 0 0 10px;
+      }
+      .connector-logo {
+        display: block;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        flex-shrink: 0;
+        object-fit: contain;
+        background: #ffffff;
+      }
+      .connector-copy {
+        flex: 1;
+        min-width: 0;
+      }
+      .connector-copy h2 {
+        font-size: 1.0625rem;
+        line-height: 1.4;
+        font-weight: 500;
+        margin: 0 0 2px;
+      }
+      .connector-copy p {
+        color: var(--muted);
+        font-size: 0.9375rem;
+        line-height: 1.45;
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .connector-authorize {
+        padding: 7px 14px;
+        min-height: 36px;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+      .connector-card.stacked {
+        flex-wrap: wrap;
+        width: min(100%, 280px);
+        background: var(--secondary);
+        border-color: transparent;
+      }
+      .stacked .connector-logo {
+        width: 44px;
+        height: 44px;
+        padding: 4px;
+      }
+      .stacked .connector-authorize {
+        width: 100%;
+        background: var(--popover);
+        color: var(--foreground);
+        min-height: 38px;
+        margin-top: 1px;
+      }
+      .connector-consent-note {
+        max-width: 420px;
+        font-size: 0.75rem;
+        line-height: 1.55;
+        color: var(--muted);
+        padding: 0 14px;
+        margin: 0 0 14px;
+      }
+      .connector-account {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        padding: 6px 8px;
+        border-radius: 999px;
+        font-size: 0.9375rem;
+        min-height: 44px;
+      }
+      .account-mark {
+        width: 28px;
+        height: 28px;
+      }
+      .account-mark svg {
+        width: 19px;
+        height: 19px;
+      }
+      .connector-result {
+        flex-basis: 100%;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin: 0;
+      }
+      .permission-intro {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      .permission-intro img {
+        border-radius: 14px;
+      }
+      .permission-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.9375rem;
+      }
+      .permission-item small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-top: 3px;
+      }
+      .permission-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .preview-controls {
+        gap: 6px;
+        padding: 8px;
+      }
+      .preview-controls button {
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+      .landing {
+        gap: 18px;
+      }
+      .landing-hero {
+        margin-bottom: 20px;
+      }
+      @media (max-width: 768px) {
+        .shell,
+        .shell.collapsed {
+          height: 820px;
+        }
+        .topbar {
+          min-height: 68px;
+          padding: 10px 16px;
+          gap: 8px;
+        }
+        .topbar-title {
+          font-size: 1.0625rem;
+        }
+        .topbar-title .assistant-mark {
+          width: 32px;
+          height: 32px;
+        }
+        .topbar .badge {
+          border: 0;
+          font-size: 0.625rem;
+          padding: 0;
+        }
+        .top-actions {
+          gap: 8px;
+        }
+        .thread {
+          padding: 12px 16px 14px;
+        }
+        .message {
+          margin-bottom: 12px;
+        }
+        .message p {
+          font-size: 1rem;
+          line-height: 1.55;
+        }
+        .message.user {
+          max-width: 88%;
+          padding: 10px 16px;
+        }
+        .message.assistant > p {
+          max-width: 94%;
+        }
+        .connector-copy p {
+          font-size: 0.875rem;
+        }
+        .composer-zone {
+          padding: 6px 16px 0;
+        }
+        .composer {
+          border-radius: 32px;
+          padding: 6px;
+          gap: 4px;
+        }
+        .composer textarea {
+          padding: 6px 3px;
+          font-size: 1rem;
+        }
+        .composer-add,
+        .voice-button,
+        .composer .send {
+          width: 36px;
+          height: 36px;
+          min-width: 36px;
+        }
+        .voice-button {
+          display: none;
+        }
+        .composer-meta .quiet {
+          min-height: 30px;
+        }
+        .connector-mode .voice-button {
+          display: inline-flex;
+        }
+        .footnote {
+          padding: 4px 16px 10px;
+        }
+        .sheet {
+          inset: 68px 0 0;
+          border-radius: 30px 30px 0 0;
+        }
+        .sheet .menu-item .item-copy {
+          min-width: 120px;
+        }
+        .landing-hero {
+          margin: auto 0;
+        }
+        .landing .home-suggestions {
+          gap: 4px;
+        }
+      }
+      @media (max-width: 350px) {
+        .connector-card {
+          gap: 9px;
+          padding: 14px;
+        }
+        .connector-logo {
+          width: 36px;
+          height: 36px;
+        }
+        .connector-authorize {
+          padding-inline: 12px;
+        }
+        .connector-copy p {
+          font-size: 0.8125rem;
+        }
+        .connector-mode .voice-button {
+          display: none;
+        }
+      }
+      .catalog-brand {
+        border-radius: 10px;
+        object-fit: contain;
+        flex-shrink: 0;
+        padding: 3px;
+        background: #ffffff;
+      }
+      .connector-logo {
+        border: 1px solid var(--border);
+        padding: 4px;
+      }
+      .connector-copy p {
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+      .connector-consent-note {
+        max-width: 380px;
+        font-size: 0.8125rem;
+      }
+      [data-mode='light'] {
+        --muted: #737373;
+      }
+      @media (max-width: 768px) {
+        .connector-copy p {
+          font-size: 1rem;
+        }
+        .connector-consent-note {
+          width: 88%;
+          padding-inline: 14px;
+        }
+        .connector-card {
+          width: 88%;
+        }
+        .connector-card.stacked {
+          width: min(72%, 280px);
+        }
+      }
+      @media (max-width: 350px) {
+        .connector-card {
+          width: 100%;
+        }
+        .connector-copy p {
+          font-size: 0.9375rem;
+        }
+        .connector-consent-note {
+          width: 100%;
+        }
+      }
+      .topbar-title > span:last-child {
+        display: none;
+      }
+      .topbar-title .assistant-mark svg {
+        color: var(--on-primary);
+      }
+      .connector-card.stacked {
+        padding: 14px;
+        gap: 10px;
+      }
+      .stacked .connector-copy h2 {
+        font-size: 0.9375rem;
+      }
+      .stacked .connector-copy p {
+        font-size: 0.875rem;
+      }
+      .connector-followup {
+        margin-top: 4px !important;
+      }
+      .outlook-mode .composer {
+        background: var(--secondary);
+        border-color: transparent;
+      }
+      .outlook-mode .composer:not(.has-draft) .send {
+        display: none;
+      }
+      .outlook-mode .voice-button {
+        display: inline-flex;
+        background: none;
+      }
+      @media (max-width: 768px) {
+        .connector-card.stacked {
+          width: min(66%, 280px);
+        }
+        .outlook-mode .composer.has-draft .voice-button {
+          display: none;
+        }
+      }
+      .connector-card {
+        flex-wrap: wrap;
+      }
+      .connector-copy h2 {
+        overflow-wrap: anywhere;
+      }
+      .composer {
+        padding: 3px;
+      }
+      .composer textarea {
+        min-height: 34px;
+        height: 34px;
+        padding-block: 4px;
+        font-size: 1.0625rem;
+      }
+      @media (max-width: 768px) {
+        .composer {
+          padding: 3px;
+        }
+        .composer textarea {
+          padding-block: 4px;
+          font-size: 1.0625rem;
+        }
+      }
+      .connector-copy h2 {
+        font-size: 1.125rem;
+      }
+      .connector-copy p {
+        font-size: 1.0625rem;
+      }
+      .connector-authorize {
+        padding-inline: 11px;
+      }
+      .stacked .connector-copy h2 {
+        font-size: 0.9375rem;
+        font-weight: 400;
+      }
+      .stacked .connector-copy p {
+        font-size: 0.875rem;
+      }
+      @media (max-width: 350px) {
+        .connector-copy p {
+          font-size: 0.9375rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1644,10 +2544,11 @@
             class="icon-btn mobile-menu"
             id="open-sidebar"
             aria-label="打开导航"
-            data-icon="panel-left"
+            data-icon="menu"
           ></button
           ><button class="topbar-title" data-action="model" aria-label="模型与模式">
-            AVEN <span data-icon="chevron-down"></span></button
+            <span class="assistant-mark" data-icon="audio-lines"></span><span>AVEN</span>
+            <span data-icon="chevron-down"></span></button
           ><span class="conversation-label" id="conversation-label">找一个一起做东西的人</span>
           <div class="top-actions">
             <span class="badge">Mock 演示</span
@@ -1659,24 +2560,34 @@
             ></button
             ><button
               class="icon-btn"
-              data-action="new"
-              aria-label="新对话"
-              data-icon="square-pen"
+              data-action="settings"
+              aria-label="更多设置"
+              data-icon="ellipsis"
             ></button>
           </div>
         </header>
         <main class="view" id="view"></main>
-        <aside class="sheet" id="sheet" aria-labelledby="sheet-title" hidden></aside>
+        <aside
+          class="sheet"
+          id="sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sheet-title"
+          hidden
+        ></aside>
       </section>
       <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     </div>
     <footer class="preview-controls">
-      <span>AVEN v0.3 · Socrates UI 适配 · 设计模拟，未连接真实用户</span>
+      <span>AVEN v0.4 · 设计模拟，未连接真实服务</span>
       <div class="control-group" aria-label="设计场景">
-        <button data-scenario="home">空白对话</button
+        <button data-action="connector-gmail">Gmail</button
+        ><button data-action="connector-outlook">Outlook</button
+        ><button data-scenario="home">空白对话</button
         ><button data-scenario="suggestion" class="active">连接小组件</button
         ><button data-scenario="receiver">对方终端</button
-        ><button data-action="theme">切换外观</button>
+        ><button data-action="theme">切换外观</button><button data-action="network">切换离线</button
+        ><button data-action="reply-failure">下次回复失败</button>
       </div>
     </footer>
     <script>
@@ -1762,6 +2673,18 @@
           '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg\n  class="lucide lucide-calendar-days"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M8 2v4" />\n  <path d="M16 2v4" />\n  <rect width="18" height="18" x="3" y="4" rx="2" />\n  <path d="M3 10h18" />\n  <path d="M8 14h.01" />\n  <path d="M12 14h.01" />\n  <path d="M16 14h.01" />\n  <path d="M8 18h.01" />\n  <path d="M12 18h.01" />\n  <path d="M16 18h.01" />\n</svg>\n',
       };
       const $ = (s) => document.querySelector(s);
+      ICONS['menu'] =
+        '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg\n  class="lucide lucide-menu"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <line x1="4" x2="20" y1="12" y2="12" />\n  <line x1="4" x2="20" y1="6" y2="6" />\n  <line x1="4" x2="20" y1="18" y2="18" />\n</svg>\n';
+      ICONS['ellipsis'] =
+        '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg\n  class="lucide lucide-ellipsis"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <circle cx="12" cy="12" r="1" />\n  <circle cx="19" cy="12" r="1" />\n  <circle cx="5" cy="12" r="1" />\n</svg>\n';
+      ICONS['audio-lines'] =
+        '<!-- @license lucide-static v0.468.0 - ISC -->\n<svg\n  class="lucide lucide-audio-lines"\n  xmlns="http://www.w3.org/2000/svg"\n  width="24"\n  height="24"\n  viewBox="0 0 24 24"\n  fill="none"\n  stroke="currentColor"\n  stroke-width="2"\n  stroke-linecap="round"\n  stroke-linejoin="round"\n>\n  <path d="M2 10v3" />\n  <path d="M6 6v11" />\n  <path d="M10 3v18" />\n  <path d="M14 8v7" />\n  <path d="M18 5v13" />\n  <path d="M22 10v3" />\n</svg>\n';
+      const BRAND_ASSETS = {
+        gmail:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAEkklEQVR4Ae2ZA5BkSRRFc23bv7H2Fta72V7btm3bDq3tsdkY27b9a9xmTr6IyXB0Z1W/6j8/+56IGzOB1jsdpzp+CQMAAAAAAAAAAAAAAACAEZ53xvDMoz8ekXXMqBGZxyyiDc88pnhExjHvj/S8E0Q7pW7gTtH64h0/ry/ZcVhDyQ6LaPT/+tIdX68ZtEu2aC2js484Uh+7l55qZvUjM4/+btBxhx8o2gnVg3b16kp2+k8fWzU3LeQ3NUjsK1JB/8ZfoI+7QU9ZLjHS84qE4+ij3qyPW66nLLesdsDOyVViZNaR2Toxq+iwyY6yNEiKHYVjqEFi14biHb6joyY7naRZapCwL8TW1qtUR68PYz3vUOEI1HN9yEl6KtVRsoQNw7I9aQ7ZSgmr9GtDnvPJsV+91QuzPl4nPcW1NXmRd5WUoUvSIil3XXvVGX/T8bhGfzHZCJjGKcDPi6lEXqzYl7HQJMmXZ2Xr73uSHh2Oc71sBFQzCzBbtbogts0nSX+fN/t58XL6nrkF0IuxjQCVJgG0+kRu9G2eJPEnJ5Ef/c58r9wCzIIWwJwk/uS4LoA1SfzJcV8Aa5L4k+O+AIYk8SYHAhiSxJAcCEh3knx58p768/9kvhYEtGGSVhdGT/FzY9Poc2/zAp58oMvYYVlZAQngT5LOzd0mOUEKqCzeRd3fRY4ULZH7YYW6+cVJS/qeenYAAtiSZJLzm/lcQQpYNGAfVdjh8uXR/69XVgJol7zrV/1+0W0sAhg2aJ08+8j0J4dfQL8+x6hzO1xbQ8dPSoDZezd+oShJAQugJdbkx4v4k8MvwCTnw+4RZQ6fsgDag48Xq/6nRBgEMCw39jEliS85/AIoObd2yqeD8wigXf36YvXnBTdzCGBYfBgliSE57AIoORd1uJqOzSuAlv/BRvXB9Z9RkngEMCSp2eQwrBXJ4Rdgdt+TgxT9lWQpINRrZXL4BZhd8dYyRX8luS/APjn8Aiz2zk3fUJJcFWCbnOAE0O55aiglyUUBFskJXIBJ0opGSpJjAmyTE7wAs7dv/qaRkuSUAPvkBC+AdssLkxOUJFcEUHKu71RYRQcMhQBawQcbN/4s75kfdgFde2cuOuf/66rpeKESYEZPM+mpZgiPX53Iiz5sDhdaAUJDz/Xp+X5ojp8fn+cXxM4QGicEEPQOF73TFQIB/9GDPUG4JICgp5j8SeJNjjC4KIDgTxJvctwXwJ8k1uS4L4A/SazJcV8AZ5IYkgMBDEliSA4EpD9J8XK9+4UBAtouSfR+Mb1vLAgIaPMk/WafHAjgSpJJzt3CAAGpk8iPSn3UZezJgQB7VsrIgfq4/ZJNDgQw4+fGX6YkWScHAvjx8yMXUJIYkgMBDEliTQ4E8AMBEAABEAABEAABEAABEAABEAABQQEBEDDLQkDlPAhIk4D/rv+rZQEflL8PAekREPv/httFS8h3NuyrD7eMUwAE0PGv7yVskR9tPiHvw4pJbAIgYFqs442HimSQ76gd9evB6zkfVg7T/5ZDQGqHj3S47nn52z27CgAAAAAAAAAAAAAAAAAAtFu2AJlqODQM4+yVAAAAAElFTkSuQmCC',
+        outlook:
+          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMjguNSIgeTE9IjI1IiB4Mj0iMjguNSIgeTI9IjQ0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzViOGYxIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjhhOGVhIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImIiIHgxPSI1LjgyMiIgeTE9IjExLjU2OCIgeDI9IjIwLjE3OCIgeTI9IjM2LjQzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzE3ODRkOSIvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3AtY29sb3I9IiMxMDdhZDUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwYTYzYzkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNNDUgMjVhLjk2Ljk2IDAgMCAwLS40NTgtLjgyNWgtLjAwNWwtLjAxOC0uMDEtMTQuOS04LjgyYTIuMDI2IDIuMDI2IDAgMCAwLS4yLS4xMTkgMiAyIDAgMCAwLTEuODM0IDAgMi4wMjYgMi4wMjYgMCAwIDAtLjIuMTE5bC0xNC45IDguODItLjAxOC4wMWEuOTcxLjk3MSAwIDAgMCAuMDIzIDEuNjYzbDE0LjkgOC44MmEyLjI0MSAyLjI0MSAwIDAgMCAuMi4xMTkgMiAyIDAgMCAwIDEuODM0IDAgMi4yNDEgMi4yNDEgMCAwIDAgLjItLjExOWwxNC45LTguODJBLjk1OS45NTkgMCAwIDAgNDUgMjV6IiBmaWxsPSIjMGEyNzY3Ii8+PHBhdGggZmlsbD0iIzAzNjRiOCIgZD0iTTE0LjIyMiAxOS4xMTFIMjR2OC45NjNoLTkuNzc4ek00MyAxMFY1LjlBMS44NTggMS44NTggMCAwIDAgNDEuMTg3IDRIMTUuODEzQTEuODU4IDEuODU4IDAgMCAwIDE0IDUuOVYxMGwxNSA0eiIvPjxwYXRoIGZpbGw9IiMwMDc4ZDQiIGQ9Ik0xNCAxMGgxMHY5SDE0eiIvPjxwYXRoIGZpbGw9IiMyOGE4ZWEiIGQ9Ik0zNCAxMEgyNHY5bDEwIDloOXYtOWwtOS05eiIvPjxwYXRoIGZpbGw9IiMwMDc4ZDQiIGQ9Ik0yNCAxOWgxMHY5SDI0eiIvPjxwYXRoIGZpbGw9IiMwMzY0YjgiIGQ9Ik0yNCAyOGgxMHY5SDI0eiIvPjxwYXRoIGZpbGw9IiMxNDQ0N2QiIGQ9Ik0xNC4yMjIgMjguMDc0SDI0djguMTQ4aC05Ljc3OHoiLz48cGF0aCBmaWxsPSIjMDA3OGQ0IiBkPSJNMzQgMjhoOXY5aC05eiIvPjxwYXRoIGQ9Ik00NC41NDIgMjUuNzgzbC0uMDE5LjAxLTE0LjkgOC4zOGMtLjA2NS4wNC0uMTMxLjA3OC0uMi4xMTJhMi4wNzcgMi4wNzcgMCAwIDEtLjgwOC4ybC0uODE0LS40NzZhMi4wMzMgMi4wMzMgMCAwIDEtLjItLjExNWwtMTUuMS04LjYxOGgtLjAwN0wxMiAyNXYxNi45NjRBMi4wNSAyLjA1IDAgMCAwIDE0LjA2MyA0NGgyOC45MDZjLjAxNyAwIC4wMzItLjAwOC4wNS0uMDA4YTIuNTMxIDIuNTMxIDAgMCAwIC43LS4xNDZBMi4wMTkgMi4wMTkgMCAwIDAgNDQgNDMuN2MuMDY3LS4wMzguMTgyLS4xMjEuMTgyLS4xMjFBMi4wMTkgMi4wMTkgMCAwIDAgNDUgNDEuOTY0VjI1YS45LjkgMCAwIDEtLjQ1OC43ODN6IiBmaWxsPSJ1cmwoI2EpIi8+PHBhdGggZD0iTTQ0LjIgMjQuOTMzdjEuMDRMMjguNjIgMzYuNyAxMi40OSAyNS4yODNhLjAxLjAxIDAgMCAwLS4wMS0uMDFsLTEuNDgtLjg5di0uNzVsLjYxLS4wMSAxLjI5Ljc0LjAzLjAxLjExLjA3czE1LjE2IDguNjUgMTUuMiA4LjY3bC41OC4zNGMuMDUtLjAyLjEtLjA0LjE2LS4wNi4wMy0uMDIgMTUuMDUtOC40NyAxNS4wNS04LjQ3eiIgZmlsbD0iIzBhMjc2NyIgb3BhY2l0eT0iLjUiLz48cGF0aCBmaWxsPSJub25lIiBkPSJNMCAwaDQ4djQ4SDB6Ii8+PHBhdGggZD0iTTQ0LjU0MiAyNS43ODNsLS4wMTkuMDExLTE0LjkgOC4zOGMtLjA2NS4wNC0uMTMxLjA3OC0uMi4xMTJhMi4wODkgMi4wODkgMCAwIDEtMS44MzQgMCAyLjI2NCAyLjI2NCAwIDAgMS0uMi0uMTEybC0xNC45LTguMzgtLjAxOC0uMDExQS45LjkgMCAwIDEgMTIgMjV2MTYuOTY0QTIuMDQ5IDIuMDQ5IDAgMCAwIDE0LjA2MiA0NGgyOC44NzZBMi4wNDkgMi4wNDkgMCAwIDAgNDUgNDEuOTY0VjI1YS45LjkgMCAwIDEtLjQ1OC43ODN6IiBmaWxsPSIjMTQ5MGRmIi8+PHBhdGggZD0iTTI5Ljg0IDM0LjA1bC0uMjIzLjEyNWEyLjE4MyAyLjE4MyAwIDAgMS0uMi4xMTMgMi4wNzEgMi4wNzEgMCAwIDEtLjc4Ni4yMDhMMzQuMyA0MS4ybDkuODg5IDIuMzgzYTIuMDM4IDIuMDM4IDAgMCAwIC42MjctLjc4M3oiIG9wYWNpdHk9Ii4xIi8+PHBhdGggZD0iTTMwLjg1IDMzLjQ4MmwtMS4yMzMuNjkzYTIuMTgzIDIuMTgzIDAgMCAxLS4yLjExMyAyLjA3MSAyLjA3MSAwIDAgMS0uNzg2LjIwOGwyLjY1NiA3LjMyMyAxMi45MDUgMS43NjFBMi4wMjIgMi4wMjIgMCAwIDAgNDUgNDEuOTY0di0uMjE5eiIgb3BhY2l0eT0iLjA1Ii8+PHBhdGggZD0iTTE0LjA5IDQ0aDI4Ljg0NWEyLjA3NCAyLjA3NCAwIDAgMCAxLjIzNS0uNEwyNy44IDM0LjAxMWEyLjAzMyAyLjAzMyAwIDAgMS0uMi0uMTE1bC0xNS4xLTguNjE4aC0uMDA3TDEyIDI1djE2LjkwNkEyLjA5MiAyLjA5MiAwIDAgMCAxNC4wOSA0NHoiIGZpbGw9IiMyOGE4ZWEiLz48cGF0aCBkPSJNMjYgMTMuODMzdjIxLjMzYTEuODM4IDEuODM4IDAgMCAxLTEuMTUgMS43IDEuNzIzIDEuNzIzIDAgMCAxLS42OC4xNEgxMlYxM2gydi0xaDEwLjE3QTEuODM3IDEuODM3IDAgMCAxIDI2IDEzLjgzM3oiIG9wYWNpdHk9Ii4xIi8+PHBhdGggZD0iTTI1IDE0LjgzM3YyMS4zM2ExLjYyOSAxLjYyOSAwIDAgMS0uMTUuN0ExLjgyMiAxLjgyMiAwIDAgMSAyMy4xNyAzOEgxMlYxM2gxMS4xN2ExLjY3OSAxLjY3OSAwIDAgMSAuODMuMjEgMS44MTggMS44MTggMCAwIDEgMSAxLjYyM3oiIG9wYWNpdHk9Ii4yIi8+PHBhdGggZD0iTTI1IDE0LjgzM3YxOS4zM0ExLjg0NiAxLjg0NiAwIDAgMSAyMy4xNyAzNkgxMlYxM2gxMS4xN2ExLjY3OSAxLjY3OSAwIDAgMSAuODMuMjEgMS44MTggMS44MTggMCAwIDEgMSAxLjYyM3oiIG9wYWNpdHk9Ii4yIi8+PHBhdGggZD0iTTI0IDE0LjgzM3YxOS4zM0ExLjgzOSAxLjgzOSAwIDAgMSAyMi4xNyAzNkgxMlYxM2gxMC4xN0ExLjgzMSAxLjgzMSAwIDAgMSAyNCAxNC44MzN6IiBvcGFjaXR5PSIuMiIvPjxyZWN0IHg9IjIiIHk9IjEzIiB3aWR0aD0iMjIiIGhlaWdodD0iMjIiIHJ4PSIxLjgzMyIgZmlsbD0idXJsKCNiKSIvPjxwYXRoIGQ9Ik03LjcyOSAyMC42ODhhNS4zMzIgNS4zMzIgMCAwIDEgMi4wOTQtMi4zMTMgNi4zMyA2LjMzIDAgMCAxIDMuMzI3LS44MzQgNS44OTIgNS44OTIgMCAwIDEgMy4wNzkuNzkxIDUuMjg0IDUuMjg0IDAgMCAxIDIuMDM3IDIuMjEgNy4xMzMgNy4xMzMgMCAwIDEgLjcxNCAzLjI1IDcuNTI4IDcuNTI4IDAgMCAxLS43MzUgMy40IDUuNDEgNS40MSAwIDAgMS0yLjEgMi4yODcgNi4xMjYgNi4xMjYgMCAwIDEtMy4xOTQuODEyIDYuMDIgNi4wMiAwIDAgMS0zLjE0Ny0uOCA1LjM2NiA1LjM2NiAwIDAgMS0yLjA2NC0yLjIxNCA2Ljk2MyA2Ljk2MyAwIDAgMS0uNzIyLTMuMjExIDcuNzMzIDcuNzMzIDAgMCAxIC43MTEtMy4zNzh6bTIuMjMyIDUuNDNhMy40NjEgMy40NjEgMCAwIDAgMS4xNzggMS41MjIgMy4wNzcgMy4wNzcgMCAwIDAgMS44NC41NTQgMy4yMjMgMy4yMjMgMCAwIDAgMS45NjQtLjU3MiAzLjMxNSAzLjMxNSAwIDAgMCAxLjE0NC0xLjUyMiA1LjkwOCA1LjkwOCAwIDAgMCAuMzY1LTIuMTIzIDYuNDYzIDYuNDYzIDAgMCAwLS4zNDQtMi4xNUEzLjQgMy40IDAgMCAwIDE1IDIwLjI0MWEzLjA0MyAzLjA0MyAwIDAgMC0xLjk0Ny0uNiAzLjE3NSAzLjE3NSAwIDAgMC0xLjg4My41NTkgMy40OSAzLjQ5IDAgMCAwLTEuMiAxLjUzNSA2LjEgNi4xIDAgMCAwLS4wMDggNC4zODV6IiBmaWxsPSIjZmZmIi8+PHBhdGggZmlsbD0iIzUwZDlmZiIgZD0iTTM0IDEwaDl2OWgtOXoiLz48L3N2Zz4=',
+      };
       const icon = (n) => ICONS[n] || ICONS.circle;
       const escapeHtml = (s) =>
         String(s).replace(
@@ -1769,12 +2692,12 @@
           (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
         );
       const state = {
-        mode: 'suggestion',
+        mode: 'connector',
         terminal: 'sender',
         connection: 'suggested',
         fields: ['name', 'interest'],
         snapshot: null,
-        plugin: 'connect',
+        plugin: 'mail',
         pluginOn: true,
         network: true,
         revoked: false,
@@ -1785,6 +2708,11 @@
         sharing: false,
         context: false,
         mailSent: false,
+        connector: 'gmail',
+        connectorStates: { gmail: 'disconnected', outlook: 'disconnected' },
+        drafts: { sender: '', receiver: '' },
+        replyError: false,
+        failNext: false,
         mcpServers: [
           {
             id: 'mcp-lab',
@@ -1854,7 +2782,15 @@
         document
           .querySelectorAll('[data-icon]')
           .forEach((n) => (n.innerHTML = icon(n.dataset.icon)));
-        document.querySelectorAll('svg').forEach((n) => n.setAttribute('aria-hidden', 'true'));
+        document.querySelectorAll('svg').forEach((n) => {
+          n.setAttribute('aria-hidden', 'true');
+          n.setAttribute('stroke-linecap', 'round');
+          n.setAttribute('stroke-linejoin', 'round');
+          n.querySelectorAll('rect').forEach((rect) => {
+            rect.setAttribute('rx', Math.min(5, Number(rect.getAttribute('width')) / 3));
+            rect.setAttribute('ry', Math.min(5, Number(rect.getAttribute('height')) / 3));
+          });
+        });
       }
       function button(label, action, style = '', glyph = '') {
         return `<button class="btn ${style}" data-action="${action}">${glyph ? icon(glyph) : ''}${label}</button>`;
@@ -1870,7 +2806,9 @@
         $('#shade').hidden = true;
         if (matchMedia('(max-width:768px)').matches) {
           $('#sidebar').inert = true;
-          $('#view').inert = false;
+          $('#view').inert = !$('#sheet').hidden;
+          $('.topbar').inert = !$('#sheet').hidden;
+          $('.preview-controls').inert = !$('#sheet').hidden;
         }
       }
       function openSidebar() {
@@ -1878,6 +2816,8 @@
         $('#shade').hidden = false;
         $('#sidebar').inert = false;
         $('#view').inert = true;
+        $('.topbar').inert = true;
+        $('.preview-controls').inert = true;
         $('#collapse').focus();
       }
       function closeTools() {
@@ -1890,9 +2830,47 @@
         clearTimeout(timer);
         state.generating = false;
       }
-      function render() {
+      function syncComposer() {
+        const prompt = $('#prompt');
+        if (!prompt) return;
+        prompt.style.height = 'auto';
+        prompt.style.height = `${Math.min(156, Math.max(34, prompt.scrollHeight))}px`;
+        prompt.style.overflowY = prompt.scrollHeight > 156 ? 'auto' : 'hidden';
+        const send = $('.send');
+        send.title = prompt.value.trim() ? '发送演示消息' : '输入后发送消息；语音尚未开放';
+        send.innerHTML = icon(
+          state.generating ? 'square' : prompt.value.trim() ? 'arrow-up' : 'audio-lines',
+        );
+        $('#composer').classList.toggle('has-draft', Boolean(prompt.value.trim()));
+        send.disabled =
+          !state.generating && (!prompt.value.trim() || !state.network || state.replyError);
+        const count = $('#draft-count');
+        if (count) {
+          count.textContent = `${prompt.value.length} / 2000`;
+          count.hidden = prompt.value.length < 1800;
+        }
+      }
+      function updateScrollCue() {
+        const transcript = $('#transcript');
+        const cue = $('[data-action="latest"]');
+        if (transcript && cue)
+          cue.hidden =
+            transcript.scrollHeight - transcript.scrollTop - transcript.clientHeight < 60;
+      }
+      function render({ follow = false } = {}) {
+        const oldTranscript = $('#transcript');
+        const scrollTop = oldTranscript?.scrollTop || 0;
+        const wasAtEnd =
+          oldTranscript && oldTranscript.scrollHeight - scrollTop - oldTranscript.clientHeight < 60;
+        const focused = document.activeElement?.id === 'prompt';
+        const selection = focused ? [$('#prompt').selectionStart, $('#prompt').selectionEnd] : null;
         $('#history').innerHTML =
           `<button class="sidebar-row ${state.mode === 'suggestion' ? 'selected' : ''}" data-action="demo">找一个一起做东西的人</button><button class="sidebar-row" data-action="ordinary">关于一个还没成形的想法</button><button class="sidebar-row" data-action="organize">帮我整理最近在想的事</button>`;
+        $('#shell').classList.toggle('connector-mode', state.mode === 'connector');
+        $('#shell').classList.toggle(
+          'outlook-mode',
+          state.mode === 'connector' && state.connector === 'outlook',
+        );
         $('#profile-name').textContent = state.terminal === 'sender' ? '林同学' : '许宁';
         $('#profile-avatar').textContent = state.terminal === 'sender' ? '林' : '许';
         $('#conversation-label').textContent =
@@ -1900,7 +2878,9 @@
             ? ''
             : state.terminal === 'receiver'
               ? '一条新的连接邀请'
-              : '找一个一起做东西的人';
+              : state.mode === 'connector'
+                ? `连接 ${state.connector === 'gmail' ? 'Gmail' : 'Outlook'}`
+                : '找一个一起做东西的人';
         document
           .querySelectorAll('[data-scenario]')
           .forEach((n) =>
@@ -1914,14 +2894,35 @@
             `<div class="landing"><div class="landing-hero"><h1>今天，想聊点什么？</h1></div>${composer()}<div class="home-suggestions"><button data-action="demo">${icon('users')}找个一起做点事的人</button><button data-action="ordinary">${icon('message-circle')}聊聊一个新想法</button><button data-action="plugins">${icon('puzzle')}选择一个插件</button></div></div><p class="footnote landing-footnote">由你决定何时连接、分享什么。当前为 Mock 设计演示。</p>`;
         } else {
           $('#view').innerHTML =
-            `<div class="transcript" id="transcript" tabindex="-1"><div class="thread">${state.terminal === 'receiver' ? receiverThread() + state.messages.map((m) => `<div class="message ${m.role}"><p>${escapeHtml(m.text)}</p></div>`).join('') + (state.generating ? '<div class="tool-status">正在准备演示回复…</div>' : '') : senderThread()}</div></div>${composer()}<p class="footnote">${state.terminal === 'receiver' ? '对方终端模拟：只展示发送者确认共享的内容。' : '未连接真实用户或模型。所有连接动作都需要你的确认。'}</p>`;
+            `<div class="transcript" id="transcript" tabindex="-1"><div class="thread">${state.terminal === 'receiver' ? receiverThread() + state.messages.map((m) => `<div class="message ${m.role}"><p>${escapeHtml(m.text)}</p></div>`).join('') + (state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : '') + replyStatus() : senderThread()}</div></div>${scrollCue()}${composer()}<p class="footnote">${state.terminal === 'receiver' ? '对方终端模拟：只展示发送者确认共享的内容。' : '未连接真实用户或模型。所有连接动作都需要你的确认。'}</p>`;
+        }
+        $('#prompt').value = state.drafts[state.terminal];
+        syncComposer();
+        const transcript = $('#transcript');
+        if (transcript) {
+          transcript.scrollTop = follow || wasAtEnd ? transcript.scrollHeight : scrollTop;
+          transcript.addEventListener('scroll', updateScrollCue, { passive: true });
+          updateScrollCue();
+        }
+        if (focused) {
+          $('#prompt').focus({ preventScroll: true });
+          $('#prompt').setSelectionRange(...selection);
         }
         hydrate();
         closeTools();
       }
+      function scrollCue() {
+        return `<div class="scroll-cue"><button class="btn" data-action="latest" hidden>${icon('arrow-up')}回到最新消息</button></div>`;
+      }
+      function replyStatus() {
+        return state.replyError
+          ? `<div class="reply-error" role="status"><strong>演示回复未完成</strong><span>你的消息已保留。重试只生成回复，不会重发邀请或执行外部操作。</span>${button('重试回复', 'retry-reply', 'outline', 'refresh-cw')}${button('继续输入', 'dismiss-error')}</div>`
+          : '';
+      }
       function senderThread() {
+        if (state.mode === 'connector') return connectorThread();
         const ordinary = state.mode === 'ordinary';
-        return `<div class="message user"><p>${ordinary ? '最近想尝试做点新的东西，但还没想清楚。' : '我想找个也对机器人感兴趣的人，一起做点东西。'}</p></div><article class="message assistant"><div class="assistant-name">AVEN</div><p>${ordinary ? '不用急着把它变成计划。你最近被什么问题吸引过？我们可以从那个小小的好奇开始。' : '可以。许宁也在找人一起做机器人项目，或许你们可以聊聊。'}</p>${!ordinary ? `<div class="tool-status"><button data-action="tool-details">${icon('users')}连接 · 找到一个可能的交集 ${icon('chevron-down')}</button></div><div class="tool-details" id="tool-details" hidden>仅使用允许发现和匹配的样例字段。没有读取对方私人对话或记忆，也没有向对方发送你的资料。</div>${connectionWidget()}` : ''}<div class="turn-actions"><button class="icon-btn" data-action="copy" aria-label="复制回复">${icon('copy')}</button><button class="icon-btn" data-action="feedback" aria-label="反馈回复">${icon('thumbs-up')}</button><button class="icon-btn" data-action="regenerate" aria-label="重新生成演示回复">${icon('refresh-cw')}</button></div></article>${state.messages.map((m) => `<div class="message ${m.role}">${m.role === 'assistant' ? '<div class="assistant-name">AVEN</div>' : ''}<p>${escapeHtml(m.text)}</p>${renderMessageWidget(m.widget)}</div>`).join('')}${state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : ''}`;
+        return `<div class="message user"><p>${ordinary ? '最近想尝试做点新的东西，但还没想清楚。' : '我想找个也对机器人感兴趣的人，一起做点东西。'}</p></div><article class="message assistant"><div class="assistant-name">AVEN</div><p>${ordinary ? '不用急着把它变成计划。你最近被什么问题吸引过？我们可以从那个小小的好奇开始。' : '可以。许宁也在找人一起做机器人项目，或许你们可以聊聊。'}</p>${!ordinary ? `<div class="tool-status"><button data-action="tool-details">${icon('users')}连接 · 找到一个可能的交集 ${icon('chevron-down')}</button></div><div class="tool-details" id="tool-details" hidden>仅使用允许发现和匹配的样例字段。没有读取对方私人对话或记忆，也没有向对方发送你的资料。</div>${connectionWidget()}` : ''}<div class="turn-actions"><button class="icon-btn" data-action="copy" aria-label="复制回复">${icon('copy')}</button><button class="icon-btn" data-action="feedback" aria-label="反馈回复">${icon('thumbs-up')}</button><button class="icon-btn" data-action="regenerate" aria-label="重新生成演示回复">${icon('refresh-cw')}</button></div></article>${state.messages.map((m) => `<div class="message ${m.role}">${m.role === 'assistant' ? '<div class="assistant-name">AVEN</div>' : ''}<p>${escapeHtml(m.text)}</p>${renderMessageWidget(m.widget)}</div>`).join('')}${state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : ''}${replyStatus()}`;
       }
       function person() {
         return `<div class="person"><span class="avatar large">许</span><div><div class="person-name">许宁</div><div class="person-detail">西安交通大学 · 机器人与控制</div></div></div>`;
@@ -1938,7 +2939,7 @@
         if (state.connection === 'pending')
           return `<div class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('send')}邀请已发送 · 模拟</span><span>等待回应</span></div>${person()}<p>对方会在自己的 AVEN 中收到邀请。只有双方同意，才会建立连接。</p><div class="widget-notice">已共享 ${Object.keys(state.snapshot || {}).length} 项 · 仅用于本次连接邀请 · 7 天有效</div></div><div class="widget-actions">${button('查看共享内容', 'manage')}${button('撤回邀请', 'withdraw')}</div></div>`;
         if (state.connection === 'preview')
-          return `<section class="connection-card" aria-label="发送前的共享预览"><div class="widget-body"><div class="widget-top"><span>${icon('shield-check')}发送前，先看看共享什么</span><span>1 次邀请</span></div>${person()}<p class="widget-heading preview-title">向许宁介绍你自己</p>${Object.entries(
+          return `<section class="connection-card" aria-label="发送前的共享预览"><div class="widget-body"><div class="widget-top"><span>${icon('shield-check')}发送前，先看看共享什么</span><span>1 次邀请</span></div>${person()}<p class="widget-heading preview-title">向许宁介绍你自己</p><div class="selection-summary" id="selected-fields" role="status">已选 ${state.fields.length} / ${Object.keys(fieldValues).length} 项 · 只分享你勾选的内容</div>${Object.entries(
             fieldValues,
           )
             .map(
@@ -1951,6 +2952,8 @@
         return `<section class="connection-card" aria-label="认识新朋友的建议"><div class="widget-body"><div class="widget-top"><span>${icon('users')}或许可以认识一下</span><span>连接插件</span></div>${person()}<p>也想做一个小型机器人项目，愿意先聊聊彼此的想法。</p><div class="shared-interests"><span class="interest">机器人</span><span class="interest">动手做项目</span></div><button class="inline-link" data-action="why">为什么推荐给我？</button><div id="why" class="widget-notice" hidden>你们都允许以“机器人项目”这一兴趣参与匹配。推荐只依据已确认且获准使用的样例信息，不代表私人经历互相可见。</div></div><div class="widget-actions">${button('认识一下', 'connect', 'primary', 'arrow-up-right')}${button('暂时不用', 'dismiss')}<span class="spacer"></span><span class="badge">样例</span></div></section>`;
       }
       function receiverThread() {
+        if (!state.network)
+          return `<article class="message assistant"><div class="assistant-name">AVEN</div><div class="error-note" role="status">当前离线，暂不展示对方的授权资料。恢复后重新检查共享范围。</div></article>`;
         if (
           !state.snapshot ||
           state.connection === 'suggested' ||
@@ -1985,6 +2988,8 @@
         return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('building-2')}美团生活 · 本地商户与团购</span><span>Mock 样例</span></div><h2 class="widget-heading">海淀区咖啡自习与简餐推荐</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">静隅咖啡自习室（中关村店）</span><span class="widget-price">人均 ¥42</span></div><div class="widget-row-meta">评分 4.8 · 营业中 08:00-22:30 · 团购单人全天饮品券 ¥38</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">谷雨轻食简餐</span><span class="widget-price">人均 ¥48</span></div><div class="widget-row-meta">评分 4.7 · 营业中 10:00-21:30 · 距 540m</div></div></div><div class="widget-notice">不会自动下单或代扣费用；外跳商户页前均会弹出确认。</div></div><div class="widget-actions">${button('确认查看美团商户', 'confirm-jump', 'primary', 'arrow-up-right')}${button('换一批', 'focus-input')}</div></section>`;
       }
       function mailWidget() {
+        if (state.connectorStates[state.connector] !== 'connected')
+          return connectorCard(state.connector);
         return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('inbox')}邮箱连接器 · Gmail / QQ 邮箱</span><span>${state.mailSent ? '已确认发送（Mock）' : '待确认草稿'}</span></div><h2 class="widget-heading">已检索 1 封相关线程 + 发信前预览</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">主题：周五机器人项目 Kick-off 议程</span><span class="badge">Gmail</span></div><div class="widget-row-meta">来自 xuning@example.com · 摘要：建议周六下午 15:00 同步硬件清单。</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">待发草稿：确认周六下午碰头</span><span class="badge">QQ 邮箱</span></div><div class="widget-row-meta">收件人：xuning@example.com · 正文：周六 15:00 我准时到软件园会议区，已带上控制板资料。</div></div></div><div class="widget-notice">发信永远要求你显式确认（confirmed: true），AI 不会静默发送邮件。</div></div><div class="widget-actions">${state.mailSent ? '<span class="widget-confirmation">已完成模拟发送</span>' : button('确认并发送草稿', 'send-mail-draft', 'primary', 'send')}${button('继续修改', 'focus-input')}</div></section>`;
       }
       function coordinationWidget() {
@@ -2010,6 +3015,32 @@
         };
         return map[kind] ? map[kind]() : '';
       }
+      function connectorCard(provider) {
+        const name = provider === 'gmail' ? 'Gmail' : 'Outlook 邮件';
+        const status = state.connectorStates[provider];
+        const connected = status === 'connected';
+        const connecting = status === 'connecting';
+        return `<section class="connector-card ${provider === 'outlook' ? 'stacked' : ''}" aria-label="${name}连接器"><img class="connector-logo" src="${BRAND_ASSETS[provider]}" alt="${name}" width="44" height="44"><div class="connector-copy"><h2>${name}</h2><p>${connected ? '已连接 · 设计模拟' : provider === 'gmail' ? '搜索、阅读邮件，<br>准备和整理草稿。' : '连接器'}</p></div><button class="btn connector-authorize ${connected ? 'outline' : 'primary'}" data-action="${connected ? 'disconnect-connector' : 'authorize-connector'}" ${connecting || !state.network ? 'disabled' : ''}>${connecting ? '连接中…' : connected ? '断开' : provider === 'outlook' ? '关联' : '授权'}</button>${status === 'denied' ? '<p class="connector-result" role="status">你取消了授权，邮箱未连接。</p>' : ''}</section>`;
+      }
+      function connectorThread() {
+        const name = state.connector === 'gmail' ? 'Gmail' : 'Outlook';
+        const connected = state.connectorStates[state.connector] === 'connected';
+        return `<div class="message assistant intro-message"><p>最近的想法、待处理的邮件，或者想认识的人，都可以从这里开始。不用先把事情整理好，我们可以边聊边梳理。<br><br>需要用到某个应用时，再把它加进这段对话。比如，先连接你的邮箱，看看有没有值得一起讨论的消息。</p></div><div class="chat-timestamp">今天 19:38</div><div class="message user"><p>帮我连接 ${name}</p></div><article class="message assistant connector-turn"><p>${connected ? `已完成 ${name} 连接演示。` : state.connector === 'gmail' ? '好，先连接你的 Gmail。' : 'Outlook 邮箱还没连上，点这里授权登录就行：'}</p>${connectorCard(state.connector)}${state.connector === 'outlook' ? '<p class="connector-followup">连接演示完成后，可以继续查看邮件相关的功能。日历和联系人是另外两个连接，需要分别授权，不会自动接通。</p>' : '<div class="connector-consent-note">AVEN 会在执行更改前征求你的同意。你可以随时断开连接。当前为设计模拟。</div>'}<button class="connector-account" data-action="authorize-connector" ${state.connector === 'outlook' ? 'hidden' : ''} ${!state.network || state.connectorStates[state.connector] === 'connecting' ? 'disabled' : ''}><span class="account-mark">${icon('audio-lines')}</span><span>${connected ? '查看连接权限' : `连接 ${name} 账户`}</span></button></article>${state.messages.map((m) => `<div class="message ${m.role}"><p>${escapeHtml(m.text)}</p>${renderMessageWidget(m.widget)}</div>`).join('')}${state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : ''}${replyStatus()}`;
+      }
+      function showConnector(provider) {
+        stop();
+        state.replyError = false;
+        state.connector = provider;
+        state.mode = 'connector';
+        state.terminal = 'sender';
+        state.messages = [];
+        state.plugin = 'mail';
+        closeSheet();
+        closeSidebar();
+        render();
+        $('#transcript').scrollTop = 0;
+        updateScrollCue();
+      }
       function composer() {
         const active = state.plugin ? PLUGIN_META[state.plugin] : null;
         return `<div class="composer-zone"><div class="composer-wrap"><div id="tools-menu" class="tools-menu" hidden><div class="menu-label">本次对话可使用的能力</div>${Object.entries(
@@ -2021,28 +3052,38 @@
           )
           .join(
             '',
-          )}<div class="menu-divider"></div><button class="menu-item" data-action="context">${icon('book-open')}<span class="item-copy">选择上下文<small>仅使用你允许的信息</small></span></button><button class="menu-item" data-action="plugins">${icon('puzzle')}<span class="item-copy">管理插件与自定义 MCP</span>${icon('chevron-right')}</button></div><form id="composer" class="composer"><label class="sr-only" for="prompt">向 AVEN 发送消息</label><textarea id="prompt" placeholder="有什么想法，和 AVEN 聊聊" rows="1" maxlength="2000"></textarea><div class="composer-chips">${active ? `<button type="button" class="chip" data-action="remove-plugin" aria-label="移除本次对话插件">${icon(active.icon)}${active.name}${icon('x')}</button>` : ''}${state.context ? '<span class="chip">已选本人 AI 上下文</span>' : ''}</div><div class="composer-rail"><button type="button" class="icon-btn" id="tools-toggle" data-action="tools" aria-label="添加插件与上下文" aria-expanded="false">${icon('plus')}</button><span class="spacer"></span><button type="button" class="quiet" data-action="context">${state.context ? '已选本人上下文' : '仅本次输入'} ${icon('chevron-down')}</button><button type="button" class="icon-btn" disabled aria-label="语音尚未开放" title="语音尚未开放">${icon('mic')}</button><button type="${state.generating ? 'button' : 'submit'}" ${state.generating ? 'data-action="stop"' : ''} class="send" aria-label="${state.generating ? '停止演示回复' : '发送演示消息'}">${icon(state.generating ? 'square' : 'arrow-up')}</button></div></form></div></div>`;
+          )}<div class="menu-divider"></div><button class="menu-item" data-action="context">${icon('book-open')}<span class="item-copy">选择上下文<small>仅使用你允许的信息</small></span></button><button class="menu-item" data-action="plugins">${icon('puzzle')}<span class="item-copy">管理插件与自定义 MCP</span>${icon('chevron-right')}</button></div>${!state.network ? '<div class="connection-status" role="status">当前离线 · 草稿保留在本次页面中，恢复后由你重新发送。</div>' : ''}<form id="composer" class="composer" aria-label="消息输入区"><button type="button" class="icon-btn composer-add" id="tools-toggle" data-action="tools" aria-label="添加插件与上下文" aria-expanded="false">${icon('plus')}</button><label class="sr-only" for="prompt">向 AVEN 发送消息</label><textarea id="prompt" aria-describedby="composer-hint" placeholder="向 AVEN 提问" rows="1" maxlength="2000"></textarea><div class="composer-rail"><button type="button" class="icon-btn voice-button" disabled aria-label="语音尚未开放" title="语音尚未开放">${icon('mic')}</button><button type="${state.generating ? 'button' : 'submit'}" ${state.generating ? 'data-action="stop"' : ''} class="send" aria-label="${state.generating ? '停止演示回复' : '发送演示消息'}">${icon(state.generating ? 'square' : state.drafts[state.terminal].trim() ? 'arrow-up' : 'audio-lines')}</button></div><div class="composer-chips">${active ? `<button type="button" class="chip" data-action="remove-plugin" aria-label="移除本次对话插件">${icon(active.icon)}${active.name}${icon('x')}</button>` : ''}${state.context ? '<span class="chip">已选本人 AI 上下文</span>' : ''}</div><div class="composer-meta"><button type="button" class="quiet" data-action="context">${state.context ? '已选本人上下文' : '仅本次输入'} ${icon('chevron-down')}</button><span id="draft-count" class="draft-count" hidden></span></div></form><p class="composer-hint" id="composer-hint">Enter 发送 · Shift + Enter 换行</p></div></div>`;
       }
       function openSheet(title, body) {
-        focusBeforeSheet = document.activeElement;
+        if ($('#sheet').hidden) focusBeforeSheet = document.activeElement;
         closeTools();
         closeSidebar();
         $('#sheet').innerHTML =
           `<div class="sheet-header"><h2 id="sheet-title">${title}</h2><button class="icon-btn" data-action="close-sheet" aria-label="关闭面板">${icon('x')}</button></div>${body}`;
         $('#sheet').hidden = false;
         $('#view').inert = true;
+        $('#sidebar').inert = true;
+        $('.topbar').inert = true;
+        $('.preview-controls').inert = true;
         $('#sheet [data-action="close-sheet"]').focus();
         hydrate();
       }
       function closeSheet() {
+        if ($('#sheet').hidden) return;
         $('#sheet').hidden = true;
         $('#view').inert = false;
+        $('#sidebar').inert = matchMedia('(max-width:768px)').matches;
+        $('.topbar').inert = false;
+        $('.preview-controls').inert = false;
         if (focusBeforeSheet?.isConnected) focusBeforeSheet.focus();
+        else $('#prompt')?.focus({ preventScroll: true });
       }
       function switchTerminal(receiver) {
         closeSheet();
         closeSidebar();
         stop();
+        state.replyError = false;
+        state.failNext = false;
         state.terminal = receiver ? 'receiver' : 'sender';
         state.context = false;
         state.messages = [];
@@ -2051,14 +3092,26 @@
       }
       function sendChat() {
         const text = $('#prompt').value.trim();
-        if (!text || state.generating) return;
+        if (!text || state.generating || !state.network || state.replyError) return;
+        state.drafts[state.terminal] = '';
         state.mode = state.mode === 'home' ? 'ordinary' : state.mode;
         state.messages.push({ role: 'user', text });
+        beginReply();
+      }
+      function beginReply() {
+        state.replyError = false;
         state.generating = true;
-        render();
+        const plugin = state.plugin;
+        render({ follow: true });
         timer = setTimeout(() => {
           state.generating = false;
-          const activeMeta = state.plugin ? PLUGIN_META[state.plugin] : null;
+          if (state.failNext || !state.network) {
+            state.failNext = false;
+            state.replyError = true;
+            render();
+            return;
+          }
+          const activeMeta = plugin ? PLUGIN_META[plugin] : null;
           const replyTextByPlugin = {
             connect:
               '我们可以先把你希望一起做的事情说清楚。是否连接、何时连接，以及向对方分享什么，都由你决定。',
@@ -2075,18 +3128,84 @@
           state.messages.push({
             role: 'assistant',
             widget:
-              activeMeta && (state.mode === 'ordinary' || state.plugin !== 'connect')
+              activeMeta && (state.mode === 'ordinary' || plugin !== 'connect')
                 ? activeMeta.widget
                 : null,
             text:
-              (state.plugin && replyTextByPlugin[state.plugin]) ||
+              (plugin && replyTextByPlugin[plugin]) ||
               '我们可以继续把这个想法展开。需要某个能力时，再从输入框的加号选择插件。',
           });
           render();
-          $('#transcript').scrollTop = $('#transcript').scrollHeight;
         }, 900);
       }
       const actions = {
+        'connector-gmail': () => showConnector('gmail'),
+        'connector-outlook': () => showConnector('outlook'),
+        'authorize-connector': () => {
+          if (!state.network || state.connectorStates[state.connector] === 'connecting') return;
+          const name = state.connector === 'gmail' ? 'Gmail' : 'Outlook';
+          openSheet(
+            `连接 ${name}`,
+            `<div class="permission-intro"><img src="${BRAND_ASSETS[state.connector]}" alt="${name}" width="48" height="48"><p>由你决定，让 AVEN 使用哪些能力。</p></div><div class="permission-item">${icon('search')}<div>搜索和阅读邮件<small>仅在你主动发起相关请求时使用</small></div></div><div class="permission-item">${icon('square-pen')}<div>准备邮件草稿<small>发送前仍需单独确认</small></div></div><p>不包含日历或联系人权限。此处只演示确认过程，不跳转登录，不读取真实邮箱或保存凭据。</p><div class="permission-actions">${button(state.connectorStates[state.connector] === 'connected' ? '完成' : '同意并继续演示', state.connectorStates[state.connector] === 'connected' ? 'close-sheet' : 'confirm-connector', 'primary')}${button('取消', 'cancel-connector', 'outline')}</div>`,
+          );
+        },
+        'confirm-connector': () => {
+          if (
+            !state.network ||
+            (state.connectorStates[state.connector] !== 'disconnected' &&
+              state.connectorStates[state.connector] !== 'denied')
+          )
+            return;
+          state.connectorStates[state.connector] = 'connected';
+          closeSheet();
+          render();
+          notify('已完成连接演示；未连接真实邮箱。');
+        },
+        'cancel-connector': () => {
+          if (state.connectorStates[state.connector] !== 'connected')
+            state.connectorStates[state.connector] = 'denied';
+          closeSheet();
+          render();
+        },
+        'disconnect-connector': () =>
+          openSheet(
+            '断开这个连接？',
+            `<p>本次演示将停止使用该邮箱连接。其他连接不受影响。</p>${button('确认断开', 'confirm-disconnect', 'danger')}${button('取消', 'close-sheet', 'outline')}`,
+          ),
+        'confirm-disconnect': () => {
+          state.connectorStates[state.connector] = 'disconnected';
+          closeSheet();
+          render();
+        },
+        latest: () => {
+          const transcript = $('#transcript');
+          transcript.scrollTop = transcript.scrollHeight;
+          updateScrollCue();
+        },
+        'retry-reply': () => {
+          if (!state.network) return notify('请先恢复连接，再重试回复。');
+          if (state.replyError && !state.generating) beginReply();
+        },
+        'dismiss-error': () => {
+          state.replyError = false;
+          render();
+          $('#prompt').focus();
+        },
+        'reply-failure': () => {
+          state.failNext = true;
+          notify('下一次演示回复将失败，用于检查恢复路径。');
+        },
+        network: () => {
+          state.network = !state.network;
+          if (!state.network && state.generating) {
+            stop();
+            state.replyError = true;
+          }
+          render();
+          notify(
+            state.network ? '连接已恢复，请确认后手动继续。' : '离线模拟已开启，不发送消息或邀请。',
+          );
+        },
         'opportunity-detail': () =>
           openSheet(
             '机器人学习项目',
@@ -2097,6 +3216,9 @@
           stop();
           state.terminal = 'sender';
           state.mode = 'home';
+          state.drafts.sender = '';
+          state.replyError = false;
+          state.failNext = false;
           state.messages = [];
           state.plugin = null;
           closeSheet();
@@ -2108,6 +3230,7 @@
           stop();
           state.terminal = 'sender';
           state.mode = 'suggestion';
+          state.replyError = false;
           state.messages = [];
           state.plugin = 'connect';
           closeSheet();
@@ -2115,6 +3238,8 @@
           render();
         },
         ordinary: () => {
+          stop();
+          state.replyError = false;
           state.mode = 'ordinary';
           state.messages = [];
           state.plugin = null;
@@ -2145,6 +3270,10 @@
           state.connection = 'preview';
           state.fields = ['name', 'interest'];
           render();
+          const preview = $('.connection-card');
+          preview.tabIndex = -1;
+          preview.focus({ preventScroll: true });
+          preview.scrollIntoView({ block: 'start' });
         },
         dismiss: () => {
           state.connection = 'dismissed';
@@ -2227,12 +3356,12 @@
         shared: () =>
           openSheet(
             '共同对话',
-            `<p>你与${state.terminal === 'receiver' ? escapeHtml(state.snapshot?.name || '对方') : '许宁'}已同意建立连接。</p><div class="error-note">关系会话 API 尚未实现。此处只展示连接后的入口，不发送真实消息，也不伪造可用的共同聊天。</div><p>之后可在这个对话中按需添加协作和时间建议小组件。</p>`,
+            `<p>你与${state.terminal === 'receiver' ? escapeHtml(state.snapshot?.name || '对方') : '许宁'}已同意建立连接。</p><div class="error-note">个人连接消息后端已交付；本原型尚未接入。此处不发送真实消息，组织关系空间会话仍待实现。</div><p>之后可在这个对话中按需添加协作和时间建议小组件。</p>`,
           ),
         plugins: () =>
           openSheet(
             '插件与自定义 MCP',
-            `<p>把能力带入对话，而不是打断对话。启用不等于授权共享；所有外部连接当前均为 Mock 安全预览。</p><div class="plugin-list"><button class="menu-item" data-action="toggle-plugin">${icon('users')}<span class="item-copy">连接<small>发现合适的人 · 邀请 · 双方确认</small></span><span class="badge">${state.pluginOn ? '已启用' : '已关闭'}</span></button><button class="menu-item" data-action="pick-opportunity">${icon('compass')}<span class="item-copy">机会<small>需要时，在对话里查看机会</small></span><span class="badge">演示</span></button><button class="menu-item" data-pick-plugin="amap">${icon('compass')}<span class="item-copy">高德地图<small>地址查询 · POI · 外跳确认</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="compare">${icon('layers')}<span class="item-copy">淘宝 / 京东 / 闪购比价<small>跨平台同屏比价与极速达</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="meituan">${icon('building-2')}<span class="item-copy">美团生活<small>周边商户 · 团购与到店建议</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="mail">${icon('inbox')}<span class="item-copy">邮箱（Gmail / QQ）<small>检索摘要 · 草稿二次确认发信</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="coordination">${icon('calendar-days')}<span class="item-copy">日程协调 + 天气出行<small>忙闲求交与出行建议卡片</small></span><span class="badge">加入对话</span></button></div><div class="mcp-form"><strong>已登记的自定义 MCP（仅允许公开 https://）</strong>${state.mcpServers.map((s) => `<div class="mcp-server-row"><div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:500">${escapeHtml(s.name)}</div><div class="widget-row-meta" style="word-break:break-all">${escapeHtml(s.url)}</div></div><button class="btn outline" data-toggle-mcp="${escapeHtml(s.id)}">${s.on ? '已启用' : '已停用'}</button><button class="btn danger" data-remove-mcp="${escapeHtml(s.id)}">移除</button></div>`).join('') || '<p>暂无自定义 MCP 服务。</p>'}<label class="sr-only" for="mcp-name">MCP 名称</label><input id="mcp-name" class="mcp-input" placeholder="MCP 名称，例如：校园课表查询"><label class="sr-only" for="mcp-url">MCP 端点 URL</label><input id="mcp-url" class="mcp-input" placeholder="https://mcp.example.com/sse（自动拦截私网/环回）">${button('登记并使用此 MCP', 'add-mcp', 'primary', 'bot')}</div>`,
+            `<p>把能力带入对话，而不是打断对话。启用不等于授权共享；所有外部连接当前均为 Mock 安全预览。</p><div class="plugin-list"><button class="menu-item" data-action="toggle-plugin">${icon('users')}<span class="item-copy">连接<small>发现合适的人 · 邀请 · 双方确认</small></span><span class="badge">${state.pluginOn ? '已启用' : '已关闭'}</span></button><button class="menu-item" data-action="pick-opportunity">${icon('compass')}<span class="item-copy">机会<small>需要时，在对话里查看机会</small></span><span class="badge">演示</span></button><button class="menu-item" data-pick-plugin="amap">${icon('compass')}<span class="item-copy">高德地图<small>地址查询 · POI · 外跳确认</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="compare">${icon('layers')}<span class="item-copy">淘宝 / 京东 / 闪购比价<small>跨平台同屏比价与极速达</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="meituan">${icon('building-2')}<span class="item-copy">美团生活<small>周边商户 · 团购与到店建议</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-action="connector-gmail"><img class="catalog-brand" src="${BRAND_ASSETS.gmail}" alt="" width="32" height="32"><span class="item-copy">Gmail<small>搜索、阅读邮件与准备草稿</small></span>${icon('chevron-right')}</button><button class="menu-item" data-action="connector-outlook"><img class="catalog-brand" src="${BRAND_ASSETS.outlook}" alt="" width="32" height="32"><span class="item-copy">Outlook 邮件<small>独立授权 · 连接演示</small></span>${icon('chevron-right')}</button><button class="menu-item" data-pick-plugin="coordination">${icon('calendar-days')}<span class="item-copy">日程协调 + 天气出行<small>忙闲求交与出行建议卡片</small></span><span class="badge">加入对话</span></button></div><div class="mcp-form"><strong>已登记的自定义 MCP（仅允许公开 https://）</strong>${state.mcpServers.map((s) => `<div class="mcp-server-row"><div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:500">${escapeHtml(s.name)}</div><div class="widget-row-meta" style="word-break:break-all">${escapeHtml(s.url)}</div></div><button class="btn outline" data-toggle-mcp="${escapeHtml(s.id)}">${s.on ? '已启用' : '已停用'}</button><button class="btn danger" data-remove-mcp="${escapeHtml(s.id)}">移除</button></div>`).join('') || '<p>暂无自定义 MCP 服务。</p>'}<label class="sr-only" for="mcp-name">MCP 名称</label><input id="mcp-name" class="mcp-input" placeholder="MCP 名称，例如：校园课表查询"><label class="sr-only" for="mcp-url">MCP 端点 URL</label><input id="mcp-url" class="mcp-input" placeholder="https://mcp.example.com/sse（自动拦截私网/环回）">${button('登记并使用此 MCP', 'add-mcp', 'primary', 'bot')}</div>`,
           ),
         'toggle-plugin': () => {
           state.pluginOn = !state.pluginOn;
@@ -2251,7 +3380,10 @@
             notify('请填写 MCP 名称与 https:// 端点 URL。');
             return;
           }
-          if (!/^https:\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/.test(url) || /(localhost|127\.0\.0\.1|10\.|192\.168\.|169\.254\.)/i.test(url)) {
+          if (
+            !/^https:\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/.test(url) ||
+            /(localhost|127\.0\.0\.1|10\.|192\.168\.|169\.254\.)/i.test(url)
+          ) {
             notify('安全校验失败：仅允许公开 https:// MCP 地址，已拦截内网或环回 URL。');
             return;
           }
@@ -2360,7 +3492,9 @@
           closeSheet();
           render();
           $('#prompt')?.focus();
-          notify(`已将「${PLUGIN_META[state.plugin]?.name || state.plugin}」加入当前对话，发送任意消息即可预览小组件。`);
+          notify(
+            `已将「${PLUGIN_META[state.plugin]?.name || state.plugin}」加入当前对话，发送任意消息即可预览小组件。`,
+          );
           return;
         }
         if (b.dataset.toggleMcp) {
@@ -2393,9 +3527,16 @@
           );
           const send = $('[data-action="send-invite"]');
           if (send) send.disabled = !state.fields.length || !state.network;
+          const summary = $('#selected-fields');
+          if (summary)
+            summary.textContent = `已选 ${state.fields.length} / ${Object.keys(fieldValues).length} 项 · 只分享你勾选的内容`;
         }
       });
       document.addEventListener('input', (e) => {
+        if (e.target.id === 'prompt') {
+          state.drafts[state.terminal] = e.target.value;
+          syncComposer();
+        }
         if (e.target.id === 'chat-search') {
           const q = e.target.value;
           $('#chat-search-results').innerHTML =
@@ -2431,6 +3572,18 @@
           e.preventDefault();
           sendChat();
         }
+        if (state.tools && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+          const buttons = [...$('#tools-menu').querySelectorAll('button:not(:disabled)')];
+          const index = buttons.indexOf(document.activeElement);
+          const next =
+            e.key === 'Home'
+              ? 0
+              : e.key === 'End'
+                ? buttons.length - 1
+                : (index + (e.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length;
+          e.preventDefault();
+          buttons[next].focus();
+        }
         if (e.key === 'Escape') {
           if (!$('#sheet').hidden) {
             closeSheet();
@@ -2441,10 +3594,14 @@
             $('#tools-toggle').focus();
             return;
           }
+          const profileOpen = !$('#profile-menu').hidden;
+          const drawerOpen = $('#shell').classList.contains('drawer-open');
           $('#profile-menu').hidden = true;
           $('#profile').setAttribute('aria-expanded', 'false');
-          closeSidebar();
-          $('#open-sidebar').focus();
+          if (drawerOpen) {
+            closeSidebar();
+            $('#open-sidebar').focus();
+          } else if (profileOpen) $('#profile').focus();
         }
         if (e.key === 'Tab') {
           const region = !$('#sheet').hidden
@@ -2456,7 +3613,9 @@
                 : null;
           if (!region) return;
           const nodes = [
-              ...region.querySelectorAll('button:not(:disabled),input:not(:disabled)'),
+              ...region.querySelectorAll(
+                'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]',
+              ),
             ].filter((n) => n.getClientRects().length),
             first = nodes[0],
             last = nodes.at(-1);
@@ -2487,11 +3646,16 @@
         $('#open-sidebar').focus();
       });
       window.addEventListener('resize', () => {
-        if (!matchMedia('(max-width:768px)').matches) {
-          $('#sidebar').inert = false;
-          $('#view').inert = !$('#sheet').hidden;
-          $('#shade').hidden = true;
-        }
+        const mobile = matchMedia('(max-width:768px)').matches;
+        const drawer = mobile && $('#shell').classList.contains('drawer-open');
+        const modal = !$('#sheet').hidden;
+        if (!mobile) $('#shell').classList.remove('drawer-open');
+        $('#sidebar').inert = modal || (mobile && !drawer);
+        $('#view').inert = modal || drawer;
+        $('.topbar').inert = modal || drawer;
+        $('.preview-controls').inert = modal || drawer;
+        $('#shade').hidden = !drawer;
+        syncComposer();
       });
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.sidebar-profile')) {

@@ -94,3 +94,9 @@ OpenAI-compatible 流必须收到 `data: [DONE]` 才能标记完成；连接提�
 `GET /api/v1/agent/provider` 返回当前用户的配置元数据或 `null`；`PUT /api/v1/agent/provider` 接收 `baseUrl`、`model`、`apiKey` 和 `expectedVersion`（新建为 0）；`DELETE /api/v1/agent/provider?version=N` 删除指定版本。写请求需要会话与 CSRF，版本不匹配返回 409。密钥仅在写入时接收，经 AES-256-GCM 加密后存储，读取接口不返回明文或密文。允许的 HTTPS base URL 由服务端 `AI_USER_ALLOWED_BASE_URLS` 精确列出，保存本身不发起外网请求；`AI_USER_CONFIG_KEY` 为服务端管理的 32 字节 base64 密钥。缺少有效配置时返回 503。
 
 该接口仅提供安全配置管理；Worker 尚未从用户设置选择 Provider，用户界面、密钥轮换、真实服务调用和外发数据授权尚未实现。不能将保存成功描述为 AI 已接入。
+
+## WEB-01 客户端接入（2026-11-12）
+
+`@aven/api-client.agent` 增加 `createTurn/getRun/cancel/events`，复用本节既有端点。`AgentStreamEventSchema` 验证服务端 wire 字段、事件类型、run_id、序号与 delta 文本；拒绝跨 run、缺号、错误类型与非终态 EOF。订阅地址由已验证 runId 构造，不跟随响应中的任意 URL。读取使用 Cookie 或调用时 Bearer，写入逐次 CSRF；客户端不自动创建/重试 run。
+
+Web 只提供 Mock 对话与停止/手动核对/重读，不提供高影响行动执行 UI。未知结果同键核对；HTTP/来源失败或断流清除已显示派生回复。详见 [WEB-01](../development/WEB_PERSONAL.md)。

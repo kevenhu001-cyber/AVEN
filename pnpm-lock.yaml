@@ -529,6 +529,9 @@ importers:
 
   packages/domain:
     dependencies:
+      '@aven/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@aven/database':
         specifier: workspace:*
         version: link:../database

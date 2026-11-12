@@ -4,8 +4,8 @@ import { colors } from '@aven/design-tokens';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AVEN · 工程基础',
-  description: 'AVEN M0 工程诊断，不是已完成产品。',
+  title: 'AVEN · 对话与连接',
+  description: 'AVEN 个人 Web 开发验证版：对话、记忆与经授权的连接。',
 };
 
 export const viewport: Viewport = {

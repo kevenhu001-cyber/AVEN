@@ -1,9 +1,12 @@
+import { ApiClientError } from './errors';
+import { createPersonalClient } from './personal';
+import { createAgentClient } from './agent';
 import {
   ApiErrorResponseSchema,
   LivenessResponseSchema,
   ReadinessResponseSchema,
 } from '@aven/contracts';
-import type { ApiErrorCode, LivenessResponse, ReadinessResponse } from '@aven/contracts';
+import type { LivenessResponse, ReadinessResponse } from '@aven/contracts';
 import { createConnectionsClient } from './connections';
 import type { TransportOptions } from './connections';
 import { createCalendarConnectionsClient } from './calendar-connections';
@@ -23,23 +26,7 @@ export type { ModerationCallOptions } from './moderation';
 export type { PluginsClient, PluginCallOptions } from './plugins';
 export type { ReferralsClient, ReferralCallOptions } from './referrals';
 
-export class ApiClientError extends Error {
-  constructor(
-    public readonly code:
-      | 'NETWORK_ERROR'
-      | 'TIMEOUT'
-      | 'CANCELLED'
-      | 'INVALID_REQUEST'
-      | 'INVALID_RESPONSE'
-      | 'HTTP_ERROR',
-    public readonly status?: number,
-    public readonly requestId?: string,
-    public readonly apiCode?: ApiErrorCode,
-  ) {
-    super(code);
-    this.name = 'ApiClientError';
-  }
-}
+export { ApiClientError } from './errors';
 
 export function createApiClient(
   options: {
@@ -95,7 +82,7 @@ export function createApiClient(
         signal: controller.signal,
         redirect: 'error',
       });
-      const body: unknown = await response.json();
+      const body: unknown = response.status === 204 ? undefined : await response.json();
       if (signal?.aborted) throw new ApiClientError('CANCELLED');
       if (timedOut) throw new ApiClientError('TIMEOUT');
       if (!response.ok) {
@@ -124,7 +111,11 @@ export function createApiClient(
     }
   }
 
+  const personal = createPersonalClient(request, () => new ApiClientError('INVALID_REQUEST'));
   return {
+    auth: personal.auth,
+    memories: personal.memories,
+    agent: createAgentClient(request, { baseUrl, fetcher, timeoutMs }),
     calendarConnections: createCalendarConnectionsClient(
       request,
       () => new ApiClientError('INVALID_REQUEST'),

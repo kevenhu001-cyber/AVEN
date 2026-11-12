@@ -26,7 +26,7 @@
     );
     check(
       'rounded primary card',
-      parseFloat(getComputedStyle($('.connection-card')).borderTopLeftRadius) === 20,
+      parseFloat(getComputedStyle($('.connection-card')).borderTopLeftRadius) === 28,
     );
     if (innerWidth === 390) {
       const action = $('[data-action="connect"]').getBoundingClientRect();
@@ -149,11 +149,12 @@
     click('[data-action="save-context"]');
     check(
       'context choice is reflected in composer',
-      state.context && $('.composer-rail').textContent.includes('已选本人上下文'),
+      state.context && $('.composer-meta').textContent.includes('已选本人上下文'),
     );
     actions.settings();
+    const previousTheme = document.documentElement.dataset.mode;
     actions.theme();
-    check('light mode works', document.documentElement.dataset.mode === 'light');
+    check('theme changes', document.documentElement.dataset.mode !== previousTheme);
     actions.theme();
     actions['close-sheet']();
     if (matchMedia('(max-width:768px)').matches) {

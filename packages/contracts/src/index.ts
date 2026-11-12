@@ -833,6 +833,25 @@ export const AgentRunEventSchema = z
   })
   .strict();
 
+/** Validated flattened wire event carried inside an SSE frame. */
+export const AgentStreamEventSchema = z
+  .object({
+    type: AgentRunEventTypeSchema,
+    schema_version: z.literal(1),
+    run_id: z.uuid(),
+    sequence: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    timestamp: z.iso.datetime({ offset: true }),
+    text: z.string().max(64000).optional(),
+    tool: z.string().max(200).optional(),
+    error_code: z.string().max(200).optional(),
+  })
+  .passthrough()
+  .superRefine((event, context) => {
+    if (event.type === 'message.delta' && typeof event.text !== 'string')
+      context.addIssue({ code: 'custom', path: ['text'], message: 'Delta text is required.' });
+  });
+export type AgentStreamEvent = z.infer<typeof AgentStreamEventSchema>;
+
 export const AgentCancelResponseSchema = z
   .object({
     runId: z.uuid(),
@@ -1842,6 +1861,8 @@ export const NotificationListSchema = z
     unreadCount: z.number().int().nonnegative(),
   })
   .strict();
+export type Notification = z.infer<typeof NotificationSchema>;
+export type NotificationCursor = z.infer<typeof NotificationCursorSchema>;
 export const NotificationPreferencesSchema = z
   .object({
     connectionInvitations: z.boolean(),

@@ -82,7 +82,16 @@ export const space = {
   48: 48,
   64: 64,
 } as const;
-export const radius = { sm: 6, md: 10, lg: 14, xl: 18, full: 999 } as const;
+export const radius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+  bubble: 26,
+  card: 28,
+  composer: 32,
+  full: 999,
+} as const;
 export const fontSize = {
   display: 36,
   h1: 28,

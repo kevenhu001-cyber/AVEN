@@ -94,3 +94,7 @@
 - `corepack pnpm auth:verify`：42 项真实 HTTP/数据库/Redis 检查通过。
 - `corepack pnpm test`：认证 contracts、Argon2id、令牌哈希与环境边界单元测试通过。
 - 未验证：真实邮件 Provider、生产部署、账号锁定、MFA、空闲超时、设备管理、真实设备 Cookie/Bearer 生命周期。
+
+## WEB-01 客户端接入（2026-11-12）
+
+`@aven/api-client.auth` 增加 `me/loginWeb/register/verifyEmail/logout`。`loginWeb` 强制 `client: web` 且拒绝包含移动 `sessionToken` 的返回；退出接受既有 204 空响应。浏览器逐次读取 CSRF Cookie，私人正文与认证令牌不写入浏览器持久存储。首页已接入这些端点，开发邮件仍是本地文件；不代表生产邮件、MFA 或完整设备会话 UI 完成。

@@ -4,6 +4,10 @@
 
 ## 1. 当前阶段
 
+- WEB-01 个人 Web 已按 ADR-017 限定接入注册/登录、Mock SSE、手工记忆、连接邀请/消息与站内通知。首页为开发验证版，工程诊断迁至 `/diagnostics`。最新范围和实际证据以 `docs/development/WEB_PERSONAL.md` 为准；下方历史“无 UI”仅限原交付阶段。M1-07 整体仍 REVIEW，不授权真实 Provider、外部 OAuth 或 Android。
+
+- 2026-11-12 用户明确授权开始下一阶段：按 [ADR-017](docs/architecture/decisions/0017-personal-web-increment.md) 实施个人 Web 限定主线。该范围可进入 UI 编码，M1-07 整体仍为 REVIEW，其他页面/原生/真实 Provider/试点门不变；以下历史“不能进入 UI 编码”在本轮限定范围内按此授权执行。
+
 - 2026-11-12 **M5-04 引荐补充资料、内容版本化与超期维护**已交付：0038、`referral_supplements` 表（FORCE RLS）、`content_version` 递增、组织待审自动重置、Worker 批量超期维护存储过程 `app.maintain_referrals`、API 客户端与 NestJS 控制器端点、`supplements:verify` 25 项全通过。当前 38 个迁移、61 张租户表（58 张 public + 3 张 app），全部 FORCE RLS。单测 235 项全通过。详见 `docs/development/REFERRAL_SUPPLEMENTS.md`。至此 M5-04 闭环为 DONE。
 
 - 2026-11-12 **P2P-04 个人连接会话消息与保留清理**已交付：0036、`peer_messages` 表（FORCE RLS）、时间倒序键集游标分页、单方软删除与双方软删除 Worker 物理清除、API 客户端与 NestJS 控制器端点、`messages:verify` 31 项全通过。产品聊天 UI、移动即时推送与自动调度仍未实现；M1-07 门不变。

@@ -2,6 +2,14 @@
 
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
+2026-11-12 **当前状态复核**：本机 PostgreSQL/Redis 均 healthy；只读检查确认开发库已应用 38/39 个迁移，0039 日历连接迁移仍为 pending，既有迁移校验和一致，61 张租户表 FORCE RLS。最新聊天/连接器稿与圆形角色动效仍为设计资产，未接入正式产品页面；相关改动尚未提交 Git。此次未执行迁移或业务集成回归，详见 [系统状态](docs/development/SYSTEM_STATUS.md)。
+
+2026-11-12 **圆形角色动效稿**：基于用户要求的“无手脚、标准正圆、两只胶囊眼睛”，增加呼吸、眨眼、好奇、开心、思考、惊喜、困倦和招呼 8 种可切换动效、眼神跟随与暂停/轮播；交付 8 个独立动态 SVG 和静态 SVG。浏览器检查 69 项通过，含变换矩阵正圆校验与系统减少动态；仅设计资产，未接入产品或真实 Agent 状态。见 [交互动效稿](docs/design/prototypes/mascot-motion/index.html) 与 [说明](docs/design/prototypes/mascot-motion/README.md)。
+
+2026-11-12 **M1-07 v0.4 图片对齐**：按用户提供的 Gmail / Outlook 手机截图重做会话与连接器视觉，默认浅色、灰色回复气泡/黑色用户气泡、28px 连接器卡、胶囊输入栏与按钮，并统一 SVG 内外圆角、压缩间距。新增双款邮箱授权卡与明确确认/取消/断开的模拟交互；五个宽度共 557 次原型断言通过。仅设计原型，未接入真实 OAuth 或邮箱，正式产品 UI 与设计评审门不变。见 [原型](docs/design/prototypes/m1-07-v3/index.html) 与 [检查记录](docs/design/prototypes/m1-07-v3/design-qa.md)。
+
+2026-11-12 **M1-07 v0.3.1 交互打磨**：沿用对话优先、精致圆角与无光影设计，完善输入草稿保留、多行高度、空白/离线禁发、失败重试、阅读位置保留、键盘导航与模态面板；共享预览增加字段计数，接收方离线隐藏授权资料。五个宽度原型检查与新增交互检查共 412 次断言通过，另完成桌面/手机键盘流程检查。仅为设计原型，正式双端评审仍为 REVIEW，未进入产品 UI 编码或接入真实业务。见 [评审稿](docs/design/prototypes/m1-07-v3/index.html) 与 [检查记录](docs/design/prototypes/m1-07-v3/design-qa.md)。
+
 2026-11-12 新增 **P2P-02 共享客户端与小组件读取协议**：Web Cookie/CSRF 与移动 Bearer 的逐次认证、类型化个人连接读写、当前会话角色与授权快照聚合读取；正文不缓存、写入不自动重试。真实 HTTP/数据库检查 71 项、单测 179 项通过。尚未把小组件接入产品聊天界面，详见 [交付记录](docs/development/CONNECTION_CLIENT_WIDGET.md)。
 
 2026-11-12 本轮完成 **P2P-03 个人连接正文保留清理**：预览过期满 24 小时、共享正文失效满 30 天后受控清除；保留邀请/连接/幂等元数据，并修复来源到期后延长可能恢复旧共享的边界。已应用 0033，旧数据升级、开发/隔离库各 37 项清理检查、74 项连接 HTTP 检查、188 项单测及构建/类型/lint 通过。显式维护已验证，生产定时调度尚未交付。见 [本轮记录](docs/development/CONNECTION_RETENTION.md)。
@@ -28,6 +36,8 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 ## 当前状态
 
+2026-11-12 **WEB-01 个人 Web 限定接入**：首页现为注册/登录与 Mock SSE 对话，接入手工记忆、用途预览后的个人邀请、已有连接消息和站内通知。正圆角色随状态变化，沿用 v0.4 圆角与紧凑布局。详见 [交付与验证](docs/development/WEB_PERSONAL.md)、[ADR-017](docs/architecture/decisions/0017-personal-web-increment.md)。这是用户授权的首批 Web 实现，M1-07 整体仍 REVIEW；真实模型、外部邮箱、原生端和完整组件层仍未完成。下方历史记录按各自交付日期和限定范围理解。
+
 2026-11-12 新增 **P2P-01 个人连接邀请后端**：已确认记忆的用途授权预览、幂等发送、接收方独立接受/拒绝、原子唯一建联、撤回与撤销即时阻断。隔离数据库与本地开发库各通过 53 项真实 HTTP/数据库检查；迁移已推进到 0032。接收通过登录后的列表读取，**没有通知、真实 AI 推荐、共同消息或产品小组件接入**，不是完整跨终端应用。详见 [个人连接交付记录](docs/development/PERSONAL_CONNECTIONS.md) 与 [API 契约](docs/api/CONNECTIONS.md)。
 
 2026-11-12 最新产品方向与设计稿：[AVEN v0.3 对话与连接](docs/design/prototypes/m1-07-v3/index.html)。依据用户反馈，改为对话优先，连接建议、共享预览和双方回应以会话小组件呈现，插件从输入区按需调用；复用 Socrates 的字体和成熟 UI，并采用精致圆角、无光影设计。前轮 v0.2 的业务导航方案已被替代。v0.3 已做五个宽度的原型自检，仍为 REVIEW；两端连接和插件均是设计模拟，尚未接入真实个人到个人服务。
@@ -37,17 +47,17 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 后端业务闭环已推进到 **M6 日程与活动**。已实现并通过真实 HTTP/数据库验证：
 
 - **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**尚未在 GitHub Actions 实跑**）。
-- **M1 设计**：仅令牌层（M1-01）与可点击原型（M1-07，**正式双端评审未做**）；M1-02–M1-06 组件与页面状态层未编码。
+- **M1 设计**：令牌层（M1-01）、可点击原型（M1-07，**正式双端评审未做**）及 ADR-017 限定个人 Web；M1-02–M1-06 仍为部分实现。
 - **M2 身份与组织**：认证会话、资料/校园、组织成员与邀请、强制 RLS、跨账号/跨组织隔离。
-- **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 只有评估集与预算门，**个人页面 UI 仍受 M1-07 评审门阻塞**。
+- **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 已有评估集/预算门和首批个人 Web，**候选记忆复核与完整个人页面仍未完成**。
 - **M4 组织与机会**：组织资料、机会生命周期、组织控制台页面、组织 Agent 与边界测试。
 - **M5 匹配·引荐·关系**：意向与可解释候选、用途授权预览、引荐双向决定、原子建联、关系共享上下文、撤销即时阻断；**M5-02 的向量语义召回未实现**（当前为确定性特征打分），**M5-08 Android 主线未实现**。
-- **M6 日程与活动**：忙闲块、忙闲投影与用途授权共享、多方时间求交、活动状态机、站内通知后端闭环（个人连接与活动协调）、个人会话消息（P2P-04）、个人拉黑与举报治理；**M6-02 外部日历 OAuth 连接底座已交付凭据 AES-256-GCM 加密隔离、HMAC state/callback、同步游标、过期游标回退恢复、原子撤回、`0039` 迁移与 `/api/v1/availability/connections*` 端点及共享客户端（`MockCalendarOAuthAdapter` 默认，真实 OAuth 密钥与 `db:verify` 实库验证待环境补验）**；**M6-05 AI 协调已交付 Mock 默认约束提取与按参与者当地 IANA 时区（含夏令时）求解接口（`POST /api/v1/events/coordinate`）并完成单测/类型/构建检查，真实 AI Provider 与实时库 `m6:verify` 复跑待环境补验**；M6-06 的移动推送与通知 UI 未实现。
+- **M6 日程与活动**：忙闲块、忙闲投影与用途授权共享、多方时间求交、活动状态机、站内通知后端闭环（个人连接与活动协调）、个人会话消息（P2P-04）、个人拉黑与举报治理；**M6-02 外部日历 OAuth 连接底座已交付凭据 AES-256-GCM 加密隔离、HMAC state/callback、同步游标、过期游标回退恢复、原子撤回、`0039` 迁移与 `/api/v1/availability/connections*` 端点及共享客户端（`MockCalendarOAuthAdapter` 默认，真实 OAuth 密钥与 `db:verify` 实库验证待环境补验）**；**M6-05 AI 协调已交付 Mock 默认约束提取与按参与者当地 IANA 时区（含夏令时）求解接口（`POST /api/v1/events/coordinate`）并完成单测/类型/构建检查，真实 AI Provider 与实时库 `m6:verify` 复跑待环境补验**；M6-06 已接入首批 Web 站内通知 UI，移动推送未实现。
 - 确定性基础求交工作时段仍固定为 UTC 09:00–18:00，单次最多 50 个主体、31 天；`POST /api/v1/events/coordinate` 已支持按参与者各自的 IANA 时区计算当地工作时段与夏令时偏移。
 
-尚未完成：个人与移动端 UI（`apps/mobile` 仅有骨架）、M7 运行保障与试点、真实 Provider/邮件/日历的真实服务验证、原生真机验收、双端设计评审、语义向量召回、移动推送。M0 与 MVP 均未完成。
+尚未完成：完整个人页面与移动端 UI（`apps/mobile` 仅有骨架）、M7 运行保障与试点、真实 Provider/邮件/日历的真实服务验证、原生真机验收、双端设计评审、语义向量召回、移动推送。M0 与 MVP 均未完成。
 
-首页是工程诊断页，组织控制台入口使用开发组织 ID，须有有效会话和组织权限；入口不代表产品界面已验收。当前 `check:expo` 报告部分依赖低于 Expo 推荐兼容版本，尚待升级和复验。
+首页为个人 Web 开发验证版，工程诊断迁至 `/diagnostics`。组织控制台入口使用开发组织 ID，须有有效会话和组织权限；入口不代表产品界面已验收。当前 `check:expo` 报告部分依赖低于 Expo 推荐兼容版本，尚待升级和复验。
 
 2026-11-11 本轮完成 M6 求交可靠性补验：无效忙闲区间不再被当作空闲，补充 HTTP 输入上限和 UTC 工作时段检查。单元测试 162/162、M6 真实 HTTP/数据库检查 37/37、诊断页 E2E 6/6，以及格式、lint、类型与构建通过。Expo 推荐补丁安装被仓库的 12 小时发布等待期拒绝，依赖清单与 lockfile 未改动，`check:expo` 仍失败。具体范围、命令与后续任务见 [求交可靠性交付记录](docs/development/M6_RELIABILITY.md)。
 
@@ -133,7 +143,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 ## 开发入口
 
-下一项是 **M1-07 正式双端设计评审**，通过后才能进入个人页面与 M1-02/M1-03 组件层的 UI 编码；在此之前优先推进 M6-06A2 活动通知与个人连接会话契约；向量召回按模型/维度门独立推进，真实 Provider 仍受数据发送与验证门约束。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
+下一项是补齐个人 Web 的候选记忆复核与会话小组件，并继续 **M1-07 正式双端设计评审**；首批限定 Web 依据 ADR-017 接入，不能替代其余页面与原生端的验收；向量召回按模型/维度门独立推进，真实 Provider 仍受数据发送与验证门约束。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
 
 契约见 [认证与会话 API](docs/api/AUTH.md)、[个人资料与校园 API](docs/api/PROFILE.md)、[组织成员与邀请 API](docs/api/ORGANIZATIONS.md)、[个人记忆 API](docs/api/MEMORIES.md)、[组织机会 API](docs/api/OPPORTUNITIES.md)、[匹配候选 API](docs/api/MATCHING.md)、[引荐与授权 API](docs/api/REFERRALS.md)、[关系空间 API](docs/api/RELATIONSHIPS.md)、[日程与活动 API](docs/api/AVAILABILITY_EVENTS.md)、[Agent 运行时 API](docs/api/AGENT.md)、[行动确认 API](docs/api/ACTIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)、[M3-06](docs/development/M3-06_ACTIONS.md)、[M3-07](docs/development/M3-07_EVALUATION.md)、[M4](docs/development/M4_ORGANIZATION.md)、[M5](docs/development/M5_MATCHING_RELATIONSHIP.md)、[M6](docs/development/M6_CALENDAR_EVENT.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 

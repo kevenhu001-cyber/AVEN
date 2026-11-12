@@ -1,3 +1,17 @@
+# v0.4 图片与资产来源
+
+2026-11-12 用户提供 `1000038450.jpg`（Gmail 授权卡与聊天）和 `1000038451.jpg`（Outlook 灰底关联卡），要求整体与连接器尽量一比一对齐。两图为本轮最新视觉依据，优先于下方 Socrates 历史方向。
+
+原图宽 899px，统一按 390px CSS 宽度归一比较；原图顶部系统状态栏不作为应用 UI 实现。全屏内容不同，不能对整张图宣称像素一致；重点对照气泡、卡片、输入栏、图标和间距，并单独裁取同状态卡片比较。原图的账号内容、其他产品品牌、验证徽章和设备系统 UI 不写入原型。
+
+本轮内嵌的真实品牌资产：
+
+- Gmail：Google 官方静态图标，`https://www.gstatic.com/images/branding/product/2x/gmail_2020q4_48dp.png`（96×96）。
+- Outlook：Microsoft 官方 Office Fabric 品牌图标，`https://res.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/outlook_48x1.svg`。与参考图的新版 Outlook 图标版本不同，作为已知品牌资产差异保留，不手绘近似图标。
+- 新增 Menu、Ellipsis、Audio Lines：Lucide Static 0.468.0 的官方 SVG（`https://unpkg.com/lucide-static@0.468.0/icons/`），沿用 [LUCIDE_LICENSE](LUCIDE_LICENSE)。所有轮廓统一圆头和圆连接，矩形轮廓加大内部圆角；未生成或手绘 SVG 图案。
+
+全部资产内嵌，打开原型时不向这些域名发请求。用户参考照片未复制入仓库；对照图片只保留在本机临时目录。
+
 # Socrates UI 来源与适配记录
 
 用户明确要求复用本机 `/home/ubuntu/User/Socrates` 的成熟 UI。本轮只读该项目，未修改它。

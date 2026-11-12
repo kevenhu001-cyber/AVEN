@@ -52,6 +52,8 @@
     "format:check": "prettier --check .",
     "test": "pnpm build:packages && vitest run",
     "test:e2e": "playwright test",
+    "design:verify": "node scripts/design-prototype-verify.mjs",
+    "design:verify:mascot": "node scripts/mascot-motion-verify.mjs",
     "connections:verify": "pnpm build && tsx scripts/connections-verify.ts",
     "connections:maintain": "pnpm build:packages && tsx scripts/connections-maintenance.ts",
     "connections:verify:retention": "pnpm build:packages && tsx scripts/connections-maintenance-verify.ts",
