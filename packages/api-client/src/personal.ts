@@ -1,19 +1,37 @@
 import {
   AuthResponseSchema,
-  LoginRequestSchema,
-  RegisterRequestSchema,
-  RegisterResponseSchema,
-  MeResponseSchema,
+  ConfirmMemoryRequestSchema,
   CreateMemoryRequestSchema,
+  ExtractMemoryRequestSchema,
+  ExtractMemoryResponseSchema,
+  LoginRequestSchema,
+  MemoryCandidateListResponseSchema,
   MemoryDetailSchema,
   MemoryListResponseSchema,
   OkResponseSchema,
+  RegisterRequestSchema,
+  RegisterResponseSchema,
+  MeResponseSchema,
+  RejectMemoryRequestSchema,
+  RequestIdSchema,
+  UpdateMemoryRequestSchema,
   VerifyEmailRequestSchema,
 } from '@aven/contracts';
-import type { CreateMemoryRequest, RegisterRequest } from '@aven/contracts';
+import type {
+  ConfirmMemoryRequest,
+  CreateMemoryRequest,
+  ExtractMemoryRequest,
+  RegisterRequest,
+  UpdateMemoryRequest,
+} from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
 
 export function createPersonalClient(request: ApiRequest, invalid: () => Error) {
+  function memoryId(value: string) {
+    const parsed = RequestIdSchema.safeParse(value);
+    if (!parsed.success) throw invalid();
+    return parsed.data;
+  }
   return {
     auth: {
       me(signal?: AbortSignal) {
@@ -76,6 +94,55 @@ export function createPersonalClient(request: ApiRequest, invalid: () => Error) 
           ...authenticatedOptions(call, true, invalid),
           body: parsed.data,
         });
+      },
+      async candidates(call: ConnectionCallOptions) {
+        return request(
+          '/api/v1/memories/candidates?limit=50',
+          MemoryCandidateListResponseSchema.parse,
+          authenticatedOptions(call, false, invalid),
+        );
+      },
+      async extract(input: ExtractMemoryRequest, call: ConnectionCallOptions) {
+        const parsed = ExtractMemoryRequestSchema.safeParse(input);
+        if (!parsed.success) throw invalid();
+        return request('/api/v1/memories/extract', ExtractMemoryResponseSchema.parse, {
+          ...authenticatedOptions(call, true, invalid),
+          body: parsed.data,
+        });
+      },
+      async confirm(id: string, input: ConfirmMemoryRequest, call: ConnectionCallOptions) {
+        const parsed = ConfirmMemoryRequestSchema.safeParse(input);
+        if (!parsed.success) throw invalid();
+        return request(`/api/v1/memories/${memoryId(id)}/confirm`, MemoryDetailSchema.parse, {
+          ...authenticatedOptions(call, true, invalid),
+          body: parsed.data,
+        });
+      },
+      async reject(id: string, expectedVersion: number, call: ConnectionCallOptions) {
+        const parsed = RejectMemoryRequestSchema.safeParse({ expectedVersion });
+        if (!parsed.success) throw invalid();
+        return request(`/api/v1/memories/${memoryId(id)}/reject`, MemoryDetailSchema.parse, {
+          ...authenticatedOptions(call, true, invalid),
+          body: parsed.data,
+        });
+      },
+      async update(id: string, input: UpdateMemoryRequest, call: ConnectionCallOptions) {
+        const parsed = UpdateMemoryRequestSchema.safeParse(input);
+        if (!parsed.success) throw invalid();
+        return request(`/api/v1/memories/${memoryId(id)}`, MemoryDetailSchema.parse, {
+          ...authenticatedOptions(call, 'PATCH', invalid),
+          body: parsed.data,
+        });
+      },
+      async remove(id: string, expectedVersion: number, call: ConnectionCallOptions) {
+        if (!Number.isInteger(expectedVersion) || expectedVersion < 1) throw invalid();
+        return request(
+          `/api/v1/memories/${memoryId(id)}?expectedVersion=${expectedVersion}`,
+          (value) => {
+            if (value !== undefined) throw new Error('Expected empty response.');
+          },
+          authenticatedOptions(call, 'DELETE', invalid),
+        );
       },
     },
   };

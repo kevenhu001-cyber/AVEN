@@ -29,7 +29,7 @@ export type ConnectionCallOptions = {
   signal?: AbortSignal | undefined;
 };
 export type TransportOptions = {
-  method?: 'GET' | 'POST' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
@@ -44,11 +44,11 @@ type Schema<T> = { safeParse: (value: unknown) => { success: false } | { success
 
 export function authenticatedOptions(
   call: ConnectionCallOptions,
-  method: 'GET' | 'POST' | 'DELETE' | boolean,
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | boolean,
   invalid: () => Error,
 ): TransportOptions {
   const httpMethod = typeof method === 'boolean' ? (method ? 'POST' : 'GET') : method;
-  const write = httpMethod === 'POST' || httpMethod === 'DELETE';
+  const write = httpMethod === 'POST' || httpMethod === 'PATCH' || httpMethod === 'DELETE';
   const headers: Record<string, string> = {};
   const token = call.auth.kind === 'mobile' ? call.auth.bearerToken : call.auth.csrfToken;
   if ((write || call.auth.kind === 'mobile') && (!token || /\s/.test(token))) throw invalid();

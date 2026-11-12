@@ -6,6 +6,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { api, authExpired, errorText, webCall, type PrivateProps } from './api';
 
 const labels = {
@@ -28,6 +29,15 @@ export function NotificationsPanel({
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [preferences, setPreferences] = useState<{
+    connectionInvitations: boolean;
+    connectionUpdates: boolean;
+    eventInvitations: boolean;
+    eventUpdates: boolean;
+    version: number;
+  } | null>(null);
+  const [preferenceNotice, setPreferenceNotice] = useState('');
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const loader = useRef<AbortController | null>(null);
   const lock = useRef(false);
 
@@ -68,6 +78,60 @@ export function NotificationsPanel({
     void load();
     return () => loader.current?.abort();
   }, [load]);
+
+  const loadPreferences = useCallback(() => {
+    return api.notifications
+      .getPreferences(webCall())
+      .then((result) => {
+        setPreferences(result);
+        return result;
+      })
+      .catch((cause) => {
+        if (authExpired(cause)) onExpired();
+        else setError(errorText(cause));
+        return null;
+      });
+  }, [onExpired]);
+
+  useEffect(() => {
+    void loadPreferences();
+  }, [loadPreferences]);
+
+  async function savePreferences(next: {
+    connectionInvitations: boolean;
+    connectionUpdates: boolean;
+    eventInvitations: boolean;
+    eventUpdates: boolean;
+  }) {
+    if (!preferences || savingPreferences) return;
+    setSavingPreferences(true);
+    setPreferenceNotice('');
+    setError('');
+    setPreferences({ ...preferences, ...next });
+    try {
+      const result = await api.notifications.updatePreferences(
+        {
+          connectionInvitations: next.connectionInvitations,
+          connectionUpdates: next.connectionUpdates,
+          eventInvitations: next.eventInvitations,
+          eventUpdates: next.eventUpdates,
+          expectedVersion: preferences.version,
+        },
+        webCall(),
+      );
+      setPreferences(result);
+      setPreferenceNotice('通知偏好已保存。');
+    } catch (cause) {
+      if (authExpired(cause)) onExpired();
+      else {
+        setError(errorText(cause));
+        setPreferenceNotice('保存未完成，请重新读取偏好后再试。');
+        void loadPreferences();
+      }
+    } finally {
+      setSavingPreferences(false);
+    }
+  }
 
   async function read(id: string) {
     if (lock.current) return;
@@ -138,6 +202,63 @@ export function NotificationsPanel({
           更早通知
         </Button>
       )}
+      <Separator />
+      <Card>
+        <CardHeader>
+          <CardTitle>通知偏好</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {!preferences ? (
+            <p role="status">正在读取通知偏好…</p>
+          ) : (
+            <>
+              {(
+                [
+                  ['connectionInvitations', '收到连接邀请时通知我'],
+                  ['connectionUpdates', '连接状态变化时通知我'],
+                  ['eventInvitations', '收到活动提案时通知我'],
+                  ['eventUpdates', '活动确认或取消时通知我'],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={preferences[key]}
+                    disabled={savingPreferences}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      const next = {
+                        connectionInvitations:
+                          key === 'connectionInvitations'
+                            ? checked
+                            : preferences.connectionInvitations,
+                        connectionUpdates:
+                          key === 'connectionUpdates' ? checked : preferences.connectionUpdates,
+                        eventInvitations:
+                          key === 'eventInvitations' ? checked : preferences.eventInvitations,
+                        eventUpdates: key === 'eventUpdates' ? checked : preferences.eventUpdates,
+                      };
+                      setPreferences({ ...preferences, ...next });
+                      void savePreferences(next);
+                    }}
+                  />
+                  {label}
+                </label>
+              ))}
+              <p className="small muted m-0">
+                关闭后不再产生新的站内通知；已经送达的通知仍会保留在收件箱。
+              </p>
+            </>
+          )}
+        </CardContent>
+        {preferenceNotice && (
+          <CardFooter>
+            <p className="small muted m-0" role="status">
+              {preferenceNotice}
+            </p>
+          </CardFooter>
+        )}
+      </Card>
     </section>
   );
 }
