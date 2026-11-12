@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -77,10 +77,27 @@ try {
     testEnv,
   );
   run(
-    'existing database: apply remaining migrations',
+    'existing database: upgrade through personal connection consent',
+    'pnpm',
+    ['exec', 'tsx', 'packages/database/src/migrate.ts', '--to', '0032_connection_complete_consent'],
+    testEnv,
+  );
+  psql(
+    testDatabase,
+    readFileSync(resolve(root, 'scripts/fixtures/connection-retention-upgrade.sql'), 'utf8'),
+  );
+  run(
+    'existing database: upgrade retention with legacy private snapshots',
     'pnpm',
     ['exec', 'tsx', 'packages/database/src/migrate.ts'],
     testEnv,
+  );
+  psql(
+    testDatabase,
+    readFileSync(resolve(root, 'scripts/fixtures/connection-retention-upgraded.sql'), 'utf8'),
+  );
+  console.log(
+    'PASS  retention upgrade conservatively timestamps stale data and preserves active data',
   );
   run('seed development data', 'pnpm', ['exec', 'tsx', 'packages/database/src/seed.ts'], testEnv);
   run('seed is idempotent', 'pnpm', ['exec', 'tsx', 'packages/database/src/seed.ts'], testEnv);

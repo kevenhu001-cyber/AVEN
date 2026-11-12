@@ -13,6 +13,7 @@ import {
 import { createWorkerReadinessRuntime, type ReadinessRuntime } from '@aven/service-health';
 import { processAgentRun, type AgentRunProcessResult } from './agent.js';
 import { OutboxDispatcher } from './outbox.js';
+import { createNotificationRuntime } from './notification.js';
 
 export type AgentRunJob = {
   runId: string;
@@ -24,6 +25,7 @@ export type WorkerRuntime = {
   agentDispatcher: OutboxDispatcher;
   queue: Queue<SampleTaskEvent, SampleTaskResult>;
   agentQueue: Queue<AgentRunJob, AgentRunProcessResult>;
+  notifications: ReturnType<typeof createNotificationRuntime>;
   pool: ReturnType<typeof createPool>;
   start(): Promise<void>;
   close(): Promise<void>;
@@ -122,8 +124,9 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
       );
     },
   });
+  const notifications = createNotificationRuntime(pool, log);
   const readiness = createWorkerReadinessRuntime({
-    consumers: () => worker.isRunning() && agentWorker.isRunning(),
+    consumers: () => worker.isRunning() && agentWorker.isRunning() && notifications.isRunning(),
   });
 
   return {
@@ -132,16 +135,19 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
     agentDispatcher,
     queue,
     agentQueue,
+    notifications,
     pool,
     async start() {
       dispatcher.start();
       agentDispatcher.start();
       await worker.waitUntilReady();
       await agentWorker.waitUntilReady();
+      await notifications.start();
     },
     async close() {
       await dispatcher.stop();
       await agentDispatcher.stop();
+      await notifications.close();
       await worker.close();
       await agentWorker.close();
       await queue.close();
@@ -153,7 +159,7 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
       await readiness.close();
     },
     isConsumerRunning() {
-      return worker.isRunning() && agentWorker.isRunning();
+      return worker.isRunning() && agentWorker.isRunning() && notifications.isRunning();
     },
   };
 }

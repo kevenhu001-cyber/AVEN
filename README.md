@@ -2,6 +2,14 @@
 
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
+2026-11-12 新增 **P2P-02 共享客户端与小组件读取协议**：Web Cookie/CSRF 与移动 Bearer 的逐次认证、类型化个人连接读写、当前会话角色与授权快照聚合读取；正文不缓存、写入不自动重试。真实 HTTP/数据库检查 71 项、单测 179 项通过。尚未把小组件接入产品聊天界面，详见 [交付记录](docs/development/CONNECTION_CLIENT_WIDGET.md)。
+
+2026-11-12 本轮完成 **P2P-03 个人连接正文保留清理**：预览过期满 24 小时、共享正文失效满 30 天后受控清除；保留邀请/连接/幂等元数据，并修复来源到期后延长可能恢复旧共享的边界。已应用 0033，旧数据升级、开发/隔离库各 37 项清理检查、74 项连接 HTTP 检查、188 项单测及构建/类型/lint 通过。显式维护已验证，生产定时调度尚未交付。见 [本轮记录](docs/development/CONNECTION_RETENTION.md)。
+
+系统仍未完成。已按代码重新核对 [系统缺口与推进顺序](docs/development/SYSTEM_STATUS.md)，并纠正开发计划中过满的 DONE：产品 UI/正式设计评审、活动通知/移动推送、共同会话、真实 AI、向量召回、真实日历、原生验收和运行保障仍待完成；不能把后端接口和原型当作完整应用。
+
+2026-11-12 新增 **M6-06A1 个人连接站内通知后端**：邀请/接受/拒绝/撤回/撤销的同事务 Outbox、真实 BullMQ 消费、当前业务/偏好过滤、分页/已读、去重与失败重试、平台管理员死信重排，以及 90 天收件箱清理。隔离库与开发库各 62 项通知 HTTP/数据库/队列检查、202 项单测通过；34 个迁移、56 张租户表 FORCE RLS。**没有通知 UI、活动通知或移动推送**，仍非完整跨终端产品。见 [本轮交付](docs/development/NOTIFICATIONS.md) 与 [API 契约](docs/api/NOTIFICATIONS.md)。
+
 ## 安全核对进展
 
 2026-11-11 核对发现，原忙闲投影允许已登录用户查询其他主体，缺少用途授权。修复分两步：迁移 `0027_availability_privacy` 先把查询收紧为仅本人（fail closed）；迁移 `0029_availability_sharing` 补上显式用途授权——忙闲所有者创建带期限（最长 90 天）的共享授权（用途 `event_coordination`），被授权方可读取忙闲投影，撤销后立即阻断。授权是单向的，不共享标题与备注等私人字段。决策见 [ADR-010](docs/architecture/decisions/0010-availability-authorization.md)。
@@ -16,6 +24,12 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 ## 当前状态
 
+2026-11-12 新增 **P2P-01 个人连接邀请后端**：已确认记忆的用途授权预览、幂等发送、接收方独立接受/拒绝、原子唯一建联、撤回与撤销即时阻断。隔离数据库与本地开发库各通过 53 项真实 HTTP/数据库检查；迁移已推进到 0032。接收通过登录后的列表读取，**没有通知、真实 AI 推荐、共同消息或产品小组件接入**，不是完整跨终端应用。详见 [个人连接交付记录](docs/development/PERSONAL_CONNECTIONS.md) 与 [API 契约](docs/api/CONNECTIONS.md)。
+
+2026-11-12 最新产品方向与设计稿：[AVEN v0.3 对话与连接](docs/design/prototypes/m1-07-v3/index.html)。依据用户反馈，改为对话优先，连接建议、共享预览和双方回应以会话小组件呈现，插件从输入区按需调用；复用 Socrates 的字体和成熟 UI，并采用精致圆角、无光影设计。前轮 v0.2 的业务导航方案已被替代。v0.3 已做五个宽度的原型自检，仍为 REVIEW；两端连接和插件均是设计模拟，尚未接入真实个人到个人服务。
+
+2026-11-12 产品界面设计新增 [M1-07 v0.2 可点击原型](docs/design/prototypes/m1-07-v2/index.html)：参考用户提供的 ChatGPT 深色截图，覆盖核心旅程与 AI/记忆/设置共 11 个视图，支持桌面侧栏、手机四项底栏、头像菜单、用途独立授权与撤销。五个宽度的原型交互/回流自检通过，详见 [设计自检](docs/design/prototypes/m1-07-v2/design-qa.md)。**仍为 REVIEW**：正式产品与工程双端评审未完成，没有进入产品 UI 编码或接入真实业务。
+
 后端业务闭环已推进到 **M6 日程与活动**。已实现并通过真实 HTTP/数据库验证：
 
 - **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**尚未在 GitHub Actions 实跑**）。
@@ -24,9 +38,14 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 - **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 只有评估集与预算门，**个人页面 UI 仍受 M1-07 评审门阻塞**。
 - **M4 组织与机会**：组织资料、机会生命周期、组织控制台页面、组织 Agent 与边界测试。
 - **M5 匹配·引荐·关系**：意向与可解释候选、用途授权预览、引荐双向决定、原子建联、关系共享上下文、撤销即时阻断；**M5-02 的向量语义召回未实现**（当前为确定性特征打分），**M5-08 Android 主线未实现**。
-- **M6 日程与活动**：忙闲块、忙闲投影与用途授权共享、多方时间求交、活动状态机；**M6-05 AI 协调与 M6-06 通知投递未实现**，外部日历仅有数据底座（无 OAuth 连接器）。
+- **M6 日程与活动**：忙闲块、忙闲投影与用途授权共享、多方时间求交、活动状态机；**M6-05 AI 协调未实现**；M6-06 只交付个人连接站内通知，活动通知/移动推送/UI 未实现，外部日历仅有数据底座（无 OAuth 连接器）。
+- 多方求交的工作时段固定为 UTC 09:00–18:00，单次最多 50 个主体、31 天；尚不支持参与者各自的当地工作时段。
 
-尚未完成：个人与移动端 UI（`apps/mobile` 仅有骨架）、M7 运行保障与试点、真实 Provider/邮件/日历的真实服务验证、原生真机验收、双端设计评审、语义向量召回、通知投递。M0 与 MVP 均未完成。
+尚未完成：个人与移动端 UI（`apps/mobile` 仅有骨架）、M7 运行保障与试点、真实 Provider/邮件/日历的真实服务验证、原生真机验收、双端设计评审、语义向量召回、活动通知与移动推送。M0 与 MVP 均未完成。
+
+首页是工程诊断页，组织控制台入口使用开发组织 ID，须有有效会话和组织权限；入口不代表产品界面已验收。当前 `check:expo` 报告部分依赖低于 Expo 推荐兼容版本，尚待升级和复验。
+
+2026-11-11 本轮完成 M6 求交可靠性补验：无效忙闲区间不再被当作空闲，补充 HTTP 输入上限和 UTC 工作时段检查。单元测试 162/162、M6 真实 HTTP/数据库检查 37/37、诊断页 E2E 6/6，以及格式、lint、类型与构建通过。Expo 推荐补丁安装被仓库的 12 小时发布等待期拒绝，依赖清单与 lockfile 未改动，`check:expo` 仍失败。具体范围、命令与后续任务见 [求交可靠性交付记录](docs/development/M6_RELIABILITY.md)。
 
 原始规格使用 PAN（Personal AI Network）作为代号。仓库及后续工程文档使用 AVEN，原始文档保留原文供追溯。
 
@@ -74,6 +93,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | [匹配候选 API](docs/api/MATCHING.md) | 意向状态机、候选生成、可解释评分与权限边界 |
 | [引荐与授权 API](docs/api/REFERRALS.md) | 授权预览、引荐状态机、双向决定、共享快照与撤销 |
 | [关系空间 API](docs/api/RELATIONSHIPS.md) | 关系建立、共享上下文、关闭与唯一性 |
+| [个人连接 API](docs/api/CONNECTIONS.md) | 个人邀请、预览、双方决定、独立授权与唯一建联 |
 | [日程与活动 API](docs/api/AVAILABILITY_EVENTS.md) | 忙闲块、忙闲投影、共享授权、多方求交与活动状态机 |
 | [Agent 运行时 API](docs/api/AGENT.md) | turn 创建、run 状态、SSE 事件流、取消与保留契约 |
 | [行动确认 API](docs/api/ACTIONS.md) | 草稿、预览、确认、取消、token 与幂等契约 |
@@ -104,7 +124,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 ## 开发入口
 
-下一项是 **M1-07 正式双端设计评审**，通过后才能进入个人页面与 M1-02/M1-03 组件层的 UI 编码；在此之前可以推进的工程项是 M6-06 通知投递、语义召回的 pgvector 迁移与真实 Provider 评估。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
+下一项是 **M1-07 正式双端设计评审**，通过后才能进入个人页面与 M1-02/M1-03 组件层的 UI 编码；在此之前优先推进 M6-06A2 活动通知与个人连接会话契约；向量召回按模型/维度门独立推进，真实 Provider 仍受数据发送与验证门约束。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
 
 契约见 [认证与会话 API](docs/api/AUTH.md)、[个人资料与校园 API](docs/api/PROFILE.md)、[组织成员与邀请 API](docs/api/ORGANIZATIONS.md)、[个人记忆 API](docs/api/MEMORIES.md)、[组织机会 API](docs/api/OPPORTUNITIES.md)、[匹配候选 API](docs/api/MATCHING.md)、[引荐与授权 API](docs/api/REFERRALS.md)、[关系空间 API](docs/api/RELATIONSHIPS.md)、[日程与活动 API](docs/api/AVAILABILITY_EVENTS.md)、[Agent 运行时 API](docs/api/AGENT.md)、[行动确认 API](docs/api/ACTIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)、[M3-06](docs/development/M3-06_ACTIONS.md)、[M3-07](docs/development/M3-07_EVALUATION.md)、[M4](docs/development/M4_ORGANIZATION.md)、[M5](docs/development/M5_MATCHING_RELATIONSHIP.md)、[M6](docs/development/M6_CALENDAR_EVENT.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
@@ -156,6 +176,11 @@ corepack pnpm opportunity:maintain # 机会到期与状态维护任务
 corepack pnpm org:verify        # 组织边界、成员移除与旧草稿确认阻断检查
 corepack pnpm m5:verify         # 首条闭环：意向→候选→授权→引荐→建联→撤销阻断
 corepack pnpm m6:verify         # 忙闲、忙闲共享授权、多方求交与活动状态机
+corepack pnpm connections:verify # 个人连接与小组件读取的 HTTP/数据库验证
+corepack pnpm connections:verify:retention # 正文保留、并发维护与权限边界验证
+corepack pnpm connections:maintain # 显式维护一次；不是生产定时调度
+corepack pnpm notifications:verify # 个人连接站内通知：真实 HTTP/数据库/队列
+corepack pnpm notifications:maintain # 显式清除 90 天前的站内通知，保留去重回执
 ```
 
 开发启动脚本已建立；认证、资料/校园、组织、记忆、Agent、行动确认、机会、意向/匹配、引荐/授权、关系、忙闲与活动 API 已实现；真实 AI Provider 与核心产品页面（个人与移动端）尚未实现：

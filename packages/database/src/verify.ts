@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('twenty-nine migrations are recorded', migrations.rows[0]?.count === '29');
+    check('thirty-four migrations are recorded', migrations.rows[0]?.count === '34');
     const availabilityContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
     await app.query('BEGIN');
     try {
@@ -281,13 +281,14 @@ async function main(): Promise<void> {
          'referral_decisions','consent_grants','consent_grant_items',
          'consent_events','relationships','relationship_members','shared_context_items',
          'calendar_connections','availability_blocks','events','event_proposals','event_participants',
-         'user_ai_providers'
+         'user_ai_providers','connection_previews','connection_invitations','peer_connections','connection_events',
+         'notifications','notification_preferences','notification_deliveries','notification_delivery_events'
        )) OR (n.nspname = 'app' AND c.relname IN (
          'sample_tasks','sample_task_results','sample_external_effects'
        )))
          AND c.relrowsecurity AND c.relforcerowsecurity`,
     );
-    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '48');
+    check('all tenant tables force RLS', forcedRls.rows[0]?.count === '56');
     check(
       'app cannot disable row security',
       await appError('SET row_security = off; SELECT count(*) FROM public.principals;'),

@@ -8,6 +8,10 @@ test('foundation page is honest, responsive, and reaches the live probe through 
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('从可靠的连接开始。');
   await expect(page.getByText('本页不是 MVP，也不是核心产品 UI。')).toBeVisible();
+  await expect(page.getByText('页面与双端设计评审尚未完成。', { exact: false })).toBeVisible();
+  await expect(
+    page.getByText('语义召回、AI 协调、活动通知与移动推送尚未实现。', { exact: false }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: '检查连接' })).toBeEnabled();
   await page.getByRole('button', { name: '检查连接' }).click();
   await expect(page.getByText('API 进程可访问')).toBeVisible();

@@ -18,6 +18,7 @@ export type OutboxDispatcherOptions = {
   enqueueTimeoutMs?: number;
   eventType?: string;
   enqueue?: (row: ClaimedEvent) => Promise<void>;
+  reconcile?: () => Promise<number>;
 };
 
 const defaultLeaseSeconds = 30;
@@ -170,6 +171,7 @@ export class OutboxDispatcher {
   }
 
   async reconcile(): Promise<number> {
+    if (this.options.reconcile) return this.options.reconcile();
     if (this.eventType !== sampleEventType) return 0;
     const rows = await this.pool.query<ClaimedEvent>(
       `SELECT o.id, o.event_type, o.payload, o.attempts

@@ -501,6 +501,7 @@ export const consentPurpose = pgEnum('consent_purpose', [
   'referral',
   'relationship_context',
   'event_coordination',
+  'connection_invitation',
 ]);
 export const consentStatus = pgEnum('consent_status', ['active', 'revoked', 'expired']);
 export const consentItemStatus = pgEnum('consent_item_status', [
@@ -620,6 +621,7 @@ export const consentGrants = pgTable('consent_grants', {
     .references(() => principals.id),
   referralId: uuid('referral_id').references(() => referrals.id, { onDelete: 'cascade' }),
   eventId: uuid('event_id'),
+  connectionInvitationId: uuid('connection_invitation_id'),
   purpose: consentPurpose('purpose').notNull(),
   status: consentStatus('status').notNull().default('active'),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
@@ -643,6 +645,7 @@ export const consentGrantItems = pgTable('consent_grant_items', {
   fieldKey: text('field_key').notNull(),
   valueSnapshot: jsonb('value_snapshot').notNull(),
   purgedAt: timestamp('purged_at', { withTimezone: true }),
+  invalidatedAt: timestamp('invalidated_at', { withTimezone: true }),
   sensitivity: text('sensitivity').notNull().default('normal'),
   status: consentItemStatus('status').notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -840,3 +843,145 @@ export const userAiProviders = pgTable(
     check('user_ai_provider_version_positive', sql`${table.version} > 0`),
   ],
 );
+
+// Personal connections (ADR-011). Deferred binding constraints live in SQL migrations.
+export const connectionPreviews = pgTable('connection_previews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorUserId: uuid('actor_user_id')
+    .notNull()
+    .references(() => users.id),
+  recipientUserId: uuid('recipient_user_id')
+    .notNull()
+    .references(() => users.id),
+  memoryItemIds: uuid('memory_item_ids').array().notNull(),
+  manifest: jsonb('manifest').notNull(),
+  grantExpiresAt: timestamp('grant_expires_at', { withTimezone: true }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  resultInvitationId: uuid('result_invitation_id'),
+  purgedAt: timestamp('purged_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const connectionInvitations = pgTable(
+  'connection_invitations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    senderUserId: uuid('sender_user_id')
+      .notNull()
+      .references(() => users.id),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id),
+    previewId: uuid('preview_id')
+      .notNull()
+      .unique()
+      .references(() => connectionPreviews.id),
+    idempotencyKey: uuid('idempotency_key').notNull(),
+    grantId: uuid('grant_id')
+      .notNull()
+      .unique()
+      .references(() => consentGrants.id),
+    status: text('status').notNull().default('pending'),
+    version: integer('version').notNull().default(1),
+    senderConfirmedAt: timestamp('sender_confirmed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    recipientDecidedAt: timestamp('recipient_decided_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('uq_connection_sender_key').on(t.senderUserId, t.idempotencyKey),
+    uniqueIndex('uq_connection_invitation_pair')
+      .on(
+        sql`least(${t.senderUserId},${t.recipientUserId})`,
+        sql`greatest(${t.senderUserId},${t.recipientUserId})`,
+      )
+      .where(sql`${t.status} in ('pending','accepted')`),
+  ],
+);
+export const peerConnections = pgTable(
+  'peer_connections',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userLow: uuid('user_low')
+      .notNull()
+      .references(() => users.id),
+    userHigh: uuid('user_high')
+      .notNull()
+      .references(() => users.id),
+    invitationId: uuid('invitation_id')
+      .notNull()
+      .unique()
+      .references(() => connectionInvitations.id),
+    establishedAt: timestamp('established_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('uq_peer_connection_pair').on(t.userLow, t.userHigh),
+    check('chk_peer_connection_pair', sql`${t.userLow}<${t.userHigh}`),
+  ],
+);
+export const connectionEvents = pgTable('connection_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  invitationId: uuid('invitation_id')
+    .notNull()
+    .references(() => connectionInvitations.id),
+  actorUserId: uuid('actor_user_id')
+    .notNull()
+    .references(() => users.id),
+  eventType: text('event_type').notNull(),
+  version: integer('version').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// M6-06A1: metadata-only in-app notifications; policies/functions live in SQL.
+export const notificationPreferences = pgTable('notification_preferences', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  connectionInvitations: boolean('connection_invitations').notNull().default(true),
+  connectionUpdates: boolean('connection_updates').notNull().default(true),
+  version: integer('version').notNull().default(1),
+});
+export const notificationDeliveries = pgTable('notification_deliveries', {
+  eventId: uuid('event_id')
+    .primaryKey()
+    .references(() => connectionEvents.id),
+  recipientUserId: uuid('recipient_user_id')
+    .notNull()
+    .references(() => users.id),
+  kind: text('kind').notNull(),
+  status: text('status').notNull().default('pending'),
+  generation: integer('generation').notNull().default(0),
+  attempts: integer('attempts').notNull().default(0),
+  lastErrorCode: text('last_error_code'),
+  lastQueuedAt: timestamp('last_queued_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .unique()
+    .references(() => notificationDeliveries.eventId),
+  recipientUserId: uuid('recipient_user_id')
+    .notNull()
+    .references(() => users.id),
+  invitationId: uuid('invitation_id')
+    .notNull()
+    .references(() => connectionInvitations.id),
+  kind: text('kind').notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const notificationDeliveryEvents = pgTable('notification_delivery_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .references(() => notificationDeliveries.eventId),
+  actorUserId: uuid('actor_user_id').references(() => users.id),
+  eventType: text('event_type').notNull(),
+  generation: integer('generation').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

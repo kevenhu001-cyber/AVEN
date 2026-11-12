@@ -14,6 +14,9 @@
 | [ADR-008](0008-progressive-delivery.md) | 按需扩展、双端设计与真实数据准入 | 已接受，未验证；部分取代 ADR-003 |
 | [ADR-009](0009-authentication-implementation.md) | Argon2id、不透明会话、CSRF、限流与认证函数边界 | 已接受，M2-01 实现验证；补充 ADR-002 |
 | [ADR-010](0010-availability-authorization.md) | 忙闲用途授权共享、默认拒绝与撤销即时生效 | 已接受，M6-01R 实现验证；补充 ADR-007 |
+| [ADR-011](0011-personal-connections.md) | 个人邀请、独立用途授权与唯一建联 | P2P-01 后端实现验证；产品 UI 未实现 |
+| [ADR-012](0012-connection-retention.md) | 个人连接预览/失效正文保留与受控清除 | P2P-03；显式维护，不代表自动调度 |
+| [ADR-013](0013-in-app-connection-notifications.md) | 个人连接站内通知、事务回执与按代数重排 | M6-06A1 后端；活动/推送/UI 待交付 |
 
 新增 ADR 时：
 

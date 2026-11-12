@@ -1,5 +1,7 @@
 # API 契约文档
 
+2026-11-12 新增 [个人连接 API](CONNECTIONS.md)：独立于组织引荐，支持个人邀请预览、用途授权、幂等发送、接收方决定、唯一建联与撤销。仅后端底座，通知和共同会话仍未实现。
+
 版本：1.6 · 状态：认证与会话、个人资料/校园申请、组织成员与邀请、个人记忆、组织机会、匹配引荐、关系空间、日程忙闲与活动已实现（M2-01–M2-05、M3-01–M3-06、M4-01–M4-05、M5-01–M5-07、M6-01–M6-04、M6-01R）。Agent 与行动契约见 [AGENT.md](AGENT.md) 与 [ACTIONS.md](ACTIONS.md)。尚未实现的端点（通知、关系会话、语义召回、真实日历连接等）不写成可用。
 
 已交付的端点文档：认证见 [AUTH.md](AUTH.md)，资料/校园见 [PROFILE.md](PROFILE.md)，组织见 [ORGANIZATIONS.md](ORGANIZATIONS.md)，记忆见 [MEMORIES.md](MEMORIES.md)，机会见 [OPPORTUNITIES.md](OPPORTUNITIES.md)，匹配见 [MATCHING.md](MATCHING.md)，引荐与授权见 [REFERRALS.md](REFERRALS.md)，关系见 [RELATIONSHIPS.md](RELATIONSHIPS.md)，日程/忙闲/活动见 [AVAILABILITY_EVENTS.md](AVAILABILITY_EVENTS.md)，Agent 见 [AGENT.md](AGENT.md)，行动确认见 [ACTIONS.md](ACTIONS.md)。首条高风险交互见 [核心端点契约](CORE_CONTRACTS.md)。
@@ -50,5 +52,6 @@
 7. 关系空间：列表、详情、共享上下文、关闭。见 [RELATIONSHIPS.md](RELATIONSHIPS.md)。
 8. 异步与 Agent：任务查询、POST turns 创建 run、GET runs/:id/events 订阅/恢复、行动确认/取消。见 [AGENT.md](AGENT.md) 与 [ACTIONS.md](ACTIONS.md)。
 9. 日程与活动：忙闲块、忙闲投影与共享授权、多方求交、活动草稿/提议/响应/取消。见 [AVAILABILITY_EVENTS.md](AVAILABILITY_EVENTS.md)。
+10. 站内通知：个人邀请与响应、偏好、已读、分页与管理员死信重试，见 [NOTIFICATIONS.md](NOTIFICATIONS.md)。活动/移动推送/UI 尚未实现。
 
 端点级文档完成前，以 [TDD](../architecture/TDD.md) 和 [SCHEMA](../database/SCHEMA.md) 为契约基线。

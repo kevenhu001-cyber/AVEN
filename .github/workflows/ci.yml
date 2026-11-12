@@ -79,5 +79,10 @@ jobs:
       - run: pnpm organization:verify
       - run: pnpm isolation:verify
       - run: pnpm memory:verify
+      - run: pnpm connections:verify
+      - run: pnpm connections:verify:retention
+      - run: pnpm notifications:verify
+      - run: pnpm m5:verify
+      - run: pnpm m6:verify
       - if: always()
         run: pnpm infra:down

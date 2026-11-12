@@ -8,6 +8,8 @@
 
 ## 1. 原则
 
+2026-11-12 个人连接扩展（ADR-011）：新增 `connection_previews`（actor、recipient、所选 memory IDs、实际值/版本 manifest、授权截止、预览截止/消费结果）、`connection_invitations`（双方、状态、版本、发送者确认时间、接收方决定时间、grant、preview 与幂等键）、`peer_connections`（无序双方、邀请、建立时间）和 `connection_events`（对象、actor、事件、版本，无正文）。复用 consent_grants/items/events，新增 `connection_invitation` 用途及邀请外键；邀请用途不能升级为关系上下文。新表 FORCE RLS、逐表最小权限，正文只经受控函数实时授权后读取。发送、决定、建联、撤销和审计同事务；源删除/失效/收紧 sharing 时同步使相应授权项 stale。字段/状态与限制详见 [个人连接契约](../api/CONNECTIONS.md)，新增迁移不修改历史迁移。
+
 - PostgreSQL 是唯一可信数据结构来源；不使用 Dashboard 手工改 schema。
 - 所有变更通过版本化 SQL 迁移；迁移放在 `packages/database/migrations`。
 - 普通请求使用不绕过 RLS 的 `aven_app` 角色；迁移使用 `aven_migrator`。
@@ -814,7 +816,11 @@ erDiagram
 
 ### 9.7 `notifications`
 
-`id`、`recipient_principal_id`、`type`、`title`、`body`、`data`、`channel`、`status`、`read_at`、`created_at`、`sent_at`；索引 `(recipient_principal_id, status, created_at)`。
+M6-06A1 采用最小元数据模式，取代未实施的 title/body/data 大载荷方案，避免授权撤销后通知仍保存私人副本。`notifications` 包含 `id`、唯一 `event_id`、`recipient_user_id`、`invitation_id`、固定 `kind`、`read_at`、`created_at`；索引 `(recipient_user_id,created_at DESC,id DESC)` 和保留索引。读取过滤当前接收方/业务状态及 90 天期限，详情重新调用连接 API。
+
+`notification_preferences` 按 user_id 保存邀请/更新开关和乐观版本；默认 true/true/0，写入后版本从 1 开始。`notification_deliveries` 以来源 connection_event ID 为 PK，同时引用同 ID Outbox，保存接收方、kind、pending/delivered/suppressed/dead、generation、attempts（0–5）、固定错误码和排队/完成时间；它是事务去重回执，不包含正文。`notification_delivery_events` 只追加 dead/retried、代数和管理员 actor 元数据。
+
+四表 FORCE RLS，app 只可直接 SELECT 本人当前可见通知；偏好、已读与管理员重排通过受控函数。Worker 仅获取派发必要元数据，消费/失败记录/清理由实际 Worker 会话的受控函数执行。通知保留 90 天，删除通知不删除消费回执，避免重放复活；回执/源事件完整保留清理与生产调度另行交付。见 [ADR-013](../architecture/decisions/0013-in-app-connection-notifications.md) 与 [API](../api/NOTIFICATIONS.md)。
 
 ### 9.8 `idempotency_keys`
 
@@ -1223,6 +1229,8 @@ GRANT EXECUTE ON FUNCTION app.auth_lookup(text) TO aven_auth;
 - 测试使用工厂，不依赖 seed 的具体 ID。
 
 ## 14. 数据保留与删除
+
+个人连接补充：`connection_previews.purged_at` 记录过期满 24 小时后的 manifest 清除，不删除幂等元数据；`consent_grant_items.invalidated_at` 记录个人邀请用途的首次失效，失效满 30 天后将 `value_snapshot` 置 JSON null 并标记 `purged_at`。维护仅 `aven_worker` 受控函数可调用，不变更邀请/连接状态，不影响其他用途。参见 [ADR-012](../architecture/decisions/0012-connection-retention.md)。审计事件保留与自动调度不因本补充而视为完成。
 
 | 数据 | 保留 | 删除方式 |
 |---|---|---|

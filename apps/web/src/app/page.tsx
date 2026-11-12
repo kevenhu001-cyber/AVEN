@@ -15,6 +15,7 @@ export default function FoundationPage() {
           Web、原生移动端与独立 API
           正在同一套契约下建立。当前页面用于检查工程联通，不展示虚构机会或用户数据。
         </p>
+        <p>本页不是 MVP，也不是核心产品 UI。</p>
       </section>
       <HealthCheck />
       <section
@@ -29,11 +30,10 @@ export default function FoundationPage() {
           M4 · 组织与机会控制台
         </p>
         <h2 id="org-console-title" style={{ fontSize: 'var(--aven-font-size-h3)' }}>
-          组织工作台已就绪
+          组织控制台开发入口
         </h2>
         <p style={{ color: 'var(--aven-color-foreground-secondary)' }}>
-          进入实验室/企业组织控制台，体验概览指标、机会生命周期管理（草稿/开放/暂停/关闭）、成员权限与组织
-          Agent 协同。
+          此入口使用开发组织 ID，访问需要有效会话和相应组织权限。页面与双端设计评审尚未完成。
         </p>
         <div className="actions" style={{ margin: 'var(--aven-space-16) 0 0' }}>
           <Link
@@ -49,15 +49,17 @@ export default function FoundationPage() {
         <dl>
           <div>
             <dt>Web 控制台</dt>
-            <dd>组织主页、机会管理、成员列表与收件箱占位，严格遵守设计令牌与状态矩阵。</dd>
+            <dd>已有组织主页、机会管理、成员列表与收件箱占位；正式设计评审仍待完成。</dd>
           </div>
           <div>
             <dt>API 与 Worker</dt>
-            <dd>组织 Agent 与机会动作已闭环；RLS 强制保障多租户与私人记忆隔离。</dd>
+            <dd>已有组织 Agent、机会接口及强制 RLS；真实模型和完整产品验收仍待完成。</dd>
           </div>
           <div>
-            <dt>M5 展望</dt>
-            <dd>双向意愿对齐、可信引荐投递与学术导师协同评审。</dd>
+            <dt>匹配与日程</dt>
+            <dd>
+              确定性匹配和日程求交已有后端实现；语义召回、AI 协调、活动通知与移动推送尚未实现。
+            </dd>
           </div>
         </dl>
       </section>

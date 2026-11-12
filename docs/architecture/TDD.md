@@ -8,6 +8,14 @@
 
 ## 1. 目的与范围
 
+M6-06A1 按 [ADR-013](decisions/0013-in-app-connection-notifications.md) 为个人连接事件追加同事务 Outbox，以独立通知队列和数据库回执投递无正文站内通知。支持当前业务/偏好过滤、5 次重试、pending 对账、平台管理员按代数重排和 90 天收件箱清理。活动通知、移动推送、UI 和生产运维仍未交付，不能关闭完整 M6-06。
+
+P2P-03 按 [ADR-012](decisions/0012-connection-retention.md) 补齐个人邀请的正文保留：预览过期满 24 小时清空 manifest，授权项首次失效满 30 天清空正文；Worker 受控函数分批处理，保留幂等/连接元数据。来源到期后延长有效期不复活旧共享。本轮不交付生产调度与全系统保留清理。
+
+P2P-02 接入层使用 `packages/api-client` 承载类型化连接请求与逐次认证，不持有 UI 状态或私人正文缓存。小组件读取在同一受限事务先读取并锁定实时授权快照，再读取元数据；角色来自服务端会话，任何后续写入仍独立校验版本与权限。该协议不代表产品组件、Agent 工具或通知已实现。
+
+2026-11-12 个人连接扩展遵循 [ADR-011](decisions/0011-personal-connections.md)：个人到个人邀请不套用绑定组织/机会的引荐；独立预览、用途授权、接收方决定与无序用户对唯一建联，同事务审计、FORCE RLS、幂等和实时撤销。端点见 [CONNECTIONS.md](../api/CONNECTIONS.md)。本轮不实现 UI、发现、通知与共同会话。
+
 本文覆盖 M0–M5 的工程基础与首条业务闭环，并为 M6–M7 预留边界。它不替代具体模块的 API 文档和数据库迁移；表结构以 [SCHEMA](../database/SCHEMA.md) 为准，决策以 [ADR](decisions/) 为准。1.1 在无已发布代码/客户端的阶段调整候选、引荐和流式路径，不需要兼容未实施的旧接口；不能将本轮文档修订算作实现验收。
 
 ## 2. 架构原则
@@ -792,6 +800,9 @@ SENTRY_DSN=
 | [ADR-008](decisions/0008-progressive-delivery.md) | 按需扩展、双端设计与渐进验证门 | 已接受，未验证 |
 | [ADR-009](decisions/0009-authentication-implementation.md) | Argon2id、不透明会话、CSRF、限流与认证函数边界 | 已接受，M2-01 验证 |
 | [ADR-010](decisions/0010-availability-authorization.md) | 忙闲用途授权共享、默认拒绝与撤销即时生效 | 已接受，M6-01R 验证 |
+| [ADR-011](decisions/0011-personal-connections.md) | 个人邀请、用途授权与唯一建联 | P2P-01 后端已验证，UI 未实现 |
+| [ADR-012](decisions/0012-connection-retention.md) | 个人邀请正文保留与受控清除 | P2P-03，自动调度另行交付 |
+| [ADR-013](decisions/0013-in-app-connection-notifications.md) | 个人连接站内通知、事务回执与按代数重排 | M6-06A1 后端；活动/推送/UI 待交付 |
 
 ## 19. 开放问题与验证门
 

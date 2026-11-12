@@ -149,7 +149,7 @@ export function HealthCheck() {
           {ready.kind === 'success' && (
             <>
               <p className="success">依赖已就绪</p>
-              <p>数据库、Redis 与迁移版本均已确认；业务接口仍未开放。</p>
+              <p>数据库、Redis 与迁移版本均已确认；这不代表业务功能已验收。</p>
               <code>Request ID: {ready.requestId}</code>
             </>
           )}

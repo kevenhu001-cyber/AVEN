@@ -971,6 +971,7 @@ export const ConsentPurposeSchema = z.enum([
   'relationship_context',
   'advisory',
   'event_coordination',
+  'connection_invitation',
 ]);
 export const ConsentItemStatusSchema = z.enum(['active', 'revoked', 'expired', 'stale']);
 
@@ -1571,3 +1572,194 @@ export const UserAIProviderMetadataSchema = z
   .strict();
 export type UserAIProviderInput = z.infer<typeof UserAIProviderInputSchema>;
 export type UserAIProviderMetadata = z.infer<typeof UserAIProviderMetadataSchema>;
+
+const UniqueMemoryIds = z
+  .array(z.uuid())
+  .min(1)
+  .max(10)
+  .refine((ids) => new Set(ids).size === ids.length);
+export const CreateConnectionPreviewRequestSchema = z
+  .object({
+    recipientUserId: z.uuid(),
+    memoryItemIds: UniqueMemoryIds,
+    expiresInDays: z.number().int().min(1).max(7).default(7),
+  })
+  .strict();
+export const SendConnectionInvitationRequestSchema = z.object({ previewId: z.uuid() }).strict();
+export const ConnectionDecisionRequestSchema = z
+  .object({
+    decision: z.enum(['accepted', 'declined']),
+    expectedVersion: z.number().int().positive(),
+  })
+  .strict();
+export const ConnectionWithdrawRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const ConnectionPreviewSchema = z
+  .object({
+    id: z.uuid(),
+    recipientUserId: z.uuid(),
+    purpose: z.literal('connection_invitation'),
+    snapshot: z.array(
+      z
+        .object({
+          sourceId: z.uuid(),
+          value: z.string(),
+          sourceVersion: z.number().int().positive(),
+          policyVersion: z.number().int().positive(),
+          validUntil: z.iso.datetime({ offset: true }).nullable(),
+        })
+        .strict(),
+    ),
+    grantExpiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export const ConnectionInvitationSchema = z
+  .object({
+    id: z.uuid(),
+    senderUserId: z.uuid(),
+    recipientUserId: z.uuid(),
+    status: z.enum(['pending', 'accepted', 'declined', 'withdrawn', 'expired']),
+    version: z.number().int().positive(),
+    grantId: z.uuid(),
+    grantStatus: z.enum(['active', 'revoked', 'expired']),
+    senderConfirmedAt: z.iso.datetime({ offset: true }),
+    recipientDecidedAt: z.iso.datetime({ offset: true }).nullable(),
+    expiresAt: z.iso.datetime({ offset: true }),
+    createdAt: z.iso.datetime({ offset: true }),
+    connectionId: z.uuid().nullable(),
+  })
+  .strict();
+export const ConnectionInvitationListSchema = z
+  .object({ data: z.array(ConnectionInvitationSchema) })
+  .strict();
+export const ConnectionSnapshotSchema = z
+  .object({
+    invitationId: z.uuid(),
+    items: z.array(
+      z
+        .object({
+          sourceId: z.uuid(),
+          field: z.literal('content'),
+          value: z.string(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+export const PeerConnectionSchema = z
+  .object({
+    id: z.uuid(),
+    userLow: z.uuid(),
+    userHigh: z.uuid(),
+    invitationId: z.uuid(),
+    establishedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export const PeerConnectionListSchema = z.object({ data: z.array(PeerConnectionSchema) }).strict();
+export type CreateConnectionPreviewRequest = z.infer<typeof CreateConnectionPreviewRequestSchema>;
+export type ConnectionInvitation = z.infer<typeof ConnectionInvitationSchema>;
+
+export const ConnectionWidgetSchema = z
+  .object({
+    kind: z.literal('connection_invitation'),
+    role: z.enum(['sender', 'recipient']),
+    invitation: ConnectionInvitationSchema,
+    snapshot: ConnectionSnapshotSchema,
+  })
+  .strict()
+  .refine((widget) => widget.invitation.id === widget.snapshot.invitationId);
+export type ConnectionWidget = z.infer<typeof ConnectionWidgetSchema>;
+
+export const ConnectionMaintenanceBatchSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(1000)
+  .default(100);
+export const ConnectionMaintenanceResultSchema = z
+  .object({
+    previewsPurged: z.number().int().min(0).max(1000),
+    itemsInvalidated: z.number().int().min(0).max(1000),
+    snapshotsPurged: z.number().int().min(0).max(1000),
+  })
+  .strict();
+
+export const NotificationKindSchema = z.enum([
+  'sent',
+  'accepted',
+  'declined',
+  'withdrawn',
+  'revoked',
+]);
+export const NotificationSchema = z
+  .object({
+    id: z.uuid(),
+    kind: NotificationKindSchema,
+    target: z.object({ type: z.literal('connection_invitation'), id: z.uuid() }).strict(),
+    createdAt: z.iso.datetime({ offset: true }),
+    readAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .strict();
+export const NotificationCursorSchema = z
+  .object({ createdAt: z.iso.datetime({ offset: true }), id: z.uuid() })
+  .strict();
+export const NotificationListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    cursorCreatedAt: z.iso.datetime({ offset: true }).optional(),
+    cursorId: z.uuid().optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.cursorCreatedAt) === Boolean(value.cursorId));
+export const NotificationListSchema = z
+  .object({
+    data: z.array(NotificationSchema),
+    nextCursor: NotificationCursorSchema.nullable(),
+    unreadCount: z.number().int().nonnegative(),
+  })
+  .strict();
+export const NotificationPreferencesSchema = z
+  .object({
+    connectionInvitations: z.boolean(),
+    connectionUpdates: z.boolean(),
+    version: z.number().int().nonnegative(),
+  })
+  .strict();
+export const UpdateNotificationPreferencesSchema = z
+  .object({
+    connectionInvitations: z.boolean(),
+    connectionUpdates: z.boolean(),
+    expectedVersion: z.number().int().min(0).max(2147483646),
+  })
+  .strict();
+export const RetryNotificationSchema = z
+  .object({ expectedGeneration: z.number().int().min(0).max(2147483646) })
+  .strict();
+export const NotificationRetryResultSchema = z
+  .object({ id: z.uuid(), generation: z.number().int().positive(), status: z.literal('pending') })
+  .strict();
+export const NotificationDeadListSchema = z
+  .object({
+    data: z.array(
+      z
+        .object({
+          id: z.uuid(),
+          kind: NotificationKindSchema,
+          generation: z.number().int().nonnegative(),
+          attempts: z.literal(5),
+          errorCode: z.literal('DELIVERY_FAILED'),
+          createdAt: z.iso.datetime({ offset: true }),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const NotificationMaintenanceBatchSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(1000)
+  .default(100);

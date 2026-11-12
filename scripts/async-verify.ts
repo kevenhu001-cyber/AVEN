@@ -46,11 +46,13 @@ function compose(args: string[]) {
 }
 
 async function main(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') throw new Error('Development verification only.');
   const logs: LogEntry[] = [];
   const log = (entry: LogEntry) => logs.push(entry);
   const migrator = createPool('aven_migrator', { max: 2 });
   const app = createPool('aven_app', { max: 2 });
   const runtime = createWorkerRuntime(log);
+  let cleanupProbeId: string | undefined;
   const faultDispatcher = new OutboxDispatcher(runtime.pool, runtime.queue, log, {
     leaseSeconds: 1,
     reconcileAfterSeconds: 0,
@@ -75,11 +77,22 @@ async function main(): Promise<void> {
   }
 
   try {
-    await migrator.query('DELETE FROM public.job_receipts');
+    const probe = await migrator.query<{ id: string }>(
+      "INSERT INTO public.outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('verification',$1,'verification.cleanup_guard','{}') RETURNING id",
+      [randomUUID()],
+    );
+    cleanupProbeId = probe.rows[0]?.id;
+    await migrator.query('DELETE FROM public.job_receipts WHERE consumer=$1', [sampleTaskConsumer]);
     await migrator.query('DELETE FROM app.sample_task_results');
     await migrator.query('DELETE FROM app.sample_external_effects');
-    await migrator.query('DELETE FROM public.outbox_events');
+    await migrator.query("DELETE FROM public.outbox_events WHERE event_type='sample_task.created'");
     await migrator.query('DELETE FROM app.sample_tasks');
+    check(
+      'sample cleanup preserves other business outbox events',
+      (await count('SELECT count(*)::text AS count FROM public.outbox_events WHERE id=$1', [
+        cleanupProbeId,
+      ])) === 1,
+    );
     await runtime.queue.obliterate({ force: true }).catch(() => undefined);
     await runtime.start();
 
@@ -301,6 +314,8 @@ async function main(): Promise<void> {
   } finally {
     await runtime.close().catch(() => undefined);
     await faultDispatcher.stop().catch(() => undefined);
+    if (cleanupProbeId)
+      await migrator.query('DELETE FROM public.outbox_events WHERE id=$1', [cleanupProbeId]);
     await app.end().catch(() => undefined);
     await migrator.end().catch(() => undefined);
   }
