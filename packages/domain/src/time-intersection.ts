@@ -63,7 +63,27 @@ export function findAvailableTimeSlots(options: TimeIntersectionOptions): Availa
     stepMinutes = 30,
   } = options;
 
-  if (windowEnd.getTime() <= windowStart.getTime() || durationMinutes <= 0) {
+  if (
+    !Number.isFinite(windowStart.getTime()) ||
+    !Number.isFinite(windowEnd.getTime()) ||
+    windowEnd.getTime() <= windowStart.getTime() ||
+    !Number.isSafeInteger(durationMinutes) ||
+    durationMinutes <= 0 ||
+    !Number.isSafeInteger(stepMinutes) ||
+    stepMinutes <= 0 ||
+    busyIntervals.some(
+      ({ start, end }) =>
+        !Number.isFinite(start.getTime()) ||
+        !Number.isFinite(end.getTime()) ||
+        end.getTime() <= start.getTime(),
+    ) ||
+    (workingHoursOnly &&
+      (!Number.isInteger(workingHourStart) ||
+        !Number.isInteger(workingHourEnd) ||
+        workingHourStart < 0 ||
+        workingHourEnd > 24 ||
+        workingHourStart >= workingHourEnd))
+  ) {
     return [];
   }
 
@@ -74,31 +94,31 @@ export function findAvailableTimeSlots(options: TimeIntersectionOptions): Availa
   const allBlocked: TimeRange[] = [...busyIntervals];
 
   if (workingHoursOnly) {
-    // Generate blocked intervals for off-hours
+    // Generate blocked intervals using UTC, independent of the server timezone.
     const currentDay = new Date(windowStart);
-    currentDay.setHours(0, 0, 0, 0);
+    currentDay.setUTCHours(0, 0, 0, 0);
 
     const endDay = new Date(windowEnd);
-    endDay.setHours(23, 59, 59, 999);
+    endDay.setUTCHours(23, 59, 59, 999);
 
     while (currentDay.getTime() <= endDay.getTime()) {
       // 00:00 to workingHourStart
       const morningBlockStart = new Date(currentDay);
-      morningBlockStart.setHours(0, 0, 0, 0);
+      morningBlockStart.setUTCHours(0, 0, 0, 0);
       const morningBlockEnd = new Date(currentDay);
-      morningBlockEnd.setHours(workingHourStart, 0, 0, 0);
+      morningBlockEnd.setUTCHours(workingHourStart, 0, 0, 0);
 
       allBlocked.push({ start: morningBlockStart, end: morningBlockEnd });
 
       // workingHourEnd to 23:59:59.999
       const eveningBlockStart = new Date(currentDay);
-      eveningBlockStart.setHours(workingHourEnd, 0, 0, 0);
+      eveningBlockStart.setUTCHours(workingHourEnd, 0, 0, 0);
       const eveningBlockEnd = new Date(currentDay);
-      eveningBlockEnd.setHours(24, 0, 0, 0);
+      eveningBlockEnd.setUTCHours(24, 0, 0, 0);
 
       allBlocked.push({ start: eveningBlockStart, end: eveningBlockEnd });
 
-      currentDay.setDate(currentDay.getDate() + 1);
+      currentDay.setUTCDate(currentDay.getUTCDate() + 1);
     }
   }
 

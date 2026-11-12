@@ -1501,13 +1501,25 @@ export const TimeSlotSchema = z
 
 export const TimeIntersectionRequestSchema = z
   .object({
-    principalIds: z.array(z.uuid()).min(1),
+    principalIds: z.array(z.uuid()).min(1).max(50),
     windowStart: z.iso.datetime(),
     windowEnd: z.iso.datetime(),
-    durationMinutes: z.number().int().positive().default(60),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .max(31 * 24 * 60)
+      .default(60),
     workingHoursOnly: z.boolean().default(true),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => {
+      const windowMs = Date.parse(value.windowEnd) - Date.parse(value.windowStart);
+      return windowMs > 0 && windowMs <= 31 * 24 * 60 * 60 * 1000;
+    },
+    { message: 'Window must be positive and no longer than 31 days.', path: ['windowEnd'] },
+  );
 
 export const TimeIntersectionResponseSchema = z
   .object({

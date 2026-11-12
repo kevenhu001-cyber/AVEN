@@ -281,8 +281,8 @@ async function main(): Promise<void> {
     // M6-01: Availability Blocks (个人日程与忙闲块录入)
     // =========================================================================
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(9, 0, 0, 0);
 
     const user1BusyStart = new Date(tomorrow.getTime() + 1 * 3600 * 1000).toISOString(); // 10:00
     const user1BusyEnd = new Date(tomorrow.getTime() + 3 * 3600 * 1000).toISOString(); // 12:00
@@ -332,6 +332,78 @@ async function main(): Promise<void> {
     // =========================================================================
     const windowStart = tomorrow.toISOString(); // 09:00
     const windowEnd = new Date(tomorrow.getTime() + 9 * 3600 * 1000).toISOString(); // 18:00
+
+    const intersectionInput = {
+      principalIds: [user2Id],
+      windowStart,
+      windowEnd,
+      durationMinutes: 60,
+    };
+    for (const [name, overrides] of [
+      ['empty window', { windowEnd: windowStart }],
+      ['reversed window', { windowEnd: new Date(tomorrow.getTime() - 1).toISOString() }],
+      [
+        'window longer than 31 days',
+        { windowEnd: new Date(tomorrow.getTime() + 31 * 24 * 3600 * 1000 + 1).toISOString() },
+      ],
+      ['more than 50 principals', { principalIds: Array<string>(51).fill(user2Id) }],
+      ['duration longer than 31 days', { durationMinutes: 31 * 24 * 60 + 1 }],
+    ] as const) {
+      const invalid = await client2.call('/api/v1/availability/intersection', {
+        method: 'POST',
+        body: { ...intersectionInput, ...overrides },
+      });
+      check(`M6-03: rejects ${name}`, invalid.status === 422, JSON.stringify(invalid.body));
+    }
+
+    const workingDayStart = new Date(tomorrow);
+    workingDayStart.setUTCHours(0);
+    const workingDayEnd = new Date(workingDayStart.getTime() + 24 * 3600 * 1000);
+    const workingHoursRes = await client2.call('/api/v1/availability/intersection', {
+      method: 'POST',
+      body: {
+        ...intersectionInput,
+        windowStart: workingDayStart.toISOString(),
+        windowEnd: workingDayEnd.toISOString(),
+      },
+    });
+    const workingSlots =
+      (nested(workingHoursRes.body, ['availableSlots']) as {
+        startAt: string;
+        endAt: string;
+      }[]) ?? [];
+    check(
+      'M6-03: default UTC working hours exclude off-hours and busy intervals',
+      workingHoursRes.status === 200 &&
+        workingSlots.length === 12 &&
+        workingSlots[0]?.startAt === windowStart &&
+        workingSlots.at(-1)?.endAt === windowEnd &&
+        workingSlots.every(
+          (slot) =>
+            Date.parse(slot.startAt) >= Date.parse(windowStart) &&
+            Date.parse(slot.endAt) <= Date.parse(windowEnd) &&
+            (Date.parse(slot.endAt) <= Date.parse(user2BusyStart) ||
+              Date.parse(slot.startAt) >= Date.parse(user2BusyEnd)),
+        ),
+      JSON.stringify(workingHoursRes.body),
+    );
+
+    const maxWindowRes = await client2.call('/api/v1/availability/intersection', {
+      method: 'POST',
+      body: {
+        ...intersectionInput,
+        windowEnd: new Date(tomorrow.getTime() + 31 * 24 * 3600 * 1000).toISOString(),
+        durationMinutes: 31 * 24 * 60,
+        workingHoursOnly: false,
+      },
+    });
+    check(
+      'M6-03: accepts exactly 31 days and returns no slot when busy time prevents a fit',
+      maxWindowRes.status === 200 &&
+        Array.isArray(nested(maxWindowRes.body, ['availableSlots'])) &&
+        (nested(maxWindowRes.body, ['availableSlots']) as unknown[]).length === 0,
+      JSON.stringify(maxWindowRes.body),
+    );
 
     const windowRes = await client2.call('/api/v1/availability/window', {
       method: 'POST',

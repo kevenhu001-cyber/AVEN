@@ -83,3 +83,77 @@ describe('findAvailableTimeSlots', () => {
     expect(slots).toHaveLength(0);
   });
 });
+
+it('uses UTC working hours across days regardless of server timezone', () => {
+  const slots = findAvailableTimeSlots({
+    windowStart: new Date('2026-11-12T17:00:00Z'),
+    windowEnd: new Date('2026-11-13T10:00:00Z'),
+    durationMinutes: 60,
+    busyIntervals: [],
+    workingHoursOnly: true,
+    stepMinutes: 60,
+  });
+  expect(slots).toEqual([
+    { startAt: '2026-11-12T17:00:00.000Z', endAt: '2026-11-12T18:00:00.000Z' },
+    { startAt: '2026-11-13T09:00:00.000Z', endAt: '2026-11-13T10:00:00.000Z' },
+  ]);
+});
+
+it('rejects a nonpositive step instead of looping indefinitely', () => {
+  expect(
+    findAvailableTimeSlots({
+      windowStart: new Date('2026-11-12T09:00:00Z'),
+      windowEnd: new Date('2026-11-12T10:00:00Z'),
+      durationMinutes: 30,
+      busyIntervals: [],
+      stepMinutes: 0,
+    }),
+  ).toEqual([]);
+});
+
+describe('invalid solver input fails closed', () => {
+  const options = {
+    windowStart: new Date('2026-11-12T09:00:00Z'),
+    windowEnd: new Date('2026-11-12T12:00:00Z'),
+    durationMinutes: 30,
+    busyIntervals: [],
+  };
+
+  it.each([NaN, Infinity, -1, 0, 0.5])('rejects duration or step %s', (value) => {
+    expect(findAvailableTimeSlots({ ...options, durationMinutes: value })).toEqual([]);
+    expect(findAvailableTimeSlots({ ...options, stepMinutes: value })).toEqual([]);
+  });
+
+  it('rejects invalid window dates', () => {
+    expect(findAvailableTimeSlots({ ...options, windowStart: new Date(NaN) })).toEqual([]);
+    expect(findAvailableTimeSlots({ ...options, windowEnd: new Date(NaN) })).toEqual([]);
+  });
+
+  it.each([
+    { start: new Date(NaN), end: new Date('2026-11-12T10:00:00Z') },
+    { start: new Date('2026-11-12T10:00:00Z'), end: new Date(NaN) },
+    { start: new Date('2026-11-12T10:00:00Z'), end: new Date('2026-11-12T09:00:00Z') },
+    { start: new Date('2026-11-12T10:00:00Z'), end: new Date('2026-11-12T10:00:00Z') },
+  ])('does not treat malformed busy interval as free time: %o', (interval) => {
+    expect(findAvailableTimeSlots({ ...options, busyIntervals: [interval] })).toEqual([]);
+  });
+
+  it.each([
+    [-1, 18],
+    [9, 25],
+    [18, 9],
+    [9, 9],
+    [NaN, 18],
+    [9, Infinity],
+    [9.5, 18],
+  ])('rejects invalid working hours %s–%s', (workingHourStart, workingHourEnd) => {
+    expect(
+      findAvailableTimeSlots({
+        ...options,
+        workingHoursOnly: true,
+        workingHourStart,
+        workingHourEnd,
+      }),
+    ).toEqual([]);
+  });
+});
