@@ -40,6 +40,7 @@ export function ChatScreen() {
   const [message, setMessage] = useState('');
   const conversation = useRef<string | undefined>(undefined);
   const controller = useRef<AbortController | null>(null);
+  const cancellation = useRef<AbortController | null>(null);
   const lock = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -47,6 +48,7 @@ export function ChatScreen() {
     return () => {
       mounted.current = false;
       controller.current?.abort();
+      cancellation.current?.abort();
     };
   }, []);
   function patch(key: string, change: Partial<Turn>) {
@@ -251,9 +253,12 @@ export function ChatScreen() {
           disabled={active.status === 'cancelling'}
           onPress={() => {
             patch(active.key, { status: 'cancelling' });
+            const abort = new AbortController();
+            cancellation.current = abort;
             void api.agent
-              .cancel(active.runId!, active.cancelKey, call())
+              .cancel(active.runId!, active.cancelKey, call(abort.signal))
               .then((result) => {
+                if (abort.signal.aborted || !mounted.current) return;
                 if (['completed', 'failed', 'cancelled'].includes(result.status)) {
                   controller.current?.abort();
                   patch(active.key, {
@@ -263,8 +268,16 @@ export function ChatScreen() {
                 }
               })
               .catch((error) => {
+                if (abort.signal.aborted || !mounted.current) return;
                 if (expired(error)) invalidate();
-                else patch(active.key, { status: 'running', problem: problemText(error) });
+                else
+                  setTurns((old) =>
+                    old.map((turn) =>
+                      turn.key === active.key && turn.status === 'cancelling'
+                        ? { ...turn, status: 'running', problem: problemText(error) }
+                        : turn,
+                    ),
+                  );
               });
           }}
         >
