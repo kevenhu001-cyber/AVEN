@@ -4,7 +4,7 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 本机开发验证版已部署：[aven.topodrive.top](https://aven.topodrive.top)。默认 Mock，非生产试点；运行方式与 TLS 限制见 [部署记录](docs/development/DEPLOYMENT.md)。
 
-2026-11-13 **WEB/ANDROID-01 个人工作区开发**：按 ADR-018 补齐 Web 资料/设备会话/密码恢复、个人运行历史、行动确认与拉黑举报；Android 新增原生登录、Mock SSE、记忆复核、个人连接与消息、通知偏好、连接器卡片和账号设置，令牌使用 SecureStore。Android APK 按用户要求由 [GitHub Actions](.github/workflows/android-apk.yml) 构建，本机只执行 JS/工程检查。当前仍待远端 APK 和设备验收，不代表完整 MVP 可发布。范围、检查与缺口见 [交付记录](docs/development/WEB_ANDROID_01.md)。
+2026-11-13 **WEB/ANDROID-01 个人工作区开发**：按 ADR-018 补齐 Web 资料/设备会话/密码恢复、个人运行历史、行动确认与拉黑举报；Android 新增原生登录、Mock SSE、记忆复核、个人连接与消息、通知偏好、连接器卡片和账号设置，令牌使用 SecureStore。Android APK 按用户要求由 [GitHub Actions](.github/workflows/android-apk.yml) 构建，本机只执行 JS/工程检查。本机工程检查与 333 项单测通过，公网账号 13 项及安全/行动/隔离 18 项复验通过。当前仍待远端 APK 和设备验收，不代表完整 MVP 可发布。范围、检查与缺口见 [交付记录](docs/development/WEB_ANDROID_01.md)。
 
 2026-11-13 **WEB-03 连接器与会话小组件接入**：个人 Web 对话输入区新增连接器入口，按类别展示服务端目录的 11 个内置连接器与凭据状态，按动作动态生成表单并以 Mock 模式调用，结果以 12 种声明式小组件卡片渲染进对话流，外部跳转需二次确认。新增 Web 端纯函数单测（vitest 范围扩到 `apps/web/src`）。未接入真实开放平台凭据、真实 MCP 传输或第三方账号。实际验证：单测 313 项、连接器复验 8 项、WEB-01/02 回归 30 项通过；`check:expo` 仍失败。详见 [交付记录](docs/development/WEB_03.md)。
 
