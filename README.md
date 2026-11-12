@@ -2,6 +2,8 @@
 
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
+2026-11-13 **WEB-03 连接器与会话小组件接入**：个人 Web 对话输入区新增连接器入口，按类别展示服务端目录的 11 个内置连接器与凭据状态，按动作动态生成表单并以 Mock 模式调用，结果以 12 种声明式小组件卡片渲染进对话流，外部跳转需二次确认。新增 Web 端纯函数单测（vitest 范围扩到 `apps/web/src`）。未接入真实开放平台凭据、真实 MCP 传输或第三方账号。实际验证：单测 313 项、连接器复验 8 项、WEB-01/02 回归 30 项通过；`check:expo` 仍失败。详见 [交付记录](docs/development/WEB_03.md)。
+
 2026-11-13 **WEB-02 候选记忆复核与通知偏好**：个人 Web「记忆与上下文」新增候选复核标签页（服务端规则提取 `mock_rules_v1`、逐条编辑/确认/拒绝、用途默认拒绝），已确认信息可原位编辑与二次确认撤回；通知面板新增通知偏好开关（`expectedVersion` 乐观锁，冲突回读）。共享客户端新增记忆复核方法并首次支持 `PATCH`。无迁移、无服务端改动，未接入真实 Provider/OAuth/原生端。实际验证：单测 308 项、个人 Web 复验 12 项、WEB-01 回归 18 项、恢复 7 项通过；`check:expo` 仍失败。详见 [交付记录](docs/development/WEB_02.md)。
 
 2026-11-12 **当前状态复核**：本机 PostgreSQL/Redis 均 healthy；只读检查确认开发库已应用 38/39 个迁移，0039 日历连接迁移仍为 pending，既有迁移校验和一致，61 张租户表 FORCE RLS。最新聊天/连接器稿与圆形角色动效仍为设计资产，未接入正式产品页面；相关改动尚未提交 Git。此次未执行迁移或业务集成回归，详见 [系统状态](docs/development/SYSTEM_STATUS.md)。
@@ -116,6 +118,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | [P2P-04 消息交付记录](docs/development/PEER_MESSAGES.md) | 消息收发、倒序游标、软删除与双删物理保留清理 |
 | [WEB-01 个人 Web 交付记录](docs/development/WEB_PERSONAL.md) | 个人 Web 首批真实接入：登录、Mock 对话、记忆、连接、消息与通知 |
 | [WEB-02 记忆复核与通知偏好](docs/development/WEB_02.md) | 候选复核、记忆编辑撤回、通知偏好与共享客户端扩展 |
+| [WEB-03 连接器与会话小组件](docs/development/WEB_03.md) | 连接器目录、动态表单、12 种会话小组件渲染与外部跳转确认 |
 | [安全与试点准入交付记录](docs/development/BLOCKS_AND_REPORTS.md) | 个人拉黑、举报、24h 邀请频控与双向阻断验证 |
 | [日程与活动 API](docs/api/AVAILABILITY_EVENTS.md) | 忙闲块、忙闲投影、共享授权、多方求交与活动状态机 |
 | [Agent 运行时 API](docs/api/AGENT.md) | turn 创建、run 状态、SSE 事件流、取消与保留契约 |

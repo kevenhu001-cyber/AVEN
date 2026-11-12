@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import type { PrivateProps } from './api';
 import { Icon } from './icon';
 import { Mascot } from './mascot';
+import { Modal } from './modal';
+import { ConnectorDialog, type ConnectorResult } from './plugins/connector-dialog';
+import { WidgetCard } from './plugins/widget-card';
 import { useAgentChat } from './use-agent-chat';
 
 const labels = {
@@ -27,12 +30,14 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
   const input = useRef<HTMLTextAreaElement>(null);
   const nearBottom = useRef(true);
   const [latest, setLatest] = useState(false);
+  const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [connectorResults, setConnectorResults] = useState<ConnectorResult[]>([]);
 
   useEffect(() => {
     if (nearBottom.current && transcript.current)
       transcript.current.scrollTop = transcript.current.scrollHeight;
     else setLatest(true);
-  }, [chat.turns]);
+  }, [chat.turns, connectorResults]);
 
   useEffect(() => {
     const node = input.current;
@@ -114,6 +119,23 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
               )}
             </article>
           ))}
+          {connectorResults.map((result) => (
+            <article key={result.key} className="chat-turn widget-turn">
+              <div className="widget-turn-head">
+                <Mascot state="happy" />
+                <span>
+                  {result.pluginName} · {result.actionTitle}
+                </span>
+                <Badge variant={result.providerMode === 'live' ? 'success' : 'warning'}>
+                  {result.providerMode === 'live' ? '实时数据' : 'Mock 数据'}
+                </Badge>
+              </div>
+              <p className="chat-bubble assistant-bubble">{result.summary}</p>
+              {result.widgets.map((widget) => (
+                <WidgetCard key={widget.widgetId} widget={widget} />
+              ))}
+            </article>
+          ))}
         </div>
       </div>
       {latest && (
@@ -137,6 +159,18 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
           chat.send();
         }}
       >
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="border-border bg-card text-foreground"
+          aria-label="连接器"
+          title="连接器"
+          onClick={() => setConnectorsOpen(true)}
+          disabled={chat.busy}
+        >
+          <Icon name="plug" />
+        </Button>
         <label className="sr-only" htmlFor="chat-input">
           向 AVEN 提问
         </label>
@@ -185,6 +219,19 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
         )}
       </form>
       <p className="composer-note">Enter 发送 · Shift + Enter 换行 · 当前对话仅在本页显示</p>
+      {connectorsOpen && (
+        <Modal title="连接器" onClose={() => setConnectorsOpen(false)}>
+          <ConnectorDialog
+            onClose={() => setConnectorsOpen(false)}
+            onExpired={onExpired}
+            onResult={(result) => {
+              setConnectorResults((current) => [...current, result]);
+              nearBottom.current = true;
+              setConnectorsOpen(false);
+            }}
+          />
+        </Modal>
+      )}
     </section>
   );
 }

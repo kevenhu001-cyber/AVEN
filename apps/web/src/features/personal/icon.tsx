@@ -1,6 +1,10 @@
-import { ArrowUp, Ellipsis, Menu, Square, X } from 'lucide-react';
+import { ArrowUp, Ellipsis, Menu, Plug, Square, X } from 'lucide-react';
 
-export function Icon({ name }: { name: 'menu' | 'ellipsis' | 'arrow-up' | 'square' | 'x' }) {
+export function Icon({
+  name,
+}: {
+  name: 'menu' | 'ellipsis' | 'arrow-up' | 'square' | 'x' | 'plug';
+}) {
   const props = {
     size: 20,
     strokeWidth: 2,
@@ -17,5 +21,7 @@ export function Icon({ name }: { name: 'menu' | 'ellipsis' | 'arrow-up' | 'squar
       return <Square {...props} />;
     case 'x':
       return <X {...props} />;
+    case 'plug':
+      return <Plug {...props} />;
   }
 }

@@ -509,3 +509,40 @@
     padding: 16px;
   }
 }
+
+.widget-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.widget-turn-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--aven-color-foreground-secondary);
+}
+.widget-turn-head .mascot {
+  width: 28px;
+  height: 28px;
+}
+.personal-app .widget-card {
+  width: 100%;
+}
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.connector-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--aven-color-control-border);
+  border-radius: var(--aven-radius-card);
+}

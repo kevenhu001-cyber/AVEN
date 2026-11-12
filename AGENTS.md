@@ -8,6 +8,8 @@
 
 - 2026-11-13 用户明确授权开始下一阶段：按 [ADR-017](docs/architecture/decisions/0017-personal-web-increment.md) 实施个人 Web 限定主线。该范围可进入 UI 编码，M1-07 整体仍为 REVIEW，其他页面/原生/真实 Provider/试点门不变；以下历史“不能进入 UI 编码”在本轮限定范围内按此授权执行。
 
+- 2026-11-13 **WEB-03 连接器与会话小组件**已交付：个人 Web 对话输入区新增连接器入口，按类别展示服务端目录的 11 个内置连接器与凭据状态，按动作生成表单并以 Mock 模式调用，结果以 12 种声明式小组件卡片渲染进对话流，外部跳转需二次确认。新增 Web 端纯函数单测（vitest 范围扩到 `apps/web/src`）。未接入真实开放平台凭据、真实 MCP 传输或第三方账号。详见 `docs/development/WEB_03.md`。
+
 - 2026-11-13 **WEB-02 候选记忆复核与通知偏好**已交付：个人 Web「记忆与上下文」新增候选复核标签页（服务端规则提取 `mock_rules_v1`、逐条编辑/确认/拒绝、用途默认拒绝），已确认信息可原位编辑与二次确认撤回，通知面板新增通知偏好开关（`expectedVersion` 乐观锁、冲突回读）。共享客户端新增记忆复核方法并首次支持 `PATCH`。无迁移、无服务端改动，未接入真实 Provider/OAuth/原生端；单测 308 项、个人 Web 复验 12 项、WEB-01 回归 18 项、恢复 7 项通过。详见 `docs/development/WEB_02.md`。
 
 - 2026-11-12 **M5-04 引荐补充资料、内容版本化与超期维护**已交付：0038、`referral_supplements` 表（FORCE RLS）、`content_version` 递增、组织待审自动重置、Worker 批量超期维护存储过程 `app.maintain_referrals`、API 客户端与 NestJS 控制器端点、`supplements:verify` 25 项全通过。当前 38 个迁移、61 张租户表（58 张 public + 3 张 app），全部 FORCE RLS。单测 235 项全通过。详见 `docs/development/REFERRAL_SUPPLEMENTS.md`。至此 M5-04 闭环为 DONE。

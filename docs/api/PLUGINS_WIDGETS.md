@@ -82,4 +82,4 @@
 
 - **真实开放平台联调**：高德 Web Service Key、淘宝开放平台/淘宝闪购、京东联盟、美团开放平台、Gmail/QQ 邮箱 OAuth2/IMAP 以及真实远程 MCP 传输（`McpTransportAdapter`）的真实凭据与线上请求尚未接入。
 - **用户级插件启停与凭据持久化表**：当前插件注册表、MCP 配置与审计处于运行期内存管理；用户自定义插件与 MCP 服务配置及加密凭据入库（参考 `calendar_connections` 隔离模式）需在数据库可用环境下新增迁移。
-- **Web / Mobile 正式会话内小组件渲染**：受 M1-07 正式双端设计评审门约束，暂未在 `apps/web` / `apps/mobile` 中编写正式聊天插件选择器与小组件卡片视图（交互预览已在 [m1-07-v3 原型](../design/prototypes/m1-07-v3/index.html) 中提供）。
+- **Web / Mobile 正式会话内小组件渲染**：2026-11-13 起，个人 Web 在 ADR-017 限定授权内接入了连接器选择器与 12 种声明式小组件卡片渲染（见 [WEB_03](../development/WEB_03.md)）；但正式双端设计评审仍未完成，`apps/mobile` 仍无插件入口与小组件视图，所有连接器仍只运行服务端 Mock 适配器。

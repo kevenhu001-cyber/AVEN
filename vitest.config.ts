@@ -5,7 +5,11 @@ export default defineConfig({
   // not resolve tsconfig `extends` from a workspace package on its own.
   oxc: { decorator: { legacy: true } },
   test: {
-    include: ['packages/*/src/**/*.test.ts', 'apps/{api,worker}/src/**/*.test.ts'],
+    include: [
+      'packages/*/src/**/*.test.ts',
+      'apps/{api,worker}/src/**/*.test.ts',
+      'apps/web/src/**/*.test.ts',
+    ],
     environment: 'node',
     maxWorkers: 1,
     testTimeout: 10000,

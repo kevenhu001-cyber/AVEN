@@ -57,6 +57,7 @@
     "personal-web:verify": "node scripts/personal-web-verify.mjs",
     "personal-web:verify:recovery": "node scripts/personal-web-recovery-verify.mjs",
     "personal-web:verify:review": "node scripts/personal-web-review-verify.mjs",
+    "personal-web:verify:connector": "node scripts/personal-web-connector-verify.mjs",
     "connections:verify": "pnpm build && tsx scripts/connections-verify.ts",
     "connections:maintain": "pnpm build:packages && tsx scripts/connections-maintenance.ts",
     "connections:verify:retention": "pnpm build:packages && tsx scripts/connections-maintenance-verify.ts",
