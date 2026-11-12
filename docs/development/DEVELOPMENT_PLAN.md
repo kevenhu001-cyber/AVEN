@@ -485,3 +485,10 @@ M4–M6 的上述 DONE 记录只反映当时记录的实现和检查，不代表
 M5-08 由 NOT_STARTED 调整为 PARTIAL：原生界面和安全会话已实现，设备主线、弱网、发布安装与正式设计评审尚未验收。APK 按用户指定通过 GitHub Actions 构建，本机不再编译；CI 结果独立记录，不能因工作流文件存在标为通过。具体文件、验证与缺口见 [WEB_ANDROID_01.md](WEB_ANDROID_01.md)。
 
 2026-11-13 用户进一步指定本机域名 `aven.topodrive.top`：独立 Nginx 与 Web/API/Worker systemd 服务已部署，公网合成账号 13 项复验通过；CDN HTTPS 正常，源站独立证书 HTTP-01 被 CDN 567 阻断，当前临时复用既有证书，详见 [DEPLOYMENT](DEPLOYMENT.md)。
+
+
+### 2026-11-13 用户视觉反馈：优先修正 Web 认证入口
+
+用户要求暂停 APK，按三张手机截图重新调整网页版注册相关 UI。已取消 Android run 43289102292，并将 APK 工作流改为仅 workflow_dispatch。新增 AuthShell/AuthPassword，统一登录、注册、密码恢复和会话检查；深灰纯色背景、白色正圆角色、54px 胶囊控件、留白与密码显示切换，移出工程诊断入口，保留简短 Mock 标识。复用原 SVG 与本地字体，无新依赖、无 API/数据库变更。设计约束已先同步 DESIGN_SYSTEM。
+
+Web 类型、lint、构建与变更格式检查通过；T3 preview 浏览器实际检查 390×844、320×568、1440×900，完成合成账号注册 201、登录 200、工作区、退出，恢复请求 202 和重置表单，密码切换与键盘焦点。发现恢复提示紧贴输入框后修正并重新截图。当前线上已重启部署；证据见仓库根 design-qa.md。M1-07 正式双端评审仍 REVIEW。

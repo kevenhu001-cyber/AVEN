@@ -2,9 +2,11 @@
 
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
+2026-11-13 **认证界面视觉调整**：按用户三张深色参考图统一登录/注册/恢复页面，纯色画布、白色正圆角色、胶囊输入与更清晰留白，移出工程入口并新增密码可见切换。线上已更新，真实注册/登录/退出与三种视口检查通过，见 [视觉 QA](design-qa.md)。用户要求先暂停 APK，远端构建已取消，工作流仅保留手动触发。
+
 本机开发验证版已部署：[aven.topodrive.top](https://aven.topodrive.top)。默认 Mock，非生产试点；运行方式与 TLS 限制见 [部署记录](docs/development/DEPLOYMENT.md)。
 
-2026-11-13 **WEB/ANDROID-01 个人工作区开发**：按 ADR-018 补齐 Web 资料/设备会话/密码恢复、个人运行历史、行动确认与拉黑举报；Android 新增原生登录、Mock SSE、记忆复核、个人连接与消息、通知偏好、连接器卡片和账号设置，令牌使用 SecureStore。Android APK 按用户要求由 [GitHub Actions](.github/workflows/android-apk.yml) 构建，本机只执行 JS/工程检查。本机工程检查与 333 项单测通过，公网账号 13 项及安全/行动/隔离 18 项复验通过。当前仍待远端 APK 和设备验收，不代表完整 MVP 可发布。范围、检查与缺口见 [交付记录](docs/development/WEB_ANDROID_01.md)。
+2026-11-13 **WEB/ANDROID-01 个人工作区开发**：按 ADR-018 补齐 Web 资料/设备会话/密码恢复、个人运行历史、行动确认与拉黑举报；Android 新增原生登录、Mock SSE、记忆复核、个人连接与消息、通知偏好、连接器卡片和账号设置，令牌使用 SecureStore。Android APK 按用户要求由 [GitHub Actions](.github/workflows/android-apk.yml) 构建，本机只执行 JS/工程检查。本机工程检查与 333 项单测通过，公网账号 15 项及安全/行动/隔离 18 项复验通过。当前仍待远端 APK 和设备验收，不代表完整 MVP 可发布。范围、检查与缺口见 [交付记录](docs/development/WEB_ANDROID_01.md)。
 
 2026-11-13 **WEB-03 连接器与会话小组件接入**：个人 Web 对话输入区新增连接器入口，按类别展示服务端目录的 11 个内置连接器与凭据状态，按动作动态生成表单并以 Mock 模式调用，结果以 12 种声明式小组件卡片渲染进对话流，外部跳转需二次确认。新增 Web 端纯函数单测（vitest 范围扩到 `apps/web/src`）。未接入真实开放平台凭据、真实 MCP 传输或第三方账号。实际验证：单测 313 项、连接器复验 8 项、WEB-01/02 回归 30 项通过；`check:expo` 仍失败。详见 [交付记录](docs/development/WEB_03.md)。
 
@@ -54,7 +56,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 后端业务闭环已推进到 **M6 日程与活动**。已实现并通过真实 HTTP/数据库验证：
 
-- **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**尚未在 GitHub Actions 实跑**）。
+- **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**整套 CI 尚无通过记录；本轮 Android APK 工作流已开始实跑**）。
 - **M1 设计**：令牌层（M1-01）、可点击原型（M1-07，**正式双端评审未做**）及 ADR-017 限定个人 Web；M1-02–M1-06 仍为部分实现。
 - **M2 身份与组织**：认证会话、资料/校园、组织成员与邀请、强制 RLS、跨账号/跨组织隔离。
 - **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 已有评估集/预算门和首批个人 Web，**候选记忆复核与完整个人页面仍未完成**。

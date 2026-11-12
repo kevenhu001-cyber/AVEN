@@ -7,24 +7,6 @@ on:
         description: '手机可访问的 HTTPS API origin；留空使用仓库变量，均为空时显示配置提示'
         type: string
         required: false
-  push:
-    branches: [main, 'feat/web-android-*']
-    paths:
-      - apps/mobile/**
-      - packages/**
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
-      - .github/workflows/android-apk.yml
-      - scripts/android-*.mjs
-  pull_request:
-    paths:
-      - apps/mobile/**
-      - packages/**
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
-      - .github/workflows/android-apk.yml
-      - scripts/android-*.mjs
-
 permissions:
   contents: read
 

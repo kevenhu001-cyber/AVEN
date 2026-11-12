@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { api, authExpired, errorText, webCall } from './api';
 import { AuthForm } from './auth-form';
 import { Workspace } from './workspace';
-import { Mascot } from './mascot';
+import { AuthShell } from './auth-shell';
 import './personal.css';
 
 export function PersonalApp() {
@@ -124,14 +124,22 @@ export function PersonalApp() {
 
   if (status !== 'ready')
     return (
-      <main className="personal-app auth-screen">
-        <section className="auth-card flex flex-col items-center gap-4">
-          <Mascot large state="thinking" />
-          <h1>{status === 'checking' ? '正在验证会话' : '暂时无法连接'}</h1>
-          {problem && <Alert variant="warning">{problem}</Alert>}
-          {status === 'error' && <Button onClick={() => void recheck()}>重新连接</Button>}
-        </section>
-      </main>
+      <AuthShell
+        title={status === 'checking' ? '正在验证会话' : '暂时无法连接'}
+        description="你的对话，即将继续。"
+      >
+        {problem && <Alert variant="warning">{problem}</Alert>}
+        {status === 'error' && (
+          <Button className="auth-submit" onClick={() => void recheck()}>
+            重新连接
+          </Button>
+        )}
+        {status === 'checking' && (
+          <p className="auth-loading" role="status">
+            正在安全连接…
+          </p>
+        )}
+      </AuthShell>
     );
 
   return <AuthForm onLogin={signedIn} />;

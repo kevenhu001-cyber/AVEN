@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api, errorText } from './api';
-import { Mascot } from './mascot';
+import { AuthShell } from './auth-shell';
+import { AuthPassword } from './auth-password';
 import { PasswordRecovery } from './password-recovery';
 
 export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
@@ -56,93 +57,108 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
     }
   }
 
-  if (recovering)
-    return (
-      <main className="auth-screen personal-app">
-        <PasswordRecovery onBack={() => setRecovering(false)} />
-      </main>
-    );
+  if (recovering) return <PasswordRecovery onBack={() => setRecovering(false)} />;
 
   return (
-    <main className="auth-screen personal-app">
-      <section className="auth-card" aria-labelledby="auth-title">
-        <Mascot large />
-        <h1 id="auth-title">{mode === 'login' ? '回到你的 AVEN' : '从一次对话开始'}</h1>
-        <p className="muted">聊聊想法，认识合适的人。每次分享，由你决定。</p>
-        <form onSubmit={(event) => void submit(event)} aria-busy={busy}>
-          {mode === 'register' && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="auth-name">怎么称呼你</Label>
-              <Input
-                id="auth-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="nickname"
-                required
-                maxLength={120}
-                disabled={busy}
-              />
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="auth-email">邮箱</Label>
+    <AuthShell
+      title={mode === 'login' ? '欢迎回来' : '创建你的 AVEN'}
+      description={mode === 'login' ? '继续对话，遇见新的可能。' : '从一次对话，开始新的连接。'}
+    >
+      <form className="auth-form" onSubmit={(event) => void submit(event)} aria-busy={busy}>
+        {mode === 'register' && (
+          <div className="auth-field">
+            <Label className="sr-only" htmlFor="auth-name">
+              怎么称呼你
+            </Label>
             <Input
-              id="auth-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
+              id="auth-name"
+              placeholder="怎么称呼你"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="nickname"
               required
-              maxLength={320}
+              maxLength={120}
               disabled={busy}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="auth-password">密码</Label>
-            <Input
-              id="auth-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              minLength={mode === 'register' ? 12 : 1}
-              maxLength={128}
-              required
+        )}
+        <div className="auth-field">
+          <Label className="sr-only" htmlFor="auth-email">
+            邮箱
+          </Label>
+          <Input
+            id="auth-email"
+            type="email"
+            inputMode="email"
+            placeholder="邮箱地址"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            maxLength={320}
+            disabled={busy}
+          />
+        </div>
+        <div className="auth-field">
+          <Label className="sr-only" htmlFor="auth-password">
+            密码
+          </Label>
+          <AuthPassword
+            key={mode}
+            id="auth-password"
+            placeholder={mode === 'login' ? '密码' : '设置密码（至少 12 个字符）'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            minLength={mode === 'register' ? 12 : 1}
+            maxLength={128}
+            required
+            disabled={busy}
+            aria-describedby={mode === 'register' ? 'auth-password-hint' : undefined}
+          />
+        </div>
+        {mode === 'register' && (
+          <p id="auth-password-hint" className="auth-field-hint">
+            至少 12 个字符，建议组合字母、数字和符号。
+          </p>
+        )}
+        {mode === 'login' && (
+          <div className="auth-assistance">
+            <Button
+              variant="ghost"
               disabled={busy}
-            />
+              onClick={() => {
+                setPassword('');
+                setRecovering(true);
+              }}
+            >
+              忘记密码
+            </Button>
           </div>
-          {message && <Alert variant="warning">{message}</Alert>}
-          <Button className="w-full" type="submit" disabled={busy}>
-            {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
-          </Button>
-        </form>
+        )}
+        {message && <Alert variant="warning">{message}</Alert>}
+        <Button className="auth-submit" type="submit" disabled={busy}>
+          {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
+        </Button>
+      </form>
+      <div className="auth-switch">
+        <span>{mode === 'login' ? '第一次来到这里？' : '已经有账号了？'}</span>
         <Button
           variant="ghost"
-          className="mb-3"
           disabled={busy}
           onClick={() => {
             setMode(mode === 'login' ? 'register' : 'login');
             setPassword('');
             setMessage('');
           }}
+          aria-label={mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
         >
-          {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
+          {mode === 'login' ? '注册' : '登录'}
         </Button>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onClick={() => {
-            setPassword('');
-            setRecovering(true);
-          }}
-        >
-          忘记密码
-        </Button>
-        <p className="small muted">开发验证版 · AI 使用 Mock 服务 · 尚未开放真实模型与邮箱连接</p>
-        <a className="small muted" href="/diagnostics">
-          工程诊断
-        </a>
-      </section>
-    </main>
+      </div>
+      <p className="auth-privacy">每一次分享，都由你决定。</p>
+    </AuthShell>
   );
 }

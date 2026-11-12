@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert } from '@/components/ui/alert';
 import { api, errorText } from './api';
+import { AuthShell } from './auth-shell';
+import { AuthPassword } from './auth-password';
 
 export function PasswordRecovery({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('');
@@ -15,15 +17,14 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
   const [message, setMessage] = useState('');
   const lock = useRef(false);
   return (
-    <section className="auth-card flex flex-col gap-3" aria-label="找回密码">
-      <h1>找回密码</h1>
-      <p className="small muted">
-        若账号存在，重置指引将送达。当前开发环境的邮件保存在本地文件，不会向真实邮箱投递。
-      </p>
+    <AuthShell
+      title={stage === 'done' ? '密码已重置' : '找回密码'}
+      description="重新开启与你的对话。"
+    >
       {message && <Alert variant="warning">{message}</Alert>}
       {stage !== 'done' && (
         <form
-          className="stack-form"
+          className="auth-form"
           onSubmit={(event) => {
             event.preventDefault();
             if (lock.current) return;
@@ -54,9 +55,12 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
         >
           {stage === 'request' ? (
             <>
-              <Label htmlFor="reset-email">账号邮箱</Label>
+              <Label className="sr-only" htmlFor="reset-email">
+                账号邮箱
+              </Label>
               <Input
                 id="reset-email"
+                placeholder="账号邮箱"
                 type="email"
                 required
                 value={email}
@@ -67,9 +71,12 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
             </>
           ) : (
             <>
-              <Label htmlFor="reset-token">重置码</Label>
+              <Label className="sr-only" htmlFor="reset-token">
+                重置码
+              </Label>
               <Input
                 id="reset-token"
+                placeholder="邮件中的重置码"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 required
@@ -78,10 +85,12 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
                 disabled={busy}
                 autoComplete="off"
               />
-              <Label htmlFor="reset-password">新密码</Label>
-              <Input
+              <Label className="sr-only" htmlFor="reset-password">
+                新密码
+              </Label>
+              <AuthPassword
                 id="reset-password"
-                type="password"
+                placeholder="新密码（至少 12 个字符）"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -92,14 +101,15 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
               />
             </>
           )}
-          <Button type="submit" disabled={busy}>
-            {stage === 'request' ? '获取重置指引' : '重置密码'}
+          <Button className="auth-submit" type="submit" disabled={busy}>
+            {busy ? '正在处理…' : stage === 'request' ? '获取重置指引' : '重置密码'}
           </Button>
         </form>
       )}
-      <Button variant="ghost" onClick={onBack} disabled={busy}>
+      <p className="auth-recovery-note">开发验证版的邮件保存在本机，暂不向真实邮箱投递。</p>
+      <Button className="auth-back" variant="ghost" onClick={onBack} disabled={busy}>
         返回登录
       </Button>
-    </section>
+    </AuthShell>
   );
 }
