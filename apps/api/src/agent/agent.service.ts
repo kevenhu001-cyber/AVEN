@@ -13,9 +13,15 @@ import {
   type AgentRunStatus,
   type AgentTurnRequest,
   type AgentTurnResponse,
+  type AgentHistoryQuery,
 } from '@aven/contracts';
 import { parseAIProviderConfig } from '@aven/ai-core';
-import { createApplicationPool, withRequestContext, type DatabasePool } from '@aven/database';
+import {
+  createApplicationPool,
+  withRequestContext,
+  listPersonalAgentHistory,
+  type DatabasePool,
+} from '@aven/database';
 import type { AuthContext } from '../auth/auth.types.js';
 import { ApiCodeException } from '../http-errors.js';
 
@@ -243,6 +249,12 @@ export class AgentService implements OnModuleDestroy {
       status: row.status,
       streamUrl: `/api/v1/agent/runs/${row.run_id}/events`,
     });
+  }
+
+  async history(auth: AuthContext, query: AgentHistoryQuery) {
+    return withRequestContext(this.getPool(), this.context(auth), (client) =>
+      listPersonalAgentHistory(client, query),
+    );
   }
 
   async getRun(auth: AuthContext, runId: string): Promise<AgentRun> {

@@ -1,5 +1,6 @@
 'use client';
 
+import { ActionPanel } from './action-panel';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ContextUse, MemoryItem } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
@@ -97,6 +98,7 @@ export function MemoriesPanel({ onExpired }: PrivateProps) {
       <TabsList>
         <TabsTrigger value="confirmed">已确认信息</TabsTrigger>
         <TabsTrigger value="candidates">候选复核</TabsTrigger>
+        <TabsTrigger value="actions">行动草稿</TabsTrigger>
       </TabsList>
       <TabsContent value="confirmed" className="flex flex-col gap-3">
         <p className="muted m-0">
@@ -173,6 +175,9 @@ export function MemoriesPanel({ onExpired }: PrivateProps) {
       </TabsContent>
       <TabsContent value="candidates">
         <CandidateReview onExpired={onExpired} onConfirmed={reload} />
+      </TabsContent>
+      <TabsContent value="actions">
+        <ActionPanel onExpired={onExpired} />
       </TabsContent>
     </Tabs>
   );

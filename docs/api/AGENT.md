@@ -32,6 +32,13 @@
 - 同一 key + 相同请求返回同一 run；同一 key + 不同请求返回 409 `IDEMPOTENCY_CONFLICT`。
 - 不存在的会话或非本人会话返回 404；输入正文不进入 Outbox、日志或分析事件。
 
+## GET /agent/runs
+
+- 本人个人运行历史元数据，排除组织 run；`limit` 默认 20、上限 50。
+- `cursorCreatedAt` 与 `cursorId` 必须同时提供；按 `(created_at, id)` 倒序键集分页。
+- 返回 `{data:[{id,conversationId,status,provider,model,createdAt}],nextCursor:{createdAt,id}|null}`，不包含输入、输出、摘要或事件正文。
+- 历史条目不赋予重放权限；读取回复继续通过下述 events 接口校验当前来源和 24 小时保留期。
+
 ## GET /agent/runs/:id
 
 - 认证：受保护；仅发起用户。

@@ -822,6 +822,34 @@ export const AgentRunSchema = z
   })
   .strict();
 
+export const AgentHistoryQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+    cursorCreatedAt: z.iso.datetime({ offset: true }).optional(),
+    cursorId: z.uuid().optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.cursorCreatedAt) === Boolean(value.cursorId));
+export const AgentHistoryItemSchema = AgentRunSchema.pick({
+  id: true,
+  conversationId: true,
+  status: true,
+  provider: true,
+  model: true,
+  createdAt: true,
+});
+export const AgentHistorySchema = z
+  .object({
+    data: z.array(AgentHistoryItemSchema),
+    nextCursor: z
+      .object({ createdAt: z.iso.datetime({ offset: true }), id: z.uuid() })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+export type AgentHistoryItem = z.infer<typeof AgentHistoryItemSchema>;
+export type AgentHistoryQuery = z.infer<typeof AgentHistoryQuerySchema>;
+
 export const AgentRunEventSchema = z
   .object({
     schemaVersion: z.literal(1),

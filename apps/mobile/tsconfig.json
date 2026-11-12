@@ -8,5 +8,5 @@
     "noEmit": true,
     "types": ["react"]
   },
-  "include": ["app/**/*.ts", "app/**/*.tsx"]
+  "include": ["app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"]
 }

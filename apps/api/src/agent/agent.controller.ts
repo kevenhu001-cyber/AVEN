@@ -7,6 +7,7 @@ import {
   Inject,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UnprocessableEntityException,
@@ -19,6 +20,8 @@ import {
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
   RequestIdSchema,
+  AgentHistoryQuerySchema,
+  AgentHistorySchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
@@ -56,6 +59,13 @@ export class AgentController {
     const input = parse(AgentTurnRequestSchema, body);
     return AgentTurnResponseSchema.parse(
       await this.agent.createTurn(auth, input, requireIdempotencyKey(idempotencyKey)),
+    );
+  }
+
+  @Get('runs')
+  async history(@CurrentAuth() auth: AuthContext, @Query() query: unknown) {
+    return AgentHistorySchema.parse(
+      await this.agent.history(auth, parse(AgentHistoryQuerySchema, query)),
     );
   }
 

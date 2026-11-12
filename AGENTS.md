@@ -4,6 +4,8 @@
 
 ## 1. 当前阶段
 
+- 2026-11-13 用户明确要求全面梳理与开发 Web 和 Android，按 ADR-018 开始双端个人工作区实施，替代下方历史 Android 暂缓与本轮个人界面编码顺序限制。正式设计评审、真实 Provider/OAuth、生产试点与原生发布验收仍须独立证据，不因实施授权而标为完成。
+
 - WEB-01 个人 Web 已按 ADR-017 限定接入注册/登录、Mock SSE、手工记忆、连接邀请/消息与站内通知。首页为开发验证版，工程诊断迁至 `/diagnostics`。最新范围和实际证据以 `docs/development/WEB_PERSONAL.md` 为准；下方历史“无 UI”仅限原交付阶段。M1-07 整体仍 REVIEW，不授权真实 Provider、外部 OAuth 或 Android。
 
 - 2026-11-13 用户明确授权开始下一阶段：按 [ADR-017](docs/architecture/decisions/0017-personal-web-increment.md) 实施个人 Web 限定主线。该范围可进入 UI 编码，M1-07 整体仍为 REVIEW，其他页面/原生/真实 Provider/试点门不变；以下历史“不能进入 UI 编码”在本轮限定范围内按此授权执行。

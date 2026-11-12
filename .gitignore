@@ -50,3 +50,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.local
+
+# Expo Continuous Native Generation
+apps/mobile/android/
+apps/mobile/ios/

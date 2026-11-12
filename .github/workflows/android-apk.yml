@@ -1,0 +1,92 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: '手机可访问的 HTTPS API origin；留空使用仓库变量，均为空时显示配置提示'
+        type: string
+        required: false
+  push:
+    branches: [main, 'feat/web-android-*']
+    paths:
+      - apps/mobile/**
+      - packages/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .github/workflows/android-apk.yml
+      - scripts/android-*.mjs
+  pull_request:
+    paths:
+      - apps/mobile/**
+      - packages/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .github/workflows/android-apk.yml
+      - scripts/android-*.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: '1'
+      NODE_ENV: production
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || vars.EXPO_PUBLIC_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - run: pnpm install --frozen-lockfile --prod=false
+      - run: node scripts/android-build-config.mjs
+      - run: pnpm build:packages
+      - run: pnpm --filter @aven/mobile typecheck
+      - run: pnpm exec vitest run apps/mobile/src packages/api-client/src
+      - run: pnpm --filter @aven/mobile prebuild:android
+      # Expo's generated release variant uses the generated debug signing key.
+      # This is an internal test APK with an embedded JS bundle, not store signing.
+      - name: Assemble standalone internal APK
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.jvmargs='-Xmx4g -XX:MaxMetaspaceSize=1g'
+      - name: Package APK and checksums
+        run: |
+          mkdir -p var/android
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk var/android/aven-internal.apk
+          sha256sum var/android/aven-internal.apk > var/android/SHA256SUMS
+          printf 'commit=%s\nrun=%s\nsigning=generated-debug-key\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > var/android/build-info.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aven-android-apk-${{ github.run_number }}
+          path: var/android/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload native build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-reports-${{ github.run_number }}
+          path: apps/mobile/android/**/build/reports/
+          if-no-files-found: ignore
+          retention-days: 7

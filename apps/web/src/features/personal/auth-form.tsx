@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api, errorText } from './api';
 import { Mascot } from './mascot';
+import { PasswordRecovery } from './password-recovery';
 
 export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
+  const [recovering, setRecovering] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,6 +55,13 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
       setBusy(false);
     }
   }
+
+  if (recovering)
+    return (
+      <main className="auth-screen personal-app">
+        <PasswordRecovery onBack={() => setRecovering(false)} />
+      </main>
+    );
 
   return (
     <main className="auth-screen personal-app">
@@ -118,6 +127,16 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
           }}
         >
           {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            setPassword('');
+            setRecovering(true);
+          }}
+        >
+          忘记密码
         </Button>
         <p className="small muted">开发验证版 · AI 使用 Mock 服务 · 尚未开放真实模型与邮箱连接</p>
         <a className="small muted" href="/diagnostics">

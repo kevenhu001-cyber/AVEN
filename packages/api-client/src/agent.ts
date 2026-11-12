@@ -6,6 +6,8 @@ import {
   AgentStreamEventSchema,
   ApiErrorResponseSchema,
   RequestIdSchema,
+  AgentHistorySchema,
+  AgentHistoryQuerySchema,
 } from '@aven/contracts';
 import type { AgentTurnRequest, AgentStreamEvent } from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
@@ -29,6 +31,23 @@ export function createAgentClient(
   }
   const path = (runId: string) => `/api/v1/agent/runs/${id(runId)}`;
   return {
+    history(
+      query: { limit?: number; cursorCreatedAt?: string; cursorId?: string },
+      call: ConnectionCallOptions,
+    ) {
+      const parsed = AgentHistoryQuerySchema.safeParse(query);
+      if (!parsed.success) throw invalid();
+      const params = new URLSearchParams({ limit: String(parsed.data.limit) });
+      if (parsed.data.cursorCreatedAt && parsed.data.cursorId) {
+        params.set('cursorCreatedAt', parsed.data.cursorCreatedAt);
+        params.set('cursorId', parsed.data.cursorId);
+      }
+      return request(
+        `/api/v1/agent/runs?${params}`,
+        AgentHistorySchema.parse,
+        authenticatedOptions(call, false, invalid),
+      );
+    },
     createTurn(input: AgentTurnRequest, idempotencyKey: string, call: ConnectionCallOptions) {
       const parsed = AgentTurnRequestSchema.safeParse(input);
       if (!parsed.success) throw invalid();

@@ -9,6 +9,7 @@ export default defineConfig({
       'packages/*/src/**/*.test.ts',
       'apps/{api,worker}/src/**/*.test.ts',
       'apps/web/src/**/*.test.ts',
+      'apps/mobile/src/**/*.test.{ts,tsx}',
     ],
     environment: 'node',
     maxWorkers: 1,

@@ -4,6 +4,22 @@ packages:
 
 # Quarantine new releases briefly; the pinned framework versions above are ~18h old.
 minimumReleaseAge: 720
+# SDK 58 compatibility patches selected by expo install --check (ADR-018).
+minimumReleaseAgeExclude:
+  - expo@58.0.25
+  - '@expo/ui@58.0.28'
+  - expo-constants@58.0.16
+  - expo-font@58.0.12
+  - expo-linking@58.0.17
+  - expo-router@58.0.31
+  - expo-splash-screen@58.0.14
+  - expo-status-bar@58.0.5
+  - expo-symbols@58.0.5
+  - expo-crypto@58.0.8
+  - expo-dev-client@58.0.20
+  - expo-dev-launcher@58.0.20
+  - expo-dev-menu@58.0.20
+  - expo-secure-store@58.0.3
 strictPeerDependencies: true
 autoInstallPeers: false
 allowBuilds:

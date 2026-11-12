@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import { applicationDatabaseUrl, databaseUrlFor } from './env.js';
 
 export * from './schema.js';
+export { listPersonalAgentHistory } from './agent-history.js';
 export { databaseUrlFor, applicationDatabaseUrl, migrationDatabaseUrl } from './env.js';
 export { seedIds, seedVersion } from './seed-data.js';
 

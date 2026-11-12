@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "@aven/contracts": "workspace:*"
   },
   "devDependencies": {
     "@aven/config": "workspace:*",

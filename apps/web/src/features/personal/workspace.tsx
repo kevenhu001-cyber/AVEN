@@ -16,8 +16,11 @@ import { Mascot } from './mascot';
 import { MemoriesPanel } from './memories-panel';
 import { Modal } from './modal';
 import { NotificationsPanel } from './notifications-panel';
+import { SettingsPanel } from './settings-panel';
+import { HistoryPanel } from './history-panel';
+import { SafetyPanel } from './safety-panel';
 
-type Panel = 'memory' | 'connections' | 'notifications' | 'account' | null;
+type Panel = 'memory' | 'connections' | 'notifications' | 'account' | 'history' | null;
 
 export function Workspace({
   me,
@@ -48,6 +51,16 @@ export function Workspace({
         }}
       >
         对话
+      </Button>
+      <Button
+        variant={panel === 'history' ? 'secondary' : 'ghost'}
+        className="w-full justify-start"
+        onClick={() => {
+          setPanel('history');
+          setMenu(false);
+        }}
+      >
+        对话记录
       </Button>
       <Button
         variant={panel === 'memory' ? 'secondary' : 'ghost'}
@@ -175,6 +188,7 @@ export function Workspace({
               connections: '我的连接',
               notifications: '通知',
               account: '我的账号',
+              history: '对话记录',
             }[panel]
           }
           onClose={close}
@@ -189,7 +203,14 @@ export function Workspace({
               onConnections={() => setPanel('connections')}
             />
           )}
-          {panel === 'account' && <Account me={me} onRetry={onRetry} onLogout={onLogout} />}
+          {panel === 'history' && <HistoryPanel onExpired={onExpired} />}
+          {panel === 'account' && (
+            <>
+              <Account me={me} onRetry={onRetry} onLogout={onLogout} />
+              <SettingsPanel me={me} onChanged={onRetry} onExpired={onExpired} />
+              <SafetyPanel onExpired={onExpired} />
+            </>
+          )}
         </Modal>
       )}
     </main>
@@ -261,7 +282,7 @@ function Account({
       <Separator />
       <p className="small muted m-0">
         AI 当前为
-        Mock；真实邮箱、外部插件与模型尚未接通。历史对话列表、自动通知刷新和原生端将在后续接入。
+        Mock；真实邮箱、外部插件与模型尚未接通。对话记录按服务端保留期读取；通知需手动刷新。
       </p>
       <div>
         <Button variant="secondary" onClick={onLogout}>

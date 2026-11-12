@@ -93,7 +93,7 @@ corepack pnpm action:verify  # 行动草稿/预览/token/确认/幂等/取消/�
 
 | 现象 | 处理 |
 |---|---|
-| `pnpm install` 报 `minimumReleaseAge` | 不要绕过供应链等待期；改用已成熟版本并记录，或等待后重试 |
+| `pnpm install` 报 `minimumReleaseAge` | 默认等待或改用成熟版本；ADR-018 为 SDK 58 兼容补丁列出精确版本例外，保持全局 720 分钟等待期。新增例外须说明兼容原因并更新 lockfile |
 | 迁移报 `changed after it was applied` | 不要编辑已应用迁移；新增迁移修正并重新验证空库/升级 |
 | `db:verify` 失败 | 查看 `aven_test` 的迁移/RLS 输出；确认 `.env` 与角色密码一致 |
 | API 就绪 503 | `pnpm infra:status`；确认 PostgreSQL/Redis 健康、`pnpm db:migrate` 已执行 |
@@ -120,3 +120,8 @@ CI 使用 `.env.example` 的开发占位密码，不使用真实密钥；未执�
 - M0-03 的 Expo Go 真机连接、原生 SSE/取消探针与 development build。
 - 生产部署、备份恢复、邮件、监控告警、真实数据准入门。
 - M1 设计系统与核心旅程高保真/原型。
+
+
+## Android APK（GitHub Actions）
+
+按用户指定，原生 APK 在 GitHub Actions 构建，本机不进行原生编译。操作、API origin 配置、下载和签名限制见 [WEB_ANDROID_01](WEB_ANDROID_01.md#android-apk)。`pnpm build` 中的 Android 步骤仅为 JS 导出，不是 APK。

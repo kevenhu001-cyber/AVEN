@@ -453,7 +453,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M6-03 | DONE | 2026-11-11 | `packages/domain/src/time-intersection.ts`、确定性多方忙碌区间合并与空闲槽位求解纯函数算法、6 项全景单测、`POST /api/v1/availability/intersection`；`pnpm m6:verify` 通过 | 多方时间求交算法与工作时段过滤已验证 |
 | M6-04 | DONE | 2026-11-11 | `0026_events_and_coordination.sql`、`events`、`event_proposals`、`event_participants` 表与 FORCE RLS、`app.can_view_event` 鉴权、`/api/v1/events/*`；`pnpm m6:verify` 通过 | 活动草稿、提案提议、参与者响应、全员接受自动转 confirmed 终态及取消流转已验证 |
 | M6-01R | DONE | 2026-11-11 | `0029_availability_sharing.sql`（`app.create_availability_share`、`app.list_availability_shares`、`app.revoke_availability_share` 与带授权判定的 `app.query_availability_window`）、`POST/GET/DELETE /api/v1/availability/shares`、ADR-010；`pnpm m6:verify` 30/30、`pnpm db:verify` 184 项通过 | 忙闲用途授权共享已验证：默认拒绝、单向授权、期限上限 90 天、撤销后立即阻断、投影不含私人字段 |
-| M5-08 | NOT_STARTED | 2026-11-11 | 无 | Android development build 主线未开始：当前无 Android SDK，`apps/mobile` 仅有首页骨架 |
+| M5-08 | PARTIAL | 2026-11-13 | ADR-018、原生个人工作区、SecureStore、会话生命周期单测、Android APK 工作流 | APK 远端构建与设备主线待验收，见 WEB_ANDROID_01.md |
 | M6-05 | PARTIAL | 2026-11-12 | `packages/contracts`、`packages/ai-core`、`packages/domain`、`packages/api-client`、`apps/api`（`POST /api/v1/events/coordinate`）、`scripts/m6-journey-verify.ts`、[M6_CALENDAR_EVENT.md](M6_CALENDAR_EVENT.md) | Mock 默认的 AI 约束提取与按参与者当地 IANA 时区工作时段（含夏令时）协调求解已通过构建、typecheck、lint 与单测；真实外部 AI Provider 实测与在实时 PostgreSQL/Redis 上运行 `m6:verify` 仍待环境补验 |
 | M6-06 | PARTIAL | 2026-11-12 | 0034、0035、通知 API/Worker/客户端、NOTIFICATIONS.md | 个人连接与活动协调站内通知已交付；移动推送、产品 UI 与生产运维尚缺 |
 | M6-06A | DONE（站内通知后端与队列） | 2026-11-12 | A1 个人连接与 A2 活动协调站内通知已交付 | 站内通知 Outbox/BullMQ/偏好/已读闭环已完成；移动推送/UI 不在此包 |
@@ -476,3 +476,12 @@ M4–M6 的上述 DONE 记录只反映当时记录的实现和检查，不代表
 ### 文档与交付记录补齐（2026-11-11）
 
 新增 [M4 交付记录](M4_ORGANIZATION.md)、[M5 交付记录](M5_MATCHING_RELATIONSHIP.md)、[M6 交付记录](M6_CALENDAR_EVENT.md)；新增端点契约 [MATCHING.md](../api/MATCHING.md)、[REFERRALS.md](../api/REFERRALS.md)、[RELATIONSHIPS.md](../api/RELATIONSHIPS.md)、[AVAILABILITY_EVENTS.md](../api/AVAILABILITY_EVENTS.md)；新增 [ADR-010 忙闲用途授权](../architecture/decisions/0010-availability-authorization.md)。README 与 AGENTS.md 的阶段描述同步到 M6 实际状态，并明确 M5-02、M5-08、M6-02、M6-05、M6-06 与 UI 层仍未完成。
+
+
+## 2026-11-13 WEB/ANDROID-01 执行记录
+
+用户明确授权全面推进 Web 和 Android；ADR-018 部分替代旧 Android 暂缓限制。个人 Web 新增账号设置、会话管理、密码恢复、运行历史、行动确认与安全入口；Android 个人原生工作区已编码，原诊断页单独保留。共享客户端补齐移动账号、行动传输与插件表单；服务端增加本人个人 run 元数据键集分页，无迁移。
+
+M5-08 由 NOT_STARTED 调整为 PARTIAL：原生界面和安全会话已实现，设备主线、弱网、发布安装与正式设计评审尚未验收。APK 按用户指定通过 GitHub Actions 构建，本机不再编译；CI 结果独立记录，不能因工作流文件存在标为通过。具体文件、验证与缺口见 [WEB_ANDROID_01.md](WEB_ANDROID_01.md)。
+
+2026-11-13 用户进一步指定本机域名 `aven.topodrive.top`：独立 Nginx 与 Web/API/Worker systemd 服务已部署，公网合成账号 13 项复验通过；CDN HTTPS 正常，源站独立证书 HTTP-01 被 CDN 567 阻断，当前临时复用既有证书，详见 [DEPLOYMENT](DEPLOYMENT.md)。

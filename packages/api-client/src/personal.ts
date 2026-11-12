@@ -16,6 +16,11 @@ import {
   RequestIdSchema,
   UpdateMemoryRequestSchema,
   VerifyEmailRequestSchema,
+  SessionListResponseSchema,
+  ChangePasswordSchema,
+  PasswordResetRequestSchema,
+  PasswordResetSchema,
+  UpdateProfileRequestSchema,
 } from '@aven/contracts';
 import type {
   ConfirmMemoryRequest,
@@ -23,6 +28,8 @@ import type {
   ExtractMemoryRequest,
   RegisterRequest,
   UpdateMemoryRequest,
+  ChangePassword,
+  UpdateProfileRequest,
 } from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
 
@@ -34,8 +41,80 @@ export function createPersonalClient(request: ApiRequest, invalid: () => Error) 
   }
   return {
     auth: {
-      me(signal?: AbortSignal) {
-        return request('/api/v1/auth/me', MeResponseSchema.parse, { signal });
+      me(signal?: AbortSignal, call?: ConnectionCallOptions) {
+        return request('/api/v1/auth/me', MeResponseSchema.parse, {
+          ...(call ? authenticatedOptions(call, false, invalid) : {}),
+          signal: signal ?? call?.signal,
+        });
+      },
+      loginMobile(input: { email: string; password: string }, signal?: AbortSignal) {
+        const parsed = LoginRequestSchema.safeParse({ ...input, client: 'mobile' });
+        if (!parsed.success) throw invalid();
+        return request(
+          '/api/v1/auth/login',
+          (value) => {
+            const result = AuthResponseSchema.parse(value);
+            if (
+              result.session.client !== 'mobile' ||
+              !result.sessionToken ||
+              /\s/.test(result.sessionToken) ||
+              result.csrfToken !== undefined
+            )
+              throw new Error('Invalid mobile session.');
+            return { ...result, sessionToken: result.sessionToken };
+          },
+          { method: 'POST', body: parsed.data, credentials: 'omit', signal },
+        );
+      },
+      sessions(call: ConnectionCallOptions) {
+        return request(
+          '/api/v1/auth/sessions',
+          SessionListResponseSchema.parse,
+          authenticatedOptions(call, false, invalid),
+        );
+      },
+      revokeSession(id: string, call: ConnectionCallOptions) {
+        return request(
+          `/api/v1/auth/sessions/${memoryId(id)}/revoke`,
+          empty,
+          authenticatedOptions(call, true, invalid),
+        );
+      },
+      updateProfile(input: UpdateProfileRequest, call: ConnectionCallOptions) {
+        const parsed = UpdateProfileRequestSchema.safeParse(input);
+        if (!parsed.success) throw invalid();
+        return request('/api/v1/me', MeResponseSchema.parse, {
+          ...authenticatedOptions(call, 'PATCH', invalid),
+          body: parsed.data,
+        });
+      },
+      changePassword(input: ChangePassword, call: ConnectionCallOptions) {
+        const parsed = ChangePasswordSchema.safeParse(input);
+        if (!parsed.success) throw invalid();
+        return request('/api/v1/auth/password/change', empty, {
+          ...authenticatedOptions(call, true, invalid),
+          body: parsed.data,
+        });
+      },
+      requestPasswordReset(email: string, signal?: AbortSignal) {
+        const parsed = PasswordResetRequestSchema.safeParse({ email });
+        if (!parsed.success) throw invalid();
+        return request('/api/v1/auth/password/reset-request', OkResponseSchema.parse, {
+          method: 'POST',
+          body: parsed.data,
+          credentials: 'omit',
+          signal,
+        });
+      },
+      resetPassword(token: string, password: string, signal?: AbortSignal) {
+        const parsed = PasswordResetSchema.safeParse({ token, password });
+        if (!parsed.success) throw invalid();
+        return request('/api/v1/auth/password/reset', empty, {
+          method: 'POST',
+          body: parsed.data,
+          credentials: 'omit',
+          signal,
+        });
       },
       loginWeb(input: { email: string; password: string }, signal?: AbortSignal) {
         const parsed = LoginRequestSchema.safeParse({ ...input, client: 'web' });
@@ -146,4 +225,8 @@ export function createPersonalClient(request: ApiRequest, invalid: () => Error) 
       },
     },
   };
+}
+
+function empty(value: unknown) {
+  if (value !== undefined) throw new Error('Expected empty response.');
 }

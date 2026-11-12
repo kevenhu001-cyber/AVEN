@@ -6,6 +6,7 @@ import {
   SubmitReportRequestSchema,
   SubmitReportResponseSchema,
   ListReportsResponseSchema,
+  RequestIdSchema,
 } from '@aven/contracts';
 import type {
   BlockUserRequest,
@@ -33,6 +34,12 @@ export function createModerationClient(
     method: 'GET' | 'POST' | 'DELETE',
     body?: unknown,
   ): TransportOptions {
+    if (
+      (options.bearerToken && /\s/.test(options.bearerToken)) ||
+      (options.csrfToken && /\s/.test(options.csrfToken)) ||
+      (options.bearerToken && options.csrfToken)
+    )
+      throw invalidRequest();
     const headers: Record<string, string> = {};
     if (options.bearerToken) {
       headers.Authorization = `Bearer ${options.bearerToken}`;
@@ -42,6 +49,7 @@ export function createModerationClient(
     }
     return {
       method,
+      credentials: options.bearerToken ? 'omit' : 'include',
       headers,
       body,
       signal: options.signal,
@@ -66,7 +74,7 @@ export function createModerationClient(
       userId: string,
       options: ModerationCallOptions = {},
     ): Promise<UnblockUserResponse> {
-      if (!userId) throw invalidRequest();
+      if (!RequestIdSchema.safeParse(userId).success) throw invalidRequest();
       return request(
         `/api/v1/blocks/${encodeURIComponent(userId)}`,
         (v) => UnblockUserResponseSchema.parse(v),

@@ -1,5 +1,6 @@
 import { ApiClientError } from './errors';
 import { createPersonalClient } from './personal';
+import { createActionsClient } from './actions';
 import { createAgentClient } from './agent';
 import {
   ApiErrorResponseSchema,
@@ -114,6 +115,7 @@ export function createApiClient(
   const personal = createPersonalClient(request, () => new ApiClientError('INVALID_REQUEST'));
   return {
     auth: personal.auth,
+    actions: createActionsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     memories: personal.memories,
     agent: createAgentClient(request, { baseUrl, fetcher, timeoutMs }),
     calendarConnections: createCalendarConnectionsClient(
@@ -157,3 +159,5 @@ export function createApiClient(
 
 export { readSse } from './sse';
 export type { SseEvent } from './sse';
+export { initialPluginValues, missingRequiredFields, buildPluginInput } from './plugin-input';
+export type { JsonSchemaProperty, PluginInputSchema } from './plugin-input';

@@ -1,13 +1,18 @@
 {
   "expo": {
-    "name": "AVEN 开发骨架",
+    "name": "AVEN",
     "slug": "aven",
     "scheme": "aven",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router"],
-    "android": { "package": "dev.aven.mobile" },
-    "ios": { "bundleIdentifier": "dev.aven.mobile" }
+    "plugins": ["expo-router", "expo-secure-store"],
+    "android": {
+      "package": "dev.aven.mobile",
+      "allowBackup": false
+    },
+    "ios": {
+      "bundleIdentifier": "dev.aven.mobile"
+    }
   }
 }

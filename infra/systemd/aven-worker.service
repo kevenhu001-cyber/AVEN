@@ -1,0 +1,22 @@
+[Unit]
+Description=AVEN worker development validation service
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/User/AVEN
+EnvironmentFile=/etc/aven/runtime.env
+ExecStart=/usr/bin/node apps/worker/dist/main.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
