@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Platform,
   Pressable,
   ScrollView,
@@ -39,6 +41,52 @@ type State =
 
 function errorCode(error: unknown): string {
   return error instanceof ApiClientError ? (error.apiCode ?? error.code) : 'NETWORK_ERROR';
+}
+
+/* ─── Animated loading dots ─── */
+function LoadingDots({ color }: { color: string }) {
+  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+  useEffect(() => {
+    const animations = dots.map((dot, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(dot, { toValue: 1, duration: 400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ]),
+      ),
+    );
+    animations.forEach((a) => a.start());
+    return () => animations.forEach((a) => a.stop());
+  }, []);
+  return (
+    <View style={styles.dotsRow}>
+      {dots.map((dot, i) => (
+        <Animated.View
+          key={i}
+          style={[styles.dot, { backgroundColor: color, opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }), transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.2] }) }] }]}
+        />
+      ))}
+    </View>
+  );
+}
+
+/* ─── Status dot + label ─── */
+function StatusBadge({ kind, theme }: { kind: State['kind']; theme: (typeof colors)[keyof typeof colors] }) {
+  const map = {
+    idle: { color: theme['foreground-tertiary'], label: '待检查' },
+    loading: { color: theme.warning, label: '检查中' },
+    success: { color: theme.success, label: '已连通' },
+    error: { color: theme.destructive, label: '未连通' },
+    cancelled: { color: theme['foreground-tertiary'], label: '已取消' },
+  };
+  const { color, label } = map[kind];
+  return (
+    <View style={styles.badge}>
+      <View style={[styles.badgeDot, { backgroundColor: color }]} />
+      <Text style={[styles.badgeLabel, { color }]}>{label}</Text>
+    </View>
+  );
 }
 
 export default function FoundationScreen() {
@@ -90,184 +138,346 @@ export default function FoundationScreen() {
   }
   const disabled = !config.client || state.kind === 'loading';
   const readyDisabled = !config.client || readyState.kind === 'loading';
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.brand, { color: theme.foreground }]}>AVEN</Text>
-        <Text style={[styles.meta, { color: theme['foreground-secondary'] }]}>
-          M0 · 原生工程骨架
-        </Text>
-        <Text accessibilityRole="header" style={[styles.heading, { color: theme.foreground }]}>
-          从可靠的连接开始。
-        </Text>
-        <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-          这是 Expo 原生诊断页，不是 WebView，也不是已完成产品。
-        </Text>
-        <View style={[styles.connection, { backgroundColor: theme['surface-secondary'] }]}>
-          <Text accessibilityRole="header" style={[styles.title, { color: theme.foreground }]}>
-            检查 API 连接
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ─── Header ─── */}
+        <View style={styles.header}>
+          <Text style={[styles.brand, { color: theme.foreground }]}>AVEN</Text>
+          <View style={[styles.versionPill, { backgroundColor: theme['surface-secondary'] }]}>
+            <Text style={[styles.versionText, { color: theme['foreground-tertiary'] }]}>M0</Text>
+          </View>
+        </View>
+
+        {/* ─── Hero ─── */}
+        <View style={styles.hero}>
+          <Text accessibilityRole="header" style={[styles.heading, { color: theme.foreground }]}>
+            从可靠的连接{'\n'}开始
           </Text>
-          <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-            {config.error ?? `API 地址：${config.origin}`}
+          <Text style={[styles.subtitle, { color: theme['foreground-secondary'] }]}>
+            Expo 原生诊断页 · 不是 WebView，也不是已完成产品
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled, busy: state.kind === 'loading' }}
-            disabled={disabled}
-            onPress={() => void check()}
-            style={[styles.button, { backgroundColor: theme.primary }]}
-          >
-            <Text style={[styles.buttonText, { color: theme['primary-foreground'] }]}>
-              {state.kind === 'loading'
-                ? '正在检查…'
-                : state.kind === 'error'
-                  ? '重试连接'
-                  : '检查连接'}
+        </View>
+
+        {/* ─── API Connection Card ─── */}
+        <View style={[styles.card, { backgroundColor: theme['surface-secondary'] }]}>
+          <View style={styles.cardHeader}>
+            <Text accessibilityRole="header" style={[styles.cardTitle, { color: theme.foreground }]}>
+              API 连接
             </Text>
-          </Pressable>
-          {state.kind === 'loading' && (
+            <StatusBadge kind={state.kind} theme={theme} />
+          </View>
+
+          <Text style={[styles.cardBody, { color: theme['foreground-secondary'] }]}>
+            {config.error ?? config.origin}
+          </Text>
+
+          <View style={styles.buttonRow}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                active.current?.abort();
-                active.current = null;
-                setState({ kind: 'cancelled' });
-              }}
-              style={[styles.button, { borderWidth: 1, borderColor: theme['control-border'] }]}
+              accessibilityState={{ disabled, busy: state.kind === 'loading' }}
+              disabled={disabled}
+              onPress={() => void check()}
+              style={({ pressed }) => [
+                styles.pillButton,
+                { backgroundColor: theme.primary, opacity: disabled ? 0.4 : pressed ? 0.85 : 1 },
+              ]}
             >
-              <Text style={[styles.buttonText, { color: theme.foreground }]}>取消检查</Text>
+              {state.kind === 'loading' ? (
+                <LoadingDots color={theme['primary-foreground']} />
+              ) : (
+                <Text style={[styles.pillButtonText, { color: theme['primary-foreground'] }]}>
+                  {state.kind === 'error' ? '重试' : '检查连接'}
+                </Text>
+              )}
             </Pressable>
-          )}
+
+            {state.kind === 'loading' && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  active.current?.abort();
+                  active.current = null;
+                  setState({ kind: 'cancelled' });
+                }}
+                style={({ pressed }) => [
+                  styles.pillButton,
+                  styles.ghostButton,
+                  { borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.pillButtonText, { color: theme['foreground-secondary'] }]}>
+                  取消
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Result area */}
           <View accessibilityLiveRegion="polite">
             {state.kind === 'idle' && (
-              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                尚未检查。存活探针不证明业务就绪。
+              <Text style={[styles.hint, { color: theme['foreground-tertiary'] }]}>
+                存活探针不证明业务就绪
               </Text>
             )}
             {state.kind === 'success' && (
-              <>
-                <Text style={[styles.body, { color: theme.success }]}>API 进程可访问</Text>
-                <Text selectable style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                  Request ID: {state.requestId}
+              <View style={styles.resultBlock}>
+                <Text style={[styles.resultText, { color: theme.success }]}>
+                  API 进程可访问
                 </Text>
-              </>
+                <Text selectable style={[styles.mono, { color: theme['foreground-tertiary'] }]}>
+                  {state.requestId}
+                </Text>
+              </View>
             )}
             {state.kind === 'error' && (
-              <Text style={[styles.body, { color: theme.destructive }]}>
-                连接未确认，请检查地址与网络后重试。错误类型：{state.code}
-              </Text>
-            )}
-            {state.kind === 'cancelled' && (
-              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                已取消本次检查。
+              <Text style={[styles.resultText, { color: theme.destructive }]}>
+                连接未确认 · {state.code}
               </Text>
             )}
           </View>
         </View>
-        <View style={[styles.connection, { backgroundColor: theme['surface-secondary'] }]}>
-          <Text accessibilityRole="header" style={[styles.title, { color: theme.foreground }]}>
-            检查依赖就绪
-          </Text>
-          <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-            数据库、Redis 与迁移版本；未就绪时不会显示成功。
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: readyDisabled, busy: readyState.kind === 'loading' }}
-            disabled={readyDisabled}
-            onPress={() => void checkReady()}
-            style={[styles.button, { backgroundColor: theme.primary }]}
-          >
-            <Text style={[styles.buttonText, { color: theme['primary-foreground'] }]}>
-              {readyState.kind === 'loading'
-                ? '正在检查…'
-                : readyState.kind === 'error'
-                  ? '重试依赖检查'
-                  : '检查依赖'}
+
+        {/* ─── Readiness Card ─── */}
+        <View style={[styles.card, { backgroundColor: theme['surface-secondary'] }]}>
+          <View style={styles.cardHeader}>
+            <Text accessibilityRole="header" style={[styles.cardTitle, { color: theme.foreground }]}>
+              依赖就绪
             </Text>
-          </Pressable>
-          {readyState.kind === 'loading' && (
+            <StatusBadge kind={readyState.kind} theme={theme} />
+          </View>
+
+          <Text style={[styles.cardBody, { color: theme['foreground-secondary'] }]}>
+            数据库、Redis 与迁移版本
+          </Text>
+
+          <View style={styles.buttonRow}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                readyActive.current?.abort();
-                readyActive.current = null;
-                setReadyState({ kind: 'cancelled' });
-              }}
-              style={[styles.button, { borderWidth: 1, borderColor: theme['control-border'] }]}
+              accessibilityState={{ disabled: readyDisabled, busy: readyState.kind === 'loading' }}
+              disabled={readyDisabled}
+              onPress={() => void checkReady()}
+              style={({ pressed }) => [
+                styles.pillButton,
+                { backgroundColor: theme.primary, opacity: readyDisabled ? 0.4 : pressed ? 0.85 : 1 },
+              ]}
             >
-              <Text style={[styles.buttonText, { color: theme.foreground }]}>取消检查</Text>
+              {readyState.kind === 'loading' ? (
+                <LoadingDots color={theme['primary-foreground']} />
+              ) : (
+                <Text style={[styles.pillButtonText, { color: theme['primary-foreground'] }]}>
+                  {readyState.kind === 'error' ? '重试' : '检查依赖'}
+                </Text>
+              )}
             </Pressable>
-          )}
+
+            {readyState.kind === 'loading' && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  readyActive.current?.abort();
+                  readyActive.current = null;
+                  setReadyState({ kind: 'cancelled' });
+                }}
+                style={({ pressed }) => [
+                  styles.pillButton,
+                  styles.ghostButton,
+                  { borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.pillButtonText, { color: theme['foreground-secondary'] }]}>
+                  取消
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
           <View accessibilityLiveRegion="polite">
             {readyState.kind === 'idle' && (
-              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                尚未检查。依赖就绪不代表业务功能已完成。
+              <Text style={[styles.hint, { color: theme['foreground-tertiary'] }]}>
+                依赖就绪不代表业务功能已完成
               </Text>
             )}
             {readyState.kind === 'success' && (
-              <>
-                <Text style={[styles.body, { color: theme.success }]}>依赖已就绪</Text>
-                <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                  数据库、Redis 与迁移版本均已确认；业务接口仍未开放。
+              <View style={styles.resultBlock}>
+                <Text style={[styles.resultText, { color: theme.success }]}>
+                  全部依赖已就绪
                 </Text>
-                <Text selectable style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                  Request ID: {readyState.requestId}
+                <Text style={[styles.hint, { color: theme['foreground-tertiary'] }]}>
+                  数据库、Redis 与迁移版本均已确认
                 </Text>
-              </>
+                <Text selectable style={[styles.mono, { color: theme['foreground-tertiary'] }]}>
+                  {readyState.requestId}
+                </Text>
+              </View>
             )}
             {readyState.kind === 'error' && (
-              <Text style={[styles.body, { color: theme.destructive }]}>
-                依赖尚未就绪，请启动本地基础设施并执行迁移后重试。错误类型：{readyState.code}
-              </Text>
-            )}
-            {readyState.kind === 'cancelled' && (
-              <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-                已取消本次检查。
+              <Text style={[styles.resultText, { color: theme.destructive }]}>
+                依赖未就绪 · {readyState.code}
               </Text>
             )}
           </View>
         </View>
-        <Text style={[styles.body, { color: theme['foreground-secondary'] }]}>
-          数据库、队列、账号、机会、授权和 AI 均尚未开放。JS 导出成功不等于原生包或真机验收通过。
+
+        {/* ─── Footer note ─── */}
+        <Text style={[styles.footer, { color: theme['foreground-tertiary'] }]}>
+          数据库、队列、账号、机会、授权和 AI 均尚未开放。{'\n'}JS 导出成功不等于原生包或真机验收通过。
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  content: { padding: space[24], gap: space[16], flexGrow: 1 },
-  brand: { fontSize: fontSize.h3, fontWeight: '600', letterSpacing: 2 },
-  meta: {
-    fontSize: fontSize['body-sm'],
-    lineHeight: fontSize['body-sm'] * lineHeight['body-sm'],
+  content: {
+    paddingHorizontal: space[24],
+    paddingTop: space[16],
+    paddingBottom: space[48],
+    gap: space[20],
+    flexGrow: 1,
+  },
+
+  /* Header */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[12],
+    paddingBottom: space[4],
+  },
+  brand: {
+    fontSize: fontSize.h3,
+    fontWeight: '700',
+    letterSpacing: 3,
+  },
+  versionPill: {
+    paddingHorizontal: space[8],
+    paddingVertical: 3,
+    borderRadius: radius.full,
+  },
+  versionText: {
+    fontSize: fontSize.micro,
+    fontWeight: '500',
+    letterSpacing: 1,
+  },
+
+  /* Hero */
+  hero: {
+    paddingTop: space[24],
+    paddingBottom: space[8],
+    gap: space[12],
   },
   heading: {
-    fontSize: fontSize.h1,
-    lineHeight: fontSize.h1 * lineHeight.h1,
-    fontWeight: '600',
-    marginTop: space[24],
+    fontSize: 32,
+    lineHeight: 32 * 1.2,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  title: {
-    fontSize: fontSize.h2,
-    lineHeight: fontSize.h2 * lineHeight.h2,
+  subtitle: {
+    fontSize: fontSize.body,
+    lineHeight: fontSize.body * lineHeight.body,
+  },
+
+  /* Cards */
+  card: {
+    borderRadius: radius.xl,
+    padding: space[20],
+    gap: space[16],
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: fontSize.h3,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  cardBody: {
+    fontSize: fontSize.body,
+    lineHeight: fontSize.body * lineHeight.body,
+  },
+
+  /* Status badge */
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badgeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  badgeLabel: {
+    fontSize: fontSize.caption,
     fontWeight: '500',
   },
-  body: {
-    fontSize: fontSize['body-native'],
-    lineHeight: fontSize['body-native'] * lineHeight.body,
+
+  /* Buttons */
+  buttonRow: {
+    flexDirection: 'row',
+    gap: space[12],
   },
-  connection: { padding: space[20], gap: space[16], borderRadius: radius.lg },
-  button: {
-    minHeight: 48,
-    padding: space[12],
-    borderRadius: radius.md,
+  pillButton: {
+    height: 44,
+    paddingHorizontal: space[24],
+    borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonText: {
-    fontSize: fontSize['body-native'],
-    lineHeight: fontSize['body-native'] * lineHeight['body-sm'],
+  ghostButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+  },
+  pillButtonText: {
+    fontSize: fontSize.body,
+    fontWeight: '600',
+  },
+
+  /* Loading dots */
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 20,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  /* Results */
+  resultBlock: {
+    gap: space[4],
+  },
+  resultText: {
+    fontSize: fontSize.body,
+    lineHeight: fontSize.body * lineHeight.body,
     fontWeight: '500',
+  },
+  hint: {
+    fontSize: fontSize['body-sm'],
+    lineHeight: fontSize['body-sm'] * lineHeight['body-sm'],
+  },
+  mono: {
+    fontSize: fontSize.caption,
+    lineHeight: fontSize.caption * lineHeight.caption,
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+  },
+
+  /* Footer */
+  footer: {
+    fontSize: fontSize.caption,
+    lineHeight: fontSize.caption * lineHeight.caption,
+    textAlign: 'center',
+    marginTop: 'auto' as unknown as number,
+    paddingTop: space[24],
   },
 });
