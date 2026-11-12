@@ -1023,3 +1023,45 @@ export const peerMessages = pgTable(
     index('idx_peer_messages_sender').on(t.senderUserId),
   ],
 );
+
+export const blockLists = pgTable(
+  'block_lists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedUserId: uuid('blocked_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    reason: text('reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('uq_block_lists_owner_blocked').on(t.ownerUserId, t.blockedUserId),
+    index('idx_block_lists_owner').on(t.ownerUserId),
+    index('idx_block_lists_blocked').on(t.blockedUserId),
+  ],
+);
+
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reporterUserId: uuid('reporter_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetType: text('target_type').notNull(),
+    targetId: uuid('target_id').notNull(),
+    reason: text('reason').notNull(),
+    details: text('details'),
+    status: text('status').notNull().default('open'),
+    resolution: text('resolution'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('idx_reports_reporter').on(t.reporterUserId),
+    index('idx_reports_status_created').on(t.status, t.createdAt),
+  ],
+);

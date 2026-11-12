@@ -1841,3 +1841,112 @@ export const NotificationMaintenanceBatchSchema = z.coerce
   .min(1)
   .max(1000)
   .default(100);
+
+// --- Blocks ---
+export const BlockUserRequestSchema = z
+  .object({
+    blockedUserId: z.uuid(),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .strict();
+export type BlockUserRequest = z.infer<typeof BlockUserRequestSchema>;
+
+export const BlockItemSchema = z
+  .object({
+    id: z.uuid(),
+    blockedUserId: z.uuid(),
+    reason: z.string().nullable().optional(),
+    createdAt: z.string(),
+  })
+  .strict();
+export type BlockItem = z.infer<typeof BlockItemSchema>;
+
+export const BlockUserResponseSchema = z
+  .object({
+    id: z.uuid(),
+    ownerUserId: z.uuid(),
+    blockedUserId: z.uuid(),
+    reason: z.string().nullable(),
+    createdAt: z.string(),
+  })
+  .strict();
+export type BlockUserResponse = z.infer<typeof BlockUserResponseSchema>;
+
+export const UnblockUserResponseSchema = z
+  .object({
+    unblocked: z.boolean(),
+  })
+  .strict();
+export type UnblockUserResponse = z.infer<typeof UnblockUserResponseSchema>;
+
+export const ListBlocksResponseSchema = z
+  .object({
+    blocks: z.array(BlockItemSchema),
+  })
+  .strict();
+export type ListBlocksResponse = z.infer<typeof ListBlocksResponseSchema>;
+
+// --- Reports ---
+export const ReportTargetTypeSchema = z.enum([
+  'user',
+  'peer_message',
+  'connection_invitation',
+  'event',
+]);
+export type ReportTargetType = z.infer<typeof ReportTargetTypeSchema>;
+
+export const ReportReasonSchema = z.enum([
+  'spam',
+  'harassment',
+  'inappropriate_content',
+  'privacy_violation',
+  'other',
+]);
+export type ReportReason = z.infer<typeof ReportReasonSchema>;
+
+export const ReportStatusSchema = z.enum(['open', 'reviewing', 'resolved', 'dismissed']);
+export type ReportStatus = z.infer<typeof ReportStatusSchema>;
+
+export const SubmitReportRequestSchema = z
+  .object({
+    targetType: ReportTargetTypeSchema,
+    targetId: z.uuid(),
+    reason: ReportReasonSchema,
+    details: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+export type SubmitReportRequest = z.infer<typeof SubmitReportRequestSchema>;
+
+export const ReportItemSchema = z
+  .object({
+    id: z.uuid(),
+    targetType: ReportTargetTypeSchema,
+    targetId: z.uuid(),
+    reason: ReportReasonSchema,
+    details: z.string().nullable().optional(),
+    status: ReportStatusSchema,
+    createdAt: z.string(),
+  })
+  .strict();
+export type ReportItem = z.infer<typeof ReportItemSchema>;
+
+export const SubmitReportResponseSchema = z
+  .object({
+    id: z.uuid(),
+    reporterUserId: z.uuid(),
+    targetType: ReportTargetTypeSchema,
+    targetId: z.uuid(),
+    reason: ReportReasonSchema,
+    details: z.string().nullable(),
+    status: ReportStatusSchema,
+    createdAt: z.string(),
+  })
+  .strict();
+export type SubmitReportResponse = z.infer<typeof SubmitReportResponseSchema>;
+
+export const ListReportsResponseSchema = z
+  .object({
+    reports: z.array(ReportItemSchema),
+  })
+  .strict();
+export type ListReportsResponse = z.infer<typeof ListReportsResponseSchema>;

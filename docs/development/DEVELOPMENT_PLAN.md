@@ -391,6 +391,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | P2P-02 | DONE（接入层范围） | 2026-11-12 | 共享连接客户端、widget 读取协议，71 项 HTTP/DB 检查 | 没有产品小组件、Agent 绑定与真实设备验收 |
 | P2P-03 | DONE（保留清理范围） | 2026-11-12 | 0033、受控保留清理、显式维护与验证脚本 | 本轮执行结果见 CONNECTION_RETENTION.md；生产调度和全系统保留仍待交付 |
 | P2P-04 | DONE（消息与保留清理范围） | 2026-11-12 | 0036、`peer_messages` 表与 FORCE RLS、游标分页、单方软删除与双删清理、`messages:verify` 31/31 | 见 PEER_MESSAGES.md；仅后端契约与存储过程，聊天 UI/移动即时推送未实现 |
+| SEC-01 | DONE（安全与试点准入后端） | 2026-11-12 | 0037、`block_lists`与`reports`（FORCE RLS）、6 项受控存储函数、24h 邀请频控与双向阻断、`moderation:verify` 27/27 | 见 BLOCKS_AND_REPORTS.md；仅后端契约与存储过程，人工审核后台与删除演练流程待补全 |
 | M0-01 | DONE | 2026-11-10 | `AGENTS.md`、`docs/product/PRD.md`、`docs/design/DESIGN_SYSTEM.md`、`docs/architecture/TDD.md`、`docs/database/SCHEMA.md`、`docs/api/README.md`、`docs/architecture/decisions/ADR-001..006`、更新后的 `README.md` | 仅文档交付；未安装依赖、未初始化应用、未执行迁移或应用测试 |
 | M0-01-R1 | DONE | 2026-11-10 | 1.1 契约与核心界面/端点、ADR-007/008；git diff --check、本地链接/锚点/表格/围栏、86 个对比度组合与范围检查；见 CONTRACT_REVIEW.md | 仅文档与静态检查；无应用/迁移/构建/真机验收，应用状态不变 |
 | M0-02 | DONE | 2026-11-10 | workspace、`pnpm-lock.yaml`、Turbo、strict TS、ESLint/dependency-cruiser、Prettier、`.env.example`；`pnpm install --frozen-lockfile`、`format:check`、`lint`、`check:expo`、`typecheck` 通过；见 FOUNDATION_REPORT.md | 仅工具链与最小依赖；数据库、迁移与业务未实现 |

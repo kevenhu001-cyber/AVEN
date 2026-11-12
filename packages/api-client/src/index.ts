@@ -7,8 +7,10 @@ import type { ApiErrorCode, LivenessResponse, ReadinessResponse } from '@aven/co
 import { createConnectionsClient } from './connections';
 import type { TransportOptions } from './connections';
 import { createNotificationsClient } from './notifications';
+import { createModerationClient } from './moderation';
 export type { NotificationCallOptions } from './notifications';
 export type { ConnectionCallOptions } from './connections';
+export type { ModerationCallOptions } from './moderation';
 
 export class ApiClientError extends Error {
   constructor(
@@ -114,6 +116,7 @@ export function createApiClient(
   return {
     connections: createConnectionsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     notifications: createNotificationsClient(request, () => new ApiClientError('INVALID_REQUEST')),
+    moderation: createModerationClient(request, () => new ApiClientError('INVALID_REQUEST')),
     async getLiveness(signal?: AbortSignal): Promise<LivenessResponse> {
       return request(
         '/health/live',

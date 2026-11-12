@@ -6,6 +6,7 @@ import { AvailabilityModule } from './availability/availability.module.js';
 import { EventModule } from './event/event.module.js';
 import { ConnectionModule } from './connection/connection.module.js';
 import { NotificationModule } from './notification/notification.module.js';
+import { ModerationModule } from './moderation/moderation.module.js';
 import { HealthController } from './health.controller';
 import { IntentModule } from './intent/intent.module.js';
 import { MemoryModule } from './memory/memory.module.js';
@@ -20,6 +21,7 @@ import { RelationshipModule } from './relationship/relationship.module.js';
     AuthModule,
     ConnectionModule,
     NotificationModule,
+    ModerationModule,
     ProfileModule,
     OrganizationModule,
     OpportunityModule,
