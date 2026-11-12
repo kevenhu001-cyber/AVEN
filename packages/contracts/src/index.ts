@@ -1979,3 +1979,148 @@ export const ListReportsResponseSchema = z
   })
   .strict();
 export type ListReportsResponse = z.infer<typeof ListReportsResponseSchema>;
+
+// --- M6-05: AI Event Constraint Extraction & Coordination ---
+
+function isValidTimeZoneName(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: trimmed });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const IanaTimeZoneSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine(isValidTimeZoneName, { message: 'Invalid IANA time zone.' });
+
+export const PreferredTimeOfDaySchema = z.enum(['morning', 'afternoon', 'evening', 'any']);
+export type PreferredTimeOfDay = z.infer<typeof PreferredTimeOfDaySchema>;
+
+export const WorkingHoursWindowSchema = z
+  .object({
+    startHour: z.number().int().min(0).max(23),
+    endHour: z.number().int().min(1).max(24),
+  })
+  .strict()
+  .refine((value) => value.startHour < value.endHour, {
+    message: 'startHour must be strictly before endHour.',
+    path: ['endHour'],
+  });
+export type WorkingHoursWindow = z.infer<typeof WorkingHoursWindowSchema>;
+
+export const MissingCoordinationConstraintSchema = z.enum([
+  'windowStart',
+  'windowEnd',
+  'durationMinutes',
+]);
+export type MissingCoordinationConstraint = z.infer<typeof MissingCoordinationConstraintSchema>;
+
+export const EventCoordinationStatusSchema = z.enum([
+  'candidates_ready',
+  'needs_clarification',
+  'no_common_slots',
+]);
+export type EventCoordinationStatus = z.infer<typeof EventCoordinationStatusSchema>;
+
+export const ExtractedEventConstraintsSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160).nullable(),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .max(31 * 24 * 60)
+      .nullable(),
+    windowStart: z.iso.datetime().nullable(),
+    windowEnd: z.iso.datetime().nullable(),
+    timezone: IanaTimeZoneSchema.nullable(),
+    workingHoursOnly: z.boolean().nullable(),
+    workingHours: WorkingHoursWindowSchema.nullable(),
+    preferredTimeOfDay: PreferredTimeOfDaySchema.default('any'),
+    notes: z.string().trim().max(500).nullable(),
+  })
+  .strict();
+export type ExtractedEventConstraints = z.infer<typeof ExtractedEventConstraintsSchema>;
+
+export const EventCoordinationOverridesSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160).optional(),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .max(31 * 24 * 60)
+      .optional(),
+    windowStart: z.iso.datetime().optional(),
+    windowEnd: z.iso.datetime().optional(),
+    timezone: IanaTimeZoneSchema.optional(),
+    workingHoursOnly: z.boolean().optional(),
+    workingHours: WorkingHoursWindowSchema.optional(),
+    preferredTimeOfDay: PreferredTimeOfDaySchema.optional(),
+  })
+  .strict()
+  .refine(
+    (value) => {
+      if (!value.windowStart || !value.windowEnd) return true;
+      const diff = Date.parse(value.windowEnd) - Date.parse(value.windowStart);
+      return diff > 0 && diff <= 31 * 24 * 60 * 60 * 1000;
+    },
+    { message: 'Window must be positive and no longer than 31 days.', path: ['windowEnd'] },
+  );
+export type EventCoordinationOverrides = z.infer<typeof EventCoordinationOverridesSchema>;
+
+export const CoordinateEventRequestSchema = z
+  .object({
+    prompt: z.string().trim().min(1).max(2000),
+    participantIds: z.array(z.uuid()).min(1).max(50),
+    referenceNow: z.iso.datetime().optional(),
+    defaultTimezone: IanaTimeZoneSchema.default('Asia/Shanghai'),
+    participantTimezones: z.record(z.uuid(), IanaTimeZoneSchema).optional(),
+    overrides: EventCoordinationOverridesSchema.optional(),
+    maxCandidates: z.number().int().min(1).max(50).default(10),
+  })
+  .strict()
+  .refine(
+    (value) => {
+      if (!value.participantTimezones) return true;
+      const allowed = new Set(value.participantIds);
+      return Object.keys(value.participantTimezones).every((id) => allowed.has(id));
+    },
+    {
+      message: 'participantTimezones keys must belong to participantIds.',
+      path: ['participantTimezones'],
+    },
+  );
+export type CoordinateEventRequest = z.infer<typeof CoordinateEventRequestSchema>;
+
+export const CoordinationCandidateSlotSchema = z
+  .object({
+    startAt: z.iso.datetime(),
+    endAt: z.iso.datetime(),
+    score: z.number().min(0).max(1),
+    reason: z.string().trim().min(1).max(240),
+  })
+  .strict();
+export type CoordinationCandidateSlot = z.infer<typeof CoordinationCandidateSlotSchema>;
+
+export const CoordinateEventResponseSchema = z
+  .object({
+    status: EventCoordinationStatusSchema,
+    provider: z.string().trim().min(1).max(120),
+    model: z.string().trim().min(1).max(120),
+    mock: z.boolean(),
+    extractedConstraints: ExtractedEventConstraintsSchema,
+    missingConstraints: z.array(MissingCoordinationConstraintSchema),
+    clarificationPrompts: z.array(z.string().trim().min(1).max(300)),
+    candidates: z.array(CoordinationCandidateSlotSchema),
+    externalCalendarsModified: z.literal(false),
+  })
+  .strict();
+export type CoordinateEventResponse = z.infer<typeof CoordinateEventResponseSchema>;

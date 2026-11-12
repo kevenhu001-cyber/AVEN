@@ -6,11 +6,13 @@ import {
 import type { ApiErrorCode, LivenessResponse, ReadinessResponse } from '@aven/contracts';
 import { createConnectionsClient } from './connections';
 import type { TransportOptions } from './connections';
+import { createEventsClient } from './events';
 import { createNotificationsClient } from './notifications';
 import { createModerationClient } from './moderation';
 import { createReferralsClient } from './referrals';
 export type { NotificationCallOptions } from './notifications';
 export type { ConnectionCallOptions } from './connections';
+export type { EventsClient, EventCallOptions } from './events';
 export type { ModerationCallOptions } from './moderation';
 export type { ReferralsClient, ReferralCallOptions } from './referrals';
 
@@ -117,6 +119,7 @@ export function createApiClient(
 
   return {
     connections: createConnectionsClient(request, () => new ApiClientError('INVALID_REQUEST')),
+    events: createEventsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     notifications: createNotificationsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     moderation: createModerationClient(request, () => new ApiClientError('INVALID_REQUEST')),
     referrals: createReferralsClient(request, () => new ApiClientError('INVALID_REQUEST')),

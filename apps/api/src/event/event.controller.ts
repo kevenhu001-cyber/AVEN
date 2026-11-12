@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import {
   CancelEventRequestSchema,
+  CoordinateEventRequestSchema,
+  CoordinateEventResponseSchema,
   CreateEventDraftRequestSchema,
   EventListResponseSchema,
   EventSchema,
@@ -24,6 +26,7 @@ import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { parse } from '../http-validation.js';
+import { EventCoordinationService } from './event-coordination.service.js';
 import { EventService } from './event.service.js';
 
 function parseId(value: string): string {
@@ -35,13 +38,23 @@ function parseId(value: string): string {
 @Controller('api/v1/events')
 @UseGuards(AuthGuard)
 export class EventController {
-  constructor(@Inject(EventService) private readonly events: EventService) {}
+  constructor(
+    @Inject(EventService) private readonly events: EventService,
+    @Inject(EventCoordinationService) private readonly coordination: EventCoordinationService,
+  ) {}
 
   @Post()
   @HttpCode(201)
   async createDraft(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
     const input = parse(CreateEventDraftRequestSchema, body);
     return EventSchema.parse(await this.events.createDraft(auth, input));
+  }
+
+  @Post('coordinate')
+  @HttpCode(200)
+  async coordinate(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    const input = parse(CoordinateEventRequestSchema, body);
+    return CoordinateEventResponseSchema.parse(await this.coordination.coordinate(auth, input));
   }
 
   @Get('me')

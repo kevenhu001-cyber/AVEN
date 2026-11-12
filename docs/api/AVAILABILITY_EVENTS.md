@@ -118,6 +118,20 @@
 
 `app.can_view_event` 判定参与者与组织成员可见性；非参与者读取返回 404。
 
+### 3.4 AI 活动约束提取与协调求解（M6-05）
+
+- `POST /api/v1/events/coordinate`
+
+请求体支持自然语言 `prompt`、可选 `participantUserIds`（默认或补充包含当前登录用户，去重后最多 50 人）、`participantTimezones`（按参与者 ID 映射的 IANA 时区，默认采用 `defaultTimezone` / `UTC`）、可选结构化覆盖字段 `overrides`（`title` / `durationMinutes` / `windowStart` / `windowEnd` / `timezone` / `workingHoursOnly` / `workingHours` / `preferredTimeOfDay` / `notes`）以及可选 `maxCandidates`（1..50，默认 10）。
+
+服务端行为：
+
+1. 先核对全部非本人参与者在目标 `window` 内对当前用户是否存在未撤销且未过期的 `event_coordination` 忙闲共享授权；任何一方未授权即按 `403` 拒绝，不会部分降级。
+2. 通过 `@aven/ai-core` 的 `extractEventConstraints` 调用统一 `AIProvider.generateObject` 契约（`purpose: 'intent_extraction'`，默认 `MockProvider`）并叠加确定性解析与用户显式 `overrides`。
+3. 若关键约束（如时长 `durationMinutes`、起止时间窗 `windowStart` / `windowEnd` 或 31 天时间窗上限）缺失或冲突，返回 `status: "needs_clarification"`、`missingConstraints` 与 `clarificationPrompts`，不直接放行无效求解。
+4. 约束完整后，仅基于授权忙闲窗口与按**每位参与者各自 IANA 时区**（利用 `Intl.DateTimeFormat` 动态对齐 UTC 偏移以处理夏令时）转换的非工作阻断区间运行确定性求交，并按 `preferredTimeOfDay`（`morning` / `afternoon` / `evening` / `any`）对候选打分排序。
+5. 响应始终显式返回 `externalCalendarsModified: false`（`usedMockProvider` 标识当前是否使用 Mock Provider）。
+
 ## 4. 外部日历
 
 - `calendar_connections` 表已建立，凭据加密隔离与同步游标字段就绪（迁移 `0025`）。
@@ -130,7 +144,7 @@
 
 ## 6. 未实现
 
-- M6-05：AI 活动约束提取与协调求解。
-- M6-06：站内通知与移动推送投递（仓库中没有任何通知表与模块）。
+- M6-05 真实外部 AI Provider 实测与在连接真实数据库/Redis 环境下的 `m6:verify` 全流程复跑。
+- M6-06 移动推送投递与产品通知 UI（个人连接与活动协调站内通知后端闭环已交付，见 [通知文档](../development/NOTIFICATIONS.md)）。
 - 外部日历 OAuth 连接器与同步任务。
 - 忙闲共享的界面与时间窗授权细化（当前授权覆盖到期限，不区分具体时间窗）。

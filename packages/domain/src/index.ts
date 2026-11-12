@@ -21,6 +21,19 @@ export {
 } from './time-intersection.js';
 
 export {
+  buildNonWorkingBlockedIntervals,
+  coordinateEventSchedule,
+  getLocalDateParts,
+  isValidIanaTimeZone,
+  resolveCoordinationConstraints,
+  zonedWallClockToUtc,
+  type CoordinateScheduleOptions,
+  type CoordinateScheduleResult,
+  type ParticipantWorkingHoursRule,
+  type ResolvedCoordinationInput,
+} from './event-coordination.js';
+
+export {
   deliverNotification,
   failNotification,
   NotificationJobSchema,

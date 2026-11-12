@@ -142,3 +142,9 @@ export {
   type PersonalMemoryCandidate,
   type OrganizationContextInput,
 } from './eval/index.js';
+export {
+  extractEventConstraints,
+  parseDeterministicEventConstraints,
+  type ExtractEventConstraintsInput,
+  type ExtractEventConstraintsResult,
+} from './event-coordination.js';

@@ -466,6 +466,45 @@ async function main(): Promise<void> {
       Boolean(chosenSlot?.startAt && chosenSlot?.endAt),
     );
 
+    // M6-05: Missing constraints return clarification without reading unshared availability
+    const clarifyRes = await client2.call('/api/v1/events/coordinate', {
+      method: 'POST',
+      body: {
+        prompt: '帮我安排一次具身智能讨论会',
+        participantIds: [user1Id, user2Id],
+        defaultTimezone: 'Asia/Shanghai',
+      },
+    });
+    check(
+      'M6-05: missing constraints return needs_clarification without querying unshared availability',
+      clarifyRes.status === 200 &&
+        nested(clarifyRes.body, ['status']) === 'needs_clarification' &&
+        nested(clarifyRes.body, ['externalCalendarsModified']) === false &&
+        Array.isArray(nested(clarifyRes.body, ['missingConstraints'])) &&
+        (nested(clarifyRes.body, ['missingConstraints']) as unknown[]).length >= 2,
+      JSON.stringify(clarifyRes.body),
+    );
+
+    const deniedCoordRes = await client2.call('/api/v1/events/coordinate', {
+      method: 'POST',
+      body: {
+        prompt: '明天约60分钟讨论',
+        participantIds: [user1Id, user2Id],
+        defaultTimezone: 'UTC',
+        overrides: {
+          windowStart,
+          windowEnd,
+          durationMinutes: 60,
+          workingHoursOnly: false,
+        },
+      },
+    });
+    check(
+      'M6-05: AI coordination denies unshared cross-user availability',
+      deniedCoordRes.status === 403,
+      JSON.stringify(deniedCoordRes.body),
+    );
+
     // =========================================================================
     // M6-01R: Purpose-bound availability sharing (grant, direction, revocation)
     // =========================================================================
@@ -541,6 +580,40 @@ async function main(): Promise<void> {
     check(
       'M6-03: multi-party candidate slot selected for proposal',
       Boolean(sharedSlot?.startAt && sharedSlot?.endAt),
+    );
+
+    const aiCoordRes = await client2.call('/api/v1/events/coordinate', {
+      method: 'POST',
+      body: {
+        prompt: '安排60分钟具身智能组会',
+        participantIds: [user1Id, user2Id],
+        defaultTimezone: 'UTC',
+        overrides: {
+          windowStart,
+          windowEnd,
+          durationMinutes: 60,
+          workingHoursOnly: false,
+        },
+        maxCandidates: 5,
+      },
+    });
+    const aiCandidates =
+      (nested(aiCoordRes.body, ['candidates']) as { startAt: string; endAt: string }[]) ?? [];
+    check(
+      'M6-05: AI coordination extracts constraints and solves authorized candidates without modifying calendars',
+      aiCoordRes.status === 200 &&
+        nested(aiCoordRes.body, ['status']) === 'candidates_ready' &&
+        nested(aiCoordRes.body, ['mock']) === true &&
+        nested(aiCoordRes.body, ['externalCalendarsModified']) === false &&
+        aiCandidates.length > 0 &&
+        aiCandidates.every(
+          (slot) =>
+            (Date.parse(slot.endAt) <= Date.parse(user1BusyStart) ||
+              Date.parse(slot.startAt) >= Date.parse(user1BusyEnd)) &&
+            (Date.parse(slot.endAt) <= Date.parse(user2BusyStart) ||
+              Date.parse(slot.startAt) >= Date.parse(user2BusyEnd)),
+        ),
+      JSON.stringify(aiCoordRes.body),
     );
 
     // =========================================================================
@@ -655,6 +728,26 @@ async function main(): Promise<void> {
       'M6-03: revoked share blocks multi-party intersection immediately',
       revokedIntersection.status === 403,
       JSON.stringify(revokedIntersection.body),
+    );
+
+    const revokedCoord = await client2.call('/api/v1/events/coordinate', {
+      method: 'POST',
+      body: {
+        prompt: '安排60分钟组会',
+        participantIds: [user1Id, user2Id],
+        defaultTimezone: 'UTC',
+        overrides: {
+          windowStart,
+          windowEnd,
+          durationMinutes: 60,
+          workingHoursOnly: false,
+        },
+      },
+    });
+    check(
+      'M6-05: revoked share blocks AI coordination immediately',
+      revokedCoord.status === 403,
+      JSON.stringify(revokedCoord.body),
     );
 
     const shareListAfterRes = await client1.call('/api/v1/availability/shares');

@@ -6,7 +6,14 @@
 
 ## 范围
 
-本轮交付 M6-01（个人日程与忙闲）、M6-02 的数据底座（外部日历凭据与游标字段）、M6-03（确定性时间求交）、M6-04（活动状态机）以及 M6-01R（忙闲用途授权共享，用于修复安全核对发现的越权读取）。未实现 M6-05（AI 协调）与 M6-06（通知投递）。
+本轮交付 M6-01（个人日程与忙闲）、M6-02 的数据底座（外部日历凭据与游标字段）、M6-03（确定性时间求交）、M6-04（活动状态机）以及 M6-01R（忙闲用途授权共享，用于修复安全核对发现的越权读取）。后续已补充交付 M6-06A1/A2（站内通知后端，见 [NOTIFICATIONS.md](NOTIFICATIONS.md)）与 **M6-05（PARTIAL：Mock 默认 AI 约束提取 + 按参与者当地 IANA 时区求解接口 `POST /api/v1/events/coordinate`）**；真实外部 AI Provider、M6-06 移动推送/UI 与 M6-02 OAuth 连接器仍未实现。
+
+### M6-05 本轮新增实现
+
+- `@aven/contracts`：新增 `CoordinateEventRequestSchema`、`CoordinateEventResponseSchema`、`ExtractedEventConstraintsSchema`、`EventCoordinationOverridesSchema` 等契约 Schema 与类型，并补充 3 项契约单测。
+- `@aven/ai-core`：新增 `extractEventConstraints` 与确定性中文/英文相对时间提示解析，统一经由 `AIProvider.generateObject`（`purpose: 'intent_extraction'`，默认 `MockProvider`）输出，并补充 4 项单测。
+- `@aven/domain`：新增 `coordinateEventSchedule`、`zonedWallClockToUtc` 与按参与者当地 IANA 时区工作时段构造非工作阻断区间的确定性求解器，处理夏令时回拨与跨日午夜区间，按 `preferredTimeOfDay` 排序候选，返回 `needs_clarification` / `no_common_slots` / `candidates_ready`；补充 5 项单测。
+- `@aven/api-client` & `apps/api`：新增 `POST /api/v1/events/coordinate`（Nest `EventCoordinationService` + `EventController`）与 `client.events.coordinate`，先在所有非本人参与者上校验 `event_coordination` 忙闲共享授权再执行提取与求解，显式返回 `externalCalendarsModified: false`；补充 2 项客户端单测与 4 项服务端单测，并在 `scripts/m6-journey-verify.ts` 中追加 4 项端到端校验用例。
 
 ## 安全核对与修复
 
@@ -58,15 +65,15 @@
 
 ## 已知限制
 
-- **M6-05 未实现**：没有 AI 约束提取与协调求解，提议时间来自确定性求交结果。
-- **M6-06 未实现**：仓库中没有通知表、通知模块、推送或死信处理；关系与活动变化不会产生任何站内或推送通知。
+- **M6-05 当前为 Mock 默认 + 确定性求解（`PARTIAL`）**：`MockProvider` 下使用确定性规则解析自然语言与缺省澄清；真实外部 AI Provider 尚未接入验证，且当前 Windows 工作机无 Docker/PostgreSQL/Redis 环境，`scripts/m6-journey-verify.ts` 中新增的 M6-05 HTTP/DB 检查尚未在真实库上实跑。
+- **M6-06 移动推送与通知 UI 未实现**：个人连接与活动协调站内通知后端（Outbox/BullMQ/偏好过滤）已另见 [NOTIFICATIONS.md](NOTIFICATIONS.md)，但移动推送与通知 UI 仍待开发。
 - **M6-02 只完成数据底座**：`calendar_connections` 表与凭据隔离、同步游标字段就绪，但没有第三方 OAuth 连接器、授权跳转与同步任务。
 - 忙闲共享授权只区分主体，不区分具体时间窗；共享在期限内覆盖全部忙闲块。
 - 没有忙闲与活动的 Web/Mobile 页面（受 M1-07 设计评审门阻塞）。
-- 没有重复时区、夏令时与跨天边界的端到端样例（求解器为纯函数并有单元测试，但没有真实活动数据验收）。
+- `apps/api` 与 `packages/domain` 的 M6-05 覆盖单元测试（含夏令时回拨与跨时区工作时段）与离线校验已通过，但端到端真实数据库/Redis 回归仍待实时依赖环境补跑。
 
 ## 下一步
 
-- M6-06：站内通知与移动推送（Outbox、幂等、去重、重试、用户偏好、死信人工处理）。
-- M6-05：模型提取约束 + 业务求解器计算候选（需要真实 Provider 与评估）。
+- 在具备 Docker/PostgreSQL/Redis 的环境中实跑 `corepack pnpm m6:verify`，验证含 M6-05 新增 4 项在内的真实 HTTP/DB 检查，并接入脱敏评测集验证真实 AI Provider 的约束提取准确率。
+- M6-06：真实移动推送投递、产品通知 UI 与生产调度告警。
 - M6-02：选定一种日历连接方式并完成凭据加密、撤销、同步游标与失败恢复。
