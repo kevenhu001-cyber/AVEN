@@ -282,7 +282,7 @@ function Account({
       <Separator />
       <p className="small muted m-0">
         AI 当前为
-        Mock；真实邮箱、外部插件与模型尚未接通。对话记录按服务端保留期读取；通知需手动刷新。
+        Mock；外部插件与模型尚未接通；账号验证与密码恢复使用邮件。对话记录按服务端保留期读取；通知需手动刷新。
       </p>
       <div>
         <Button variant="secondary" onClick={onLogout}>

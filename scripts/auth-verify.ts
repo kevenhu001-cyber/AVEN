@@ -44,7 +44,7 @@ function readMail(kind: 'verify_email' | 'reset_password', email: string): strin
         text?: string;
       };
       if (message.to !== email || message.kind !== kind) continue;
-      const match = /(?:验证令牌|重置令牌)：(\S+)/.exec(message.text ?? '');
+      const match = /(?:验证令牌|重置令牌|重置码)：(\S+)/.exec(message.text ?? '');
       if (match?.[1]) return match[1];
     } catch {
       // Ignore malformed dev mail files.

@@ -38,6 +38,7 @@ const check = (condition, label) => {
 let mobileToken;
 try {
   await page.goto(base);
+  await page.getByRole('button', { name: '登录或注册', exact: true }).click();
   await page.getByLabel('邮箱', { exact: true }).fill(email);
   await page.getByLabel('密码', { exact: true }).fill(fixture.password);
   await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -147,6 +148,7 @@ try {
   await page.getByRole('button', { name: '关闭面板' }).click();
   await page.getByRole('button', { name: '我的账号', exact: true }).click();
   await page.getByRole('button', { name: '退出登录', exact: true }).click();
+  await page.getByRole('button', { name: '登录或注册', exact: true }).click();
   await page.getByRole('button', { name: '忘记密码', exact: true }).click();
   await expect(page.getByRole('heading', { name: '找回密码' })).toBeVisible();
   await page.getByLabel('账号邮箱').fill(`missing.${randomUUID()}@example.test`);

@@ -357,7 +357,7 @@ export class AuthService implements OnModuleDestroy {
       await this.mailer.send({
         to: email,
         subject: '重置你的 AVEN 密码',
-        text: `重置令牌：${token}\n有效期至：${expiresAt.toISOString()}\n如果这不是你的操作，请忽略此邮件。`,
+        text: `请打开以下链接设置新密码：\n${this.env.WEB_ORIGIN}/#reset_token=${encodeURIComponent(token)}\n\n或在 AVEN 密码恢复页填写重置码：${token}\n有效期至：${expiresAt.toISOString()}\n如果这不是你的操作，请忽略此邮件。`,
         kind: 'reset_password',
       });
     } catch {

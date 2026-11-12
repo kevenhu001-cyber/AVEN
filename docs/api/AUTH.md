@@ -98,3 +98,10 @@
 ## WEB-01 客户端接入（2026-11-12）
 
 `@aven/api-client.auth` 增加 `me/loginWeb/register/verifyEmail/logout`。`loginWeb` 强制 `client: web` 且拒绝包含移动 `sessionToken` 的返回；退出接受既有 204 空响应。浏览器逐次读取 CSRF Cookie，私人正文与认证令牌不写入浏览器持久存储。首页已接入这些端点，开发邮件仍是本地文件；不代表生产邮件、MFA 或完整设备会话 UI 完成。
+
+
+## SMTP 与密码恢复链接增量（2026-11-13）
+
+参考 Socrates 的 Nodemailer/SMTP 传输方式；AVEN 使用独立注入的 Mailer，显式 `AUTH_MAIL_TRANSPORT=smtp` 时读取 SMTP_HOST/PORT/SECURE/USER/PASS/FROM。TLS 校验保持开启，465 使用隐式 TLS，非隐式 TLS 模式强制 STARTTLS，连接与发送设定超时；不打印正文、地址、凭据或底层 SMTP 错误。未配置时保留显式开发 file sink；生产不回退到文件。
+
+重置邮件提供 `WEB_ORIGIN/#reset_token=<token>` 链接及现有重置码；fragment 不发送给源站/CDN，客户端提取后立即清除。令牌仍为一小时、一次性，重置后撤销所有会话。重置请求保持非枚举 202；SMTP 投递是否成功与收件箱实际送达分别记账。

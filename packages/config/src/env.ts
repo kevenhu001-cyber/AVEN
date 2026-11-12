@@ -86,3 +86,31 @@ export function redisUrl(): string {
   if (!password) throw new Error('Missing REDIS_PASSWORD.');
   return `redis://:${encodeURIComponent(password)}@${host}:${port}`;
 }
+
+const OptionalMailText = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+const MailEnvironmentSchema = z
+  .object({
+    AUTH_MAIL_TRANSPORT: z.enum(['file', 'smtp', 'disabled']).optional(),
+    SMTP_HOST: OptionalMailText,
+    SMTP_PORT: PortSchema.default(465),
+    SMTP_SECURE: z.enum(['true', 'false']).default('true'),
+    SMTP_USER: OptionalMailText,
+    SMTP_PASS: OptionalMailText,
+    SMTP_FROM: z.preprocess((value) => (value === '' ? undefined : value), z.email().optional()),
+  })
+  .superRefine((env, context) => {
+    if (env.AUTH_MAIL_TRANSPORT !== 'smtp') return;
+    for (const name of ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'] as const) {
+      if (!env[name])
+        context.addIssue({ code: 'custom', path: [name], message: 'Required for SMTP.' });
+    }
+    if (env.SMTP_HOST && /[\s\r\n]/.test(env.SMTP_HOST))
+      context.addIssue({ code: 'custom', path: ['SMTP_HOST'], message: 'Invalid host.' });
+  });
+export type MailEnvironment = z.infer<typeof MailEnvironmentSchema>;
+export function parseMailEnvironment(input: Record<string, unknown>): MailEnvironment {
+  return parseEnvironment(MailEnvironmentSchema, input);
+}

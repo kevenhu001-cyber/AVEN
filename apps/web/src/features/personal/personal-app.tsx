@@ -1,146 +1,52 @@
 'use client';
-
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MeResponse } from '@aven/contracts';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { api, authExpired, errorText, webCall } from './api';
+import { useCallback, useEffect, useState } from 'react';
 import { AuthForm } from './auth-form';
 import { Workspace } from './workspace';
-import { AuthShell } from './auth-shell';
+import { usePersonalSession } from './use-personal-session';
 import './personal.css';
 
 export function PersonalApp() {
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [status, setStatus] = useState<'checking' | 'ready' | 'error'>('checking');
-  const [problem, setProblem] = useState('');
-  const checker = useRef<AbortController | null>(null);
-  const channel = useRef<BroadcastChannel | null>(null);
-
-  const invalidate = useCallback(() => {
-    checker.current?.abort();
-    setMe(null);
-    setStatus('ready');
-  }, []);
-
-  const check = useCallback(() => {
-    checker.current?.abort();
-    const controller = new AbortController();
-    checker.current = controller;
-    return api.auth
-      .me(controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) {
-          setMe(result);
-          setStatus('ready');
-        }
-      })
-      .catch((error) => {
-        if (controller.signal.aborted) return;
-        if (authExpired(error)) {
-          setMe(null);
-          setStatus('ready');
-        } else {
-          setStatus('error');
-          setProblem(errorText(error));
-        }
-      });
-  }, []);
-
-  const recheck = useCallback(async () => {
-    setStatus('checking');
-    setProblem('');
-    await check();
-  }, [check]);
-
+  const session = usePersonalSession();
+  const [recoveryRoute, setRecoveryRoute] = useState(false);
+  const openRecovery = useCallback(() => setRecoveryRoute(true), []);
   useEffect(() => {
-    void check();
-    const visible = () => {
-      if (document.hidden) {
-        checker.current?.abort();
-        setStatus('checking');
-      } else void recheck();
+    let active = true;
+    const requested = new URLSearchParams(window.location.hash.slice(1)).has('reset_token');
+    void Promise.resolve(requested).then((value) => {
+      if (active && value) setRecoveryRoute(true);
+    });
+    const changed = () => {
+      if (new URLSearchParams(window.location.hash.slice(1)).has('reset_token'))
+        setRecoveryRoute(true);
     };
-    const offline = () => {
-      checker.current?.abort();
-      setProblem('当前离线。私人内容已隐藏，恢复连接后会重新验证会话。');
-      setStatus('error');
-    };
-    const broadcast = () => {
-      void recheck();
-    };
-    if ('BroadcastChannel' in window) {
-      channel.current = new BroadcastChannel('aven-session');
-      channel.current.onmessage = broadcast;
-    }
-    document.addEventListener('visibilitychange', visible);
-    window.addEventListener('focus', broadcast);
-    window.addEventListener('pageshow', broadcast);
-    window.addEventListener('offline', offline);
-    window.addEventListener('online', broadcast);
+    window.addEventListener('hashchange', changed);
     return () => {
-      checker.current?.abort();
-      channel.current?.close();
-      document.removeEventListener('visibilitychange', visible);
-      window.removeEventListener('focus', broadcast);
-      window.removeEventListener('pageshow', broadcast);
-      window.removeEventListener('offline', offline);
-      window.removeEventListener('online', broadcast);
+      active = false;
+      window.removeEventListener('hashchange', changed);
     };
-  }, [check, recheck]);
-
-  async function signedIn() {
-    channel.current?.postMessage('changed');
-    await recheck();
-  }
-
-  async function logout() {
-    setStatus('checking');
-    try {
-      await api.auth.logout(webCall());
-      invalidate();
-      channel.current?.postMessage('changed');
-    } catch (error) {
-      if (authExpired(error)) invalidate();
-      else {
-        setStatus('error');
-        setProblem(errorText(error));
-      }
-    }
-  }
-
-  if (me)
+  }, []);
+  if (session.me && !recoveryRoute)
     return (
       <Workspace
-        key={me.user.id}
-        me={me}
-        suspended={status !== 'ready'}
-        problem={problem}
-        onRetry={() => void recheck()}
-        onExpired={invalidate}
-        onLogout={() => void logout()}
+        key={session.me.user.id}
+        me={session.me}
+        suspended={session.status !== 'ready'}
+        problem={session.problem}
+        onRetry={() => void session.recheck(true)}
+        onExpired={session.invalidate}
+        onLogout={() => void session.logout()}
       />
     );
-
-  if (status !== 'ready')
-    return (
-      <AuthShell
-        title={status === 'checking' ? '正在验证会话' : '暂时无法连接'}
-        description="你的对话，即将继续。"
-      >
-        {problem && <Alert variant="warning">{problem}</Alert>}
-        {status === 'error' && (
-          <Button className="auth-submit" onClick={() => void recheck()}>
-            重新连接
-          </Button>
-        )}
-        {status === 'checking' && (
-          <p className="auth-loading" role="status">
-            正在安全连接…
-          </p>
-        )}
-      </AuthShell>
-    );
-
-  return <AuthForm onLogin={signedIn} />;
+  // Keep this tree mounted during anonymous checks, including initial hydration.
+  return (
+    <AuthForm
+      onLogin={session.signedIn}
+      onRecoveryOpen={openRecovery}
+      onRecoveryClose={() => setRecoveryRoute(false)}
+      onReset={session.invalidate}
+      checking={session.status === 'checking'}
+      connectionProblem={session.problem}
+      onRetry={() => void session.recheck()}
+    />
+  );
 }

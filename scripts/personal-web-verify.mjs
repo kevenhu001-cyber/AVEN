@@ -49,6 +49,7 @@ async function account(suffix) {
   const authenticated = (await context.request.get(`${base}/api/v1/auth/me`)).ok();
   await page.goto(base);
   if (!authenticated) {
+    await page.getByRole('button', { name: '登录或注册', exact: true }).click();
     if (!fixture.registered.includes(suffix)) {
       await page.getByRole('button', { name: '还没有账号？注册' }).click();
       await page.getByLabel('怎么称呼你').fill(`验证用户 ${suffix}`);

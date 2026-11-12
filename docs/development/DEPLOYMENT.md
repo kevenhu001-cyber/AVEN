@@ -7,7 +7,7 @@
 - Nginx 独立虚拟主机：`infra/nginx/aven.topodrive.top.conf`；已安装至 `/etc/nginx/sites-available/aven.topodrive.top` 并启用。其他站点未修改。
 - `aven-web`、`aven-api`、`aven-worker` 三个 systemd 服务已启用开机自启，模板见 `infra/systemd/`；分别监听回环 3000、3001、3002。运行路径为本仓库，部署的是 Next production build 与编译后的 API/Worker。
 - `/etc/aven/runtime.env` 以 root 0600 保存运行配置，由 systemd 注入；没有提交密钥。PostgreSQL/Redis 使用已有 Compose 卷与 `unless-stopped`，未重建、未执行迁移。
-- APP_ENV 为明确的 development 验证环境，默认 Mock，邮件写入本机受限文件，不向公众展示验证码。页面明确显示开发验证版；此部署不是正式生产身份或真实数据试点。
+- APP_ENV 为明确的 development 验证环境，默认 Mock；本轮事务邮件已接 SMTP，开发验证命令保留独立文件 sink。页面明确显示开发验证版；此部署不是正式生产身份或真实数据试点。
 - API origin 限定为该 HTTPS 域名。Nginx 强制 Secure/SameSite Cookie，关闭 API 缓存/缓冲和上游自动重试；拒绝公网 `/health/`，关闭访问日志以免记录敏感查询。
 
 ## TLS 与 CDN
@@ -31,3 +31,6 @@
 
 
 2026-11-13 认证界面视觉增量：按用户截图调整为深色纯色、白色正圆角色、胶囊表单和更清晰留白。Web production build 已重新部署，API/Worker 无改动；公网浏览器实际完成注册、登录、工作区和退出及密码恢复请求。视觉与视口证据见根目录 design-qa.md。
+
+
+2026-11-13 后续增量：欢迎页、匿名复核无闪烁与 SMTP 已部署。运行环境使用 `AUTH_MAIL_TRANSPORT=smtp`，SMTP 值仅在 root 0600 环境中；原配置有受限备份。实际运行配置的 TLS/认证已验证，未发送测试邮件。重置链接使用 fragment，客户端取出立即移除；验证记录与限制见 [WEB_LOGIN_02](WEB_LOGIN_02.md)。

@@ -125,3 +125,10 @@ CI 使用 `.env.example` 的开发占位密码，不使用真实密钥；未执�
 ## Android APK（GitHub Actions）
 
 按用户指定，原生 APK 在 GitHub Actions 构建，本机不进行原生编译。操作、API origin 配置、下载和签名限制见 [WEB_ANDROID_01](WEB_ANDROID_01.md#android-apk)。`pnpm build` 中的 Android 步骤仅为 JS 导出，不是 APK。
+
+
+## 事务邮件与恢复检查
+
+开发默认 `AUTH_MAIL_TRANSPORT=file`，仅在 APP_ENV=development 且 AUTH_DEV_MODE=true 时写 `.data/mail`。部署使用 `AUTH_MAIL_TRANSPORT=smtp` 与 SMTP_HOST/PORT/SECURE/USER/PASS/FROM；465 通常使用 SECURE=true，587 使用 SECURE=false 并强制 STARTTLS。保留 TLS 校验，不把真实值放入仓库。生产不允许 file 回退。
+
+`pnpm password-recovery:verify` 启动随机端口 API、显式 file sink 与独立限流盐，验证密码恢复与旧会话撤销，不清除线上限流记录或发送外部邮件。真实 SMTP 的连接认证和实际收件箱送达分别验收。

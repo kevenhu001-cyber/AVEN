@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,14 +8,26 @@ import { api, errorText } from './api';
 import { AuthShell } from './auth-shell';
 import { AuthPassword } from './auth-password';
 
-export function PasswordRecovery({ onBack }: { onBack: () => void }) {
+export function PasswordRecovery({
+  onBack,
+  initialToken = '',
+  onReset,
+}: {
+  onBack: () => void;
+  initialToken?: string;
+  onReset: () => void;
+}) {
   const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(initialToken);
   const [password, setPassword] = useState('');
-  const [stage, setStage] = useState<'request' | 'reset' | 'done'>('request');
+  const [stage, setStage] = useState<'request' | 'reset' | 'done'>(
+    initialToken ? 'reset' : 'request',
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const lock = useRef(false);
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
   return (
     <AuthShell
       title={stage === 'done' ? '密码已重置' : '找回密码'}
@@ -31,24 +43,31 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
             lock.current = true;
             setBusy(true);
             setMessage('');
+            const controller = new AbortController();
+            request.current = controller;
             void (async () => {
               try {
                 if (stage === 'request') {
-                  await api.auth.requestPasswordReset(email);
+                  await api.auth.requestPasswordReset(email, controller.signal);
+                  if (controller.signal.aborted) return;
                   setStage('reset');
-                  setMessage('如果账号存在，已生成重置指引。请填写邮件中的重置码。');
+                  setMessage('如果账号存在，已生成重置指引。请打开邮件中的链接，或填写重置码。');
                 } else {
-                  await api.auth.resetPassword(token, password);
+                  await api.auth.resetPassword(token, password, controller.signal);
+                  if (controller.signal.aborted) return;
+                  onReset();
                   setToken('');
                   setStage('done');
                   setMessage('密码已重置，所有旧会话已撤销，请重新登录。');
                 }
               } catch (error) {
-                setMessage(errorText(error));
+                if (!controller.signal.aborted) setMessage(errorText(error));
               } finally {
-                setPassword('');
                 lock.current = false;
-                setBusy(false);
+                if (!controller.signal.aborted) {
+                  setPassword('');
+                  setBusy(false);
+                }
               }
             })();
           }}
@@ -106,7 +125,7 @@ export function PasswordRecovery({ onBack }: { onBack: () => void }) {
           </Button>
         </form>
       )}
-      <p className="auth-recovery-note">开发验证版的邮件保存在本机，暂不向真实邮箱投递。</p>
+      <p className="auth-recovery-note">重置链接一小时内有效。请留意收件箱与垃圾邮件。</p>
       <Button className="auth-back" variant="ghost" onClick={onBack} disabled={busy}>
         返回登录
       </Button>

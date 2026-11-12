@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { LoginRequestSchema, RegisterRequestSchema } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,48 @@ import { api, errorText } from './api';
 import { AuthShell } from './auth-shell';
 import { AuthPassword } from './auth-password';
 import { PasswordRecovery } from './password-recovery';
+import { AuthWelcome } from './auth-welcome';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { parseResetFragment } from './auth-reset-link';
 
-export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
+export function AuthForm({
+  onLogin,
+  checking,
+  connectionProblem,
+  onRetry,
+  onRecoveryOpen,
+  onRecoveryClose,
+  onReset,
+}: {
+  onLogin: () => Promise<void>;
+  checking: boolean;
+  connectionProblem: string;
+  onRetry: () => void;
+  onRecoveryOpen: () => void;
+  onRecoveryClose: () => void;
+  onReset: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [resetToken, setResetToken] = useState('');
   const [recovering, setRecovering] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const consume = () => {
+      if (!active || !new URLSearchParams(window.location.hash.slice(1)).has('reset_token')) return;
+      const value = parseResetFragment(window.location.hash);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      onRecoveryOpen();
+      setResetToken(value ?? '');
+      setRecovering(true);
+      setOpen(true);
+    };
+    void Promise.resolve().then(consume);
+    window.addEventListener('hashchange', consume);
+    return () => {
+      active = false;
+      window.removeEventListener('hashchange', consume);
+    };
+  }, [onRecoveryOpen]);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,108 +96,160 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
     }
   }
 
-  if (recovering) return <PasswordRecovery onBack={() => setRecovering(false)} />;
-
   return (
-    <AuthShell
-      title={mode === 'login' ? '欢迎回来' : '创建你的 AVEN'}
-      description={mode === 'login' ? '继续对话，遇见新的可能。' : '从一次对话，开始新的连接。'}
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (busy) return;
+        setOpen(value);
+        if (!value) {
+          setPassword('');
+          setMessage('');
+          setRecovering(false);
+          setResetToken('');
+          onRecoveryClose();
+        }
+      }}
     >
-      <form className="auth-form" onSubmit={(event) => void submit(event)} aria-busy={busy}>
-        {mode === 'register' && (
-          <div className="auth-field">
-            <Label className="sr-only" htmlFor="auth-name">
-              怎么称呼你
-            </Label>
-            <Input
-              id="auth-name"
-              placeholder="怎么称呼你"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete="nickname"
-              required
-              maxLength={120}
-              disabled={busy}
-            />
-          </div>
-        )}
-        <div className="auth-field">
-          <Label className="sr-only" htmlFor="auth-email">
-            邮箱
-          </Label>
-          <Input
-            id="auth-email"
-            type="email"
-            inputMode="email"
-            placeholder="邮箱地址"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="username"
-            autoCapitalize="none"
-            spellCheck={false}
-            required
-            maxLength={320}
-            disabled={busy}
+      <AuthWelcome onContinue={() => setOpen(true)} />
+      <DialogContent
+        className="personal-app auth-theme auth-dialog translate-x-0 translate-y-0 sm:-translate-x-1/2 sm:-translate-y-1/2"
+        overlayClassName="auth-dialog-overlay"
+        aria-describedby={undefined}
+        showCloseButton={!busy}
+      >
+        <DialogTitle className="sr-only">
+          {recovering ? '找回密码' : mode === 'login' ? '登录 AVEN' : '注册 AVEN'}
+        </DialogTitle>
+        {recovering ? (
+          <PasswordRecovery
+            initialToken={resetToken}
+            onReset={onReset}
+            onBack={() => {
+              setRecovering(false);
+              setResetToken('');
+              onRecoveryClose();
+            }}
           />
-        </div>
-        <div className="auth-field">
-          <Label className="sr-only" htmlFor="auth-password">
-            密码
-          </Label>
-          <AuthPassword
-            key={mode}
-            id="auth-password"
-            placeholder={mode === 'login' ? '密码' : '设置密码（至少 12 个字符）'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            minLength={mode === 'register' ? 12 : 1}
-            maxLength={128}
-            required
-            disabled={busy}
-            aria-describedby={mode === 'register' ? 'auth-password-hint' : undefined}
-          />
-        </div>
-        {mode === 'register' && (
-          <p id="auth-password-hint" className="auth-field-hint">
-            至少 12 个字符，建议组合字母、数字和符号。
-          </p>
+        ) : (
+          <AuthShell
+            title={mode === 'login' ? '欢迎回来' : '创建你的 AVEN'}
+            description={
+              mode === 'login' ? '继续对话，遇见新的可能。' : '从一次对话，开始新的连接。'
+            }
+          >
+            <form className="auth-form" onSubmit={(event) => void submit(event)} aria-busy={busy}>
+              {mode === 'register' && (
+                <div className="auth-field">
+                  <Label className="sr-only" htmlFor="auth-name">
+                    怎么称呼你
+                  </Label>
+                  <Input
+                    id="auth-name"
+                    placeholder="怎么称呼你"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="nickname"
+                    required
+                    maxLength={120}
+                    disabled={busy}
+                  />
+                </div>
+              )}
+              <div className="auth-field">
+                <Label className="sr-only" htmlFor="auth-email">
+                  邮箱
+                </Label>
+                <Input
+                  id="auth-email"
+                  type="email"
+                  inputMode="email"
+                  placeholder="邮箱地址"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  maxLength={320}
+                  disabled={busy}
+                />
+              </div>
+              <div className="auth-field">
+                <Label className="sr-only" htmlFor="auth-password">
+                  密码
+                </Label>
+                <AuthPassword
+                  key={mode}
+                  id="auth-password"
+                  placeholder={mode === 'login' ? '密码' : '设置密码（至少 12 个字符）'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={mode === 'register' ? 12 : 1}
+                  maxLength={128}
+                  required
+                  disabled={busy}
+                  aria-describedby={mode === 'register' ? 'auth-password-hint' : undefined}
+                />
+              </div>
+              {mode === 'register' && (
+                <p id="auth-password-hint" className="auth-field-hint">
+                  至少 12 个字符，建议组合字母、数字和符号。
+                </p>
+              )}
+              {mode === 'login' && (
+                <div className="auth-assistance">
+                  <Button
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => {
+                      setPassword('');
+                      onRecoveryOpen();
+                      setRecovering(true);
+                    }}
+                  >
+                    忘记密码
+                  </Button>
+                </div>
+              )}
+              {message && <Alert variant="warning">{message}</Alert>}
+              <Button className="auth-submit" type="submit" disabled={busy || checking}>
+                {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
+              </Button>
+            </form>
+            <div className="auth-switch">
+              <span>{mode === 'login' ? '第一次来到这里？' : '已经有账号了？'}</span>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login');
+                  setPassword('');
+                  setMessage('');
+                }}
+                aria-label={mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
+              >
+                {mode === 'login' ? '注册' : '登录'}
+              </Button>
+            </div>
+            <div className="auth-connection" role="status">
+              {connectionProblem ? (
+                <>
+                  <span>{connectionProblem}</span>
+                  <Button variant="ghost" onClick={onRetry}>
+                    重新连接
+                  </Button>
+                </>
+              ) : checking ? (
+                '正在安全连接…'
+              ) : (
+                ''
+              )}
+            </div>
+          </AuthShell>
         )}
-        {mode === 'login' && (
-          <div className="auth-assistance">
-            <Button
-              variant="ghost"
-              disabled={busy}
-              onClick={() => {
-                setPassword('');
-                setRecovering(true);
-              }}
-            >
-              忘记密码
-            </Button>
-          </div>
-        )}
-        {message && <Alert variant="warning">{message}</Alert>}
-        <Button className="auth-submit" type="submit" disabled={busy}>
-          {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
-        </Button>
-      </form>
-      <div className="auth-switch">
-        <span>{mode === 'login' ? '第一次来到这里？' : '已经有账号了？'}</span>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onClick={() => {
-            setMode(mode === 'login' ? 'register' : 'login');
-            setPassword('');
-            setMessage('');
-          }}
-          aria-label={mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
-        >
-          {mode === 'login' ? '注册' : '登录'}
-        </Button>
-      </div>
-      <p className="auth-privacy">每一次分享，都由你决定。</p>
-    </AuthShell>
+      </DialogContent>
+    </Dialog>
   );
 }

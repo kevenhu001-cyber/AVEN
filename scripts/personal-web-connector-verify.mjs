@@ -37,6 +37,7 @@ try {
   await page.goto(base);
   const authenticated = (await context.request.get(`${base}/api/v1/auth/me`)).ok();
   if (!authenticated) {
+    await page.getByRole('button', { name: '登录或注册', exact: true }).click();
     if (!fixture.registered) {
       await page.getByRole('button', { name: '还没有账号？注册' }).click();
       await page.getByLabel('怎么称呼你').fill('连接器验证用户');
