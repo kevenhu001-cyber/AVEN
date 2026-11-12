@@ -17,6 +17,7 @@ M6-06A 更新：个人连接（A1）与活动协调（A2）站内通知的 API�
 - M6-06A1/A2：个人连接与活动协调站内通知、5 次退避重试、免打扰偏好、已读游标与 90 天维护清理。
 - 安全与试点准入：个人拉黑（`block_lists`）、违规举报（`reports`）与连接邀请 24h 频控（20 次/24h）；双向阻断邀请与聊天消息（0037_user_blocks_and_reports）；37 个迁移、60 张租户表（全部 FORCE RLS）。
 - M5-04：引荐补充资料（`referral_supplements`）、内容版本化递增（`content_version`）、组织待审决定自动重置（`pending`）与 Worker 批量超期引荐/授权扫描维护（0038_referral_supplements）；38 个迁移、61 张租户表（全部 FORCE RLS）。
+- 插件与功能小组件底座：[PLUGINS_WIDGETS.md](../api/PLUGINS_WIDGETS.md) 已交付 12 种声明式 `ConversationWidget` 协议、`PluginRegistry`、工具审计桥接、11 个内置连接器（高德地图 `amap.maps`、淘宝 `taobao.commerce`、京东 `jd.commerce`、淘宝闪购 `taobao_flash.commerce`、美团生活 `meituan.lifestyle`、Gmail `gmail.mail`、QQ 邮箱 `qqmail.mail`、社交连接 `aven.social`、日程协调 `aven.calendar`、天气出行 `aven.weather`、跨平台比价 `aven.compare`）以及带 SSRF 防护与按用户隔离的自定义 MCP 运行时（`McpPluginManager`、`GET/POST/DELETE /api/v1/plugins/mcp/servers`）；[m1-07-v3 原型](../design/prototypes/m1-07-v3/index.html) 已提供全部卡片的交互演示；尚未接入真实外部开放平台密钥、真实远程 MCP 传输、数据库持久化凭据或双端正式产品 UI 渲染组件。
 
 ## 仍须完成
 

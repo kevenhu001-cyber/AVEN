@@ -96,6 +96,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | [M6 日程与活动交付](docs/development/M6_CALENDAR_EVENT.md) | 忙闲块、忙闲投影与用途授权共享、多方求交、活动状态机 |
 | [匹配候选 API](docs/api/MATCHING.md) | 意向状态机、候选生成、可解释评分与权限边界 |
 | [引荐与授权 API](docs/api/REFERRALS.md) | 授权预览、引荐状态机、双向决定、共享快照与撤销 |
+| [插件与功能小组件 API](docs/api/PLUGINS_WIDGETS.md) | 可扩展插件注册表、11 个内置连接器（高德/淘宝/京东/闪购/美团/Gmail/QQ邮箱/社交/日程/天气/比价）、自定义 MCP 与 12 种会话小组件协议 |
 | [关系空间 API](docs/api/RELATIONSHIPS.md) | 关系建立、共享上下文、关闭与唯一性 |
 | [个人连接 API](docs/api/CONNECTIONS.md) | 个人邀请、预览、双方决定、独立授权与唯一建联 |
 | [会话消息 API](docs/api/PEER_MESSAGES.md) | 消息收发、时间倒序游标分页与单方软删除契约 |

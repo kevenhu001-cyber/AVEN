@@ -86,11 +86,15 @@ describe('API skeleton over real HTTP', () => {
     expect(text).not.toContain('stack');
     expect(ApiErrorResponseSchema.parse(JSON.parse(text)).error.code).toBe('INTERNAL');
   });
-  it('requires authentication for user provider configuration routes', async () => {
+  it('requires authentication for user provider configuration and plugin routes', async () => {
     const cases = [
       { method: 'GET', path: '/api/v1/agent/provider' },
       { method: 'PUT', path: '/api/v1/agent/provider' },
       { method: 'DELETE', path: '/api/v1/agent/provider?version=1' },
+      { method: 'GET', path: '/api/v1/plugins' },
+      { method: 'GET', path: '/api/v1/plugins/mcp/servers' },
+      { method: 'POST', path: '/api/v1/plugins/mcp/servers' },
+      { method: 'POST', path: '/api/v1/plugins/amap.maps/invoke' },
     ];
     for (const item of cases) {
       const response = await fetch(`${baseUrl}${item.path}`, { method: item.method });

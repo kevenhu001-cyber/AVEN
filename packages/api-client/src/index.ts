@@ -9,11 +9,13 @@ import type { TransportOptions } from './connections';
 import { createEventsClient } from './events';
 import { createNotificationsClient } from './notifications';
 import { createModerationClient } from './moderation';
+import { createPluginsClient } from './plugins';
 import { createReferralsClient } from './referrals';
 export type { NotificationCallOptions } from './notifications';
 export type { ConnectionCallOptions } from './connections';
 export type { EventsClient, EventCallOptions } from './events';
 export type { ModerationCallOptions } from './moderation';
+export type { PluginsClient, PluginCallOptions } from './plugins';
 export type { ReferralsClient, ReferralCallOptions } from './referrals';
 
 export class ApiClientError extends Error {
@@ -122,6 +124,7 @@ export function createApiClient(
     events: createEventsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     notifications: createNotificationsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     moderation: createModerationClient(request, () => new ApiClientError('INVALID_REQUEST')),
+    plugins: createPluginsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     referrals: createReferralsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     async getLiveness(signal?: AbortSignal): Promise<LivenessResponse> {
       return request(

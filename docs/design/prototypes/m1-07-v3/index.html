@@ -858,6 +858,60 @@
         color: var(--success);
         font-size: 0.8125rem;
       }
+      .widget-rows {
+        margin-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .widget-row {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .widget-row-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .widget-row-title {
+        font-size: 0.8125rem;
+        font-weight: 500;
+      }
+      .widget-price {
+        font-size: 0.8125rem;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      .widget-row-meta {
+        font-size: 0.6875rem;
+        color: var(--muted);
+        margin-top: 4px;
+        line-height: 1.6;
+      }
+      .mcp-form {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        gap: 10px;
+      }
+      .mcp-input {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        font-size: 0.75rem;
+      }
+      .mcp-server-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
       .composer-zone {
         padding: 8px 24px 0;
         flex-shrink: 0;
@@ -966,9 +1020,9 @@
         position: absolute;
         bottom: calc(100% + 10px);
         left: 0;
-        width: 290px;
+        width: 310px;
         max-width: 100%;
-        max-height: 500px;
+        max-height: min(58vh, 440px);
         overflow: auto;
         border: 1px solid var(--border);
         border-radius: 16px;
@@ -1730,6 +1784,65 @@
         generating: false,
         sharing: false,
         context: false,
+        mailSent: false,
+        mcpServers: [
+          {
+            id: 'mcp-lab',
+            name: '实验室论文检索 MCP',
+            url: 'https://mcp.papers.example.com/sse',
+            on: true,
+          },
+        ],
+      };
+      const PLUGIN_META = {
+        connect: {
+          icon: 'users',
+          name: '连接',
+          desc: '发现适合交流的人，由你确认后发出邀请',
+          widget: 'connection',
+        },
+        opportunity: {
+          icon: 'compass',
+          name: '机会',
+          desc: '在需要时，把合适的机会带入对话',
+          widget: 'opportunity',
+        },
+        coordination: {
+          icon: 'calendar-days',
+          name: '一起做事',
+          desc: '日程求交与明日出行天气建议卡片',
+          widget: 'coordination',
+        },
+        amap: {
+          icon: 'compass',
+          name: '高德地图',
+          desc: '地址检索、周边 POI 与导航链接卡片',
+          widget: 'amap',
+        },
+        compare: {
+          icon: 'layers',
+          name: '比价与闪购',
+          desc: '淘宝、京东与淘宝闪购同屏比价与极速达',
+          widget: 'compare',
+        },
+        meituan: {
+          icon: 'building-2',
+          name: '美团生活',
+          desc: '周边餐饮自习商户、评分与团购预览',
+          widget: 'meituan',
+        },
+        mail: {
+          icon: 'inbox',
+          name: '邮箱（Gmail / QQ）',
+          desc: '邮件检索摘要与二次确认发信草稿',
+          widget: 'mail',
+        },
+        mcp: {
+          icon: 'bot',
+          name: '自定义 MCP',
+          desc: '调用已登记的只读安全 MCP 服务',
+          widget: 'mcp',
+        },
       };
       const fieldValues = {
         name: ['显示名', '林同学'],
@@ -1808,7 +1921,7 @@
       }
       function senderThread() {
         const ordinary = state.mode === 'ordinary';
-        return `<div class="message user"><p>${ordinary ? '最近想尝试做点新的东西，但还没想清楚。' : '我想找个也对机器人感兴趣的人，一起做点东西。'}</p></div><article class="message assistant"><div class="assistant-name">AVEN</div><p>${ordinary ? '不用急着把它变成计划。你最近被什么问题吸引过？我们可以从那个小小的好奇开始。' : '可以。许宁也在找人一起做机器人项目，或许你们可以聊聊。'}</p>${!ordinary ? `<div class="tool-status"><button data-action="tool-details">${icon('users')}连接 · 找到一个可能的交集 ${icon('chevron-down')}</button></div><div class="tool-details" id="tool-details" hidden>仅使用允许发现和匹配的样例字段。没有读取对方私人对话或记忆，也没有向对方发送你的资料。</div>${connectionWidget()}` : ''}<div class="turn-actions"><button class="icon-btn" data-action="copy" aria-label="复制回复">${icon('copy')}</button><button class="icon-btn" data-action="feedback" aria-label="反馈回复">${icon('thumbs-up')}</button><button class="icon-btn" data-action="regenerate" aria-label="重新生成演示回复">${icon('refresh-cw')}</button></div></article>${state.messages.map((m) => `<div class="message ${m.role}">${m.role === 'assistant' ? '<div class="assistant-name">AVEN</div>' : ''}<p>${escapeHtml(m.text)}</p>${m.widget === 'connection' ? connectionWidget() : m.widget === 'opportunity' ? opportunityWidget() : ''}</div>`).join('')}${state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : ''}`;
+        return `<div class="message user"><p>${ordinary ? '最近想尝试做点新的东西，但还没想清楚。' : '我想找个也对机器人感兴趣的人，一起做点东西。'}</p></div><article class="message assistant"><div class="assistant-name">AVEN</div><p>${ordinary ? '不用急着把它变成计划。你最近被什么问题吸引过？我们可以从那个小小的好奇开始。' : '可以。许宁也在找人一起做机器人项目，或许你们可以聊聊。'}</p>${!ordinary ? `<div class="tool-status"><button data-action="tool-details">${icon('users')}连接 · 找到一个可能的交集 ${icon('chevron-down')}</button></div><div class="tool-details" id="tool-details" hidden>仅使用允许发现和匹配的样例字段。没有读取对方私人对话或记忆，也没有向对方发送你的资料。</div>${connectionWidget()}` : ''}<div class="turn-actions"><button class="icon-btn" data-action="copy" aria-label="复制回复">${icon('copy')}</button><button class="icon-btn" data-action="feedback" aria-label="反馈回复">${icon('thumbs-up')}</button><button class="icon-btn" data-action="regenerate" aria-label="重新生成演示回复">${icon('refresh-cw')}</button></div></article>${state.messages.map((m) => `<div class="message ${m.role}">${m.role === 'assistant' ? '<div class="assistant-name">AVEN</div>' : ''}<p>${escapeHtml(m.text)}</p>${renderMessageWidget(m.widget)}</div>`).join('')}${state.generating ? '<div class="tool-status" role="status">正在准备演示回复…</div>' : ''}`;
       }
       function person() {
         return `<div class="person"><span class="avatar large">许</span><div><div class="person-name">许宁</div><div class="person-detail">西安交通大学 · 机器人与控制</div></div></div>`;
@@ -1862,19 +1975,53 @@
       function opportunityWidget() {
         return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('compass')}机会插件</span><span>样例</span></div><h2 class="widget-heading">从一个小型复现实验开始</h2><p>一个开放的机器人学习项目。每周约 6 小时，欢迎先了解任务再决定是否参与。</p><div class="widget-notice">按当前话题展示，不代表已经申请或共享任何资料。</div></div><div class="widget-actions">${button('了解这个项目', 'opportunity-detail', 'outline')}${button('继续聊聊', 'focus-input')}</div></section>`;
       }
+      function amapWidget() {
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('compass')}高德地图 · 地址检索</span><span>Mock 样例</span></div><h2 class="widget-heading">中关村软件园周边见面地点</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">中关村软件园 · 国际会议中心咖啡区</span><span class="badge">距 380m</span></div><div class="widget-row-meta">北京市海淀区东北旺西路 8 号 · 适合项目碰头</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">地铁西二旗站 A 口步行区</span><span class="badge">距 650m</span></div><div class="widget-row-meta">北京市海淀区上地西路 · 公共交通换乘便捷</div></div></div><div class="widget-notice">外跳高德导航需你点击确认；当前展示脱敏样例地址，未发送真实定位。</div></div><div class="widget-actions">${button('确认打开高德导航', 'confirm-jump', 'primary', 'arrow-up-right')}${button('继续追问', 'focus-input')}</div></section>`;
+      }
+      function compareWidget() {
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('layers')}淘宝 / 京东 / 淘宝闪购 · 同屏比价</span><span>Mock 样例</span></div><h2 class="widget-heading">无线静音机械键盘 · 跨平台结果</h2><div class="shared-interests"><span class="interest">最低价：淘宝 ¥468</span><span class="interest">最快达：淘宝闪购 32 分钟</span></div><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">淘宝 · 官方品牌旗舰店</span><span class="widget-price">¥468</span></div><div class="widget-row-meta">快递 48 小时内发货 · 评分 4.9</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">京东 · 京东自营旗舰店</span><span class="widget-price">¥498</span></div><div class="widget-row-meta">次日达 · 售后 7 天无理由</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">淘宝闪购 · 周边数码专营（680m）</span><span class="widget-price">¥509</span></div><div class="widget-row-meta">预计 32 分钟送达 · 配送费 ¥5</div></div></div><div class="widget-notice">所有外链均经 https 白名单校验；下单需跳转原平台并在你确认后完成。</div></div><div class="widget-actions">${button('确认跳转比价商品页', 'confirm-jump', 'primary', 'arrow-up-right')}${button('继续筛选', 'focus-input')}</div></section>`;
+      }
+      function meituanWidget() {
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('building-2')}美团生活 · 本地商户与团购</span><span>Mock 样例</span></div><h2 class="widget-heading">海淀区咖啡自习与简餐推荐</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">静隅咖啡自习室（中关村店）</span><span class="widget-price">人均 ¥42</span></div><div class="widget-row-meta">评分 4.8 · 营业中 08:00-22:30 · 团购单人全天饮品券 ¥38</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">谷雨轻食简餐</span><span class="widget-price">人均 ¥48</span></div><div class="widget-row-meta">评分 4.7 · 营业中 10:00-21:30 · 距 540m</div></div></div><div class="widget-notice">不会自动下单或代扣费用；外跳商户页前均会弹出确认。</div></div><div class="widget-actions">${button('确认查看美团商户', 'confirm-jump', 'primary', 'arrow-up-right')}${button('换一批', 'focus-input')}</div></section>`;
+      }
+      function mailWidget() {
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('inbox')}邮箱连接器 · Gmail / QQ 邮箱</span><span>${state.mailSent ? '已确认发送（Mock）' : '待确认草稿'}</span></div><h2 class="widget-heading">已检索 1 封相关线程 + 发信前预览</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">主题：周五机器人项目 Kick-off 议程</span><span class="badge">Gmail</span></div><div class="widget-row-meta">来自 xuning@example.com · 摘要：建议周六下午 15:00 同步硬件清单。</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">待发草稿：确认周六下午碰头</span><span class="badge">QQ 邮箱</span></div><div class="widget-row-meta">收件人：xuning@example.com · 正文：周六 15:00 我准时到软件园会议区，已带上控制板资料。</div></div></div><div class="widget-notice">发信永远要求你显式确认（confirmed: true），AI 不会静默发送邮件。</div></div><div class="widget-actions">${state.mailSent ? '<span class="widget-confirmation">已完成模拟发送</span>' : button('确认并发送草稿', 'send-mail-draft', 'primary', 'send')}${button('继续修改', 'focus-input')}</div></section>`;
+      }
+      function coordinationWidget() {
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('calendar-days')}日程协调 + 天气出行建议</span><span>Mock 样例</span></div><h2 class="widget-heading">推荐共同空闲时段：周六 15:00 - 17:00</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">候选 1：周六 15:00 - 17:00（Asia/Shanghai）</span><span class="badge">双方全空闲</span></div><div class="widget-row-meta">只读求解，未修改任何外部日历。</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">明日北京天气：晴间多云 4°C ~ 15°C</span><span class="badge">适宜出行</span></div><div class="widget-row-meta">出行建议：早晚偏凉建议加外套，路面干燥适合步行或骑行。</div></div></div></div><div class="widget-actions">${button('在对话中确认时段', 'focus-input', 'primary')}${button('管理插件', 'plugins')}</div></section>`;
+      }
+      function mcpWidget() {
+        const activeMcp = state.mcpServers.find((s) => s.on) || state.mcpServers[0];
+        if (!activeMcp) {
+          return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('bot')}自定义 MCP</span><span>未启用</span></div><p>你当前没有已启用的 MCP 服务。可以在“管理插件”中登记 https:// MCP 端点。</p></div><div class="widget-actions">${button('管理 MCP 插件', 'plugins', 'primary')}</div></section>`;
+        }
+        return `<section class="connection-card"><div class="widget-body"><div class="widget-top"><span>${icon('bot')}${escapeHtml(activeMcp.name)}</span><span>只读沙箱结果</span></div><h2 class="widget-heading">工具：search_papers · 结构化返回</h2><div class="widget-rows"><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">paper_1</span><span class="badge">key_value</span></div><div class="widget-row-meta">Diffusion Policy for Mobile Manipulation (ICRA 2025)</div></div><div class="widget-row"><div class="widget-row-head"><span class="widget-row-title">endpoint</span><span class="badge">https 白名单</span></div><div class="widget-row-meta">${escapeHtml(activeMcp.url)}</div></div></div><div class="widget-notice">仅允许公开 https:// 端点，自动拦截私网/环回 SSRF 地址，禁止执行返回脚本。</div></div><div class="widget-actions">${button('管理 MCP 服务', 'plugins', 'outline')}${button('继续追问', 'focus-input')}</div></section>`;
+      }
+      function renderMessageWidget(kind) {
+        const map = {
+          connection: connectionWidget,
+          opportunity: opportunityWidget,
+          amap: amapWidget,
+          compare: compareWidget,
+          meituan: meituanWidget,
+          mail: mailWidget,
+          coordination: coordinationWidget,
+          mcp: mcpWidget,
+        };
+        return map[kind] ? map[kind]() : '';
+      }
       function composer() {
-        return `<div class="composer-zone"><div class="composer-wrap"><div id="tools-menu" class="tools-menu" hidden><div class="menu-label">本次对话可使用的能力</div>${[
-          ['connect', 'users', '连接', '发现适合交流的人，由你确认后发出邀请'],
-          ['opportunity', 'compass', '机会', '在需要时，把合适的机会带入对话'],
-          ['coordination', 'calendar-days', '一起做事', '时间建议和协作小组件'],
-        ]
+        const active = state.plugin ? PLUGIN_META[state.plugin] : null;
+        return `<div class="composer-zone"><div class="composer-wrap"><div id="tools-menu" class="tools-menu" hidden><div class="menu-label">本次对话可使用的能力</div>${Object.entries(
+          PLUGIN_META,
+        )
           .map(
-            ([id, i, n, d]) =>
-              `<button class="menu-item ${state.plugin === id ? 'selected' : ''}" data-plugin="${id}" aria-pressed="${state.plugin === id}">${icon(i)}<span class="item-copy">${n}<small>${d}</small></span>${state.plugin === id ? icon('check') : ''}</button>`,
+            ([id, meta]) =>
+              `<button class="menu-item ${state.plugin === id ? 'selected' : ''}" data-plugin="${id}" aria-pressed="${state.plugin === id}">${icon(meta.icon)}<span class="item-copy">${meta.name}<small>${meta.desc}</small></span>${state.plugin === id ? icon('check') : ''}</button>`,
           )
           .join(
             '',
-          )}<div class="menu-divider"></div><button class="menu-item" data-action="context">${icon('book-open')}<span class="item-copy">选择上下文<small>仅使用你允许的信息</small></span></button><button class="menu-item" data-action="plugins">${icon('puzzle')}<span class="item-copy">管理插件</span>${icon('chevron-right')}</button></div><form id="composer" class="composer"><label class="sr-only" for="prompt">向 AVEN 发送消息</label><textarea id="prompt" placeholder="有什么想法，和 AVEN 聊聊" rows="1" maxlength="2000"></textarea><div class="composer-chips">${state.plugin ? `<button type="button" class="chip" data-action="remove-plugin" aria-label="移除本次对话插件">${icon(state.plugin === 'connect' ? 'users' : state.plugin === 'opportunity' ? 'compass' : 'calendar-days')}${state.plugin === 'connect' ? '连接' : state.plugin === 'opportunity' ? '机会' : '一起做事'}${icon('x')}</button>` : ''}${state.context ? '<span class="chip">已选本人 AI 上下文</span>' : ''}</div><div class="composer-rail"><button type="button" class="icon-btn" id="tools-toggle" data-action="tools" aria-label="添加插件与上下文" aria-expanded="false">${icon('plus')}</button><span class="spacer"></span><button type="button" class="quiet" data-action="context">${state.context ? '已选本人上下文' : '仅本次输入'} ${icon('chevron-down')}</button><button type="button" class="icon-btn" disabled aria-label="语音尚未开放" title="语音尚未开放">${icon('mic')}</button><button type="${state.generating ? 'button' : 'submit'}" ${state.generating ? 'data-action="stop"' : ''} class="send" aria-label="${state.generating ? '停止演示回复' : '发送演示消息'}">${icon(state.generating ? 'square' : 'arrow-up')}</button></div></form></div></div>`;
+          )}<div class="menu-divider"></div><button class="menu-item" data-action="context">${icon('book-open')}<span class="item-copy">选择上下文<small>仅使用你允许的信息</small></span></button><button class="menu-item" data-action="plugins">${icon('puzzle')}<span class="item-copy">管理插件与自定义 MCP</span>${icon('chevron-right')}</button></div><form id="composer" class="composer"><label class="sr-only" for="prompt">向 AVEN 发送消息</label><textarea id="prompt" placeholder="有什么想法，和 AVEN 聊聊" rows="1" maxlength="2000"></textarea><div class="composer-chips">${active ? `<button type="button" class="chip" data-action="remove-plugin" aria-label="移除本次对话插件">${icon(active.icon)}${active.name}${icon('x')}</button>` : ''}${state.context ? '<span class="chip">已选本人 AI 上下文</span>' : ''}</div><div class="composer-rail"><button type="button" class="icon-btn" id="tools-toggle" data-action="tools" aria-label="添加插件与上下文" aria-expanded="false">${icon('plus')}</button><span class="spacer"></span><button type="button" class="quiet" data-action="context">${state.context ? '已选本人上下文' : '仅本次输入'} ${icon('chevron-down')}</button><button type="button" class="icon-btn" disabled aria-label="语音尚未开放" title="语音尚未开放">${icon('mic')}</button><button type="${state.generating ? 'button' : 'submit'}" ${state.generating ? 'data-action="stop"' : ''} class="send" aria-label="${state.generating ? '停止演示回复' : '发送演示消息'}">${icon(state.generating ? 'square' : 'arrow-up')}</button></div></form></div></div>`;
       }
       function openSheet(title, body) {
         focusBeforeSheet = document.activeElement;
@@ -1911,20 +2058,29 @@
         render();
         timer = setTimeout(() => {
           state.generating = false;
+          const activeMeta = state.plugin ? PLUGIN_META[state.plugin] : null;
+          const replyTextByPlugin = {
+            connect:
+              '我们可以先把你希望一起做的事情说清楚。是否连接、何时连接，以及向对方分享什么，都由你决定。',
+            amap: '已通过高德地图连接器（Mock）检索到中关村软件园周边的见面地点卡片，可直接查看坐标与导航确认入口。',
+            compare:
+              '已为你同屏聚合淘宝、京东与淘宝闪购（Mock）结果：当前淘宝价格最低，淘宝闪购最快 32 分钟送达。',
+            meituan:
+              '已调用美团生活连接器（Mock）整理周边自习咖啡与简餐商户卡片，外部跳转或下单均需你先确认。',
+            mail: '已检索到 1 封相关邮件线程并为你准备了待发草稿预览；只有点击“确认并发送草稿”后才会触发模拟发送。',
+            coordination:
+              '已结合多方忙闲求交与明日北京天气出行插件（Mock）生成候选时段与穿着建议，未修改你的外部日历。',
+            mcp: '已调用你登记的只读自定义 MCP 服务并返回结构化卡片结果，已隔离脚本与内网访问。',
+          };
           state.messages.push({
             role: 'assistant',
             widget:
-              state.mode === 'ordinary'
-                ? state.plugin === 'connect'
-                  ? 'connection'
-                  : state.plugin === 'opportunity'
-                    ? 'opportunity'
-                    : null
+              activeMeta && (state.mode === 'ordinary' || state.plugin !== 'connect')
+                ? activeMeta.widget
                 : null,
             text:
-              state.plugin === 'connect'
-                ? '我们可以先把你希望一起做的事情说清楚。是否连接、何时连接，以及向对方分享什么，都由你决定。'
-                : '我们可以继续把这个想法展开。需要某个能力时，再从输入框的加号选择插件。',
+              (state.plugin && replyTextByPlugin[state.plugin]) ||
+              '我们可以继续把这个想法展开。需要某个能力时，再从输入框的加号选择插件。',
           });
           render();
           $('#transcript').scrollTop = $('#transcript').scrollHeight;
@@ -2075,8 +2231,8 @@
           ),
         plugins: () =>
           openSheet(
-            '插件',
-            `<p>把能力带入对话，而不是打断对话。启用不等于授权共享。</p><div class="plugin-list"><button class="menu-item" data-action="toggle-plugin">${icon('users')}<span class="item-copy">连接<small>发现合适的人 · 邀请 · 双方确认</small></span><span class="badge">${state.pluginOn ? '已启用' : '已关闭'}</span></button><button class="menu-item" data-action="pick-opportunity">${icon('compass')}<span class="item-copy">机会<small>需要时，在对话里查看机会</small></span><span class="badge">演示</span></button><button class="menu-item" data-action="coordination">${icon('calendar-days')}<span class="item-copy">一起做事<small>活动与时间建议</small></span><span class="badge">计划中</span></button></div><p>不是第三方插件运行时；所有能力均为设计演示。</p>`,
+            '插件与自定义 MCP',
+            `<p>把能力带入对话，而不是打断对话。启用不等于授权共享；所有外部连接当前均为 Mock 安全预览。</p><div class="plugin-list"><button class="menu-item" data-action="toggle-plugin">${icon('users')}<span class="item-copy">连接<small>发现合适的人 · 邀请 · 双方确认</small></span><span class="badge">${state.pluginOn ? '已启用' : '已关闭'}</span></button><button class="menu-item" data-action="pick-opportunity">${icon('compass')}<span class="item-copy">机会<small>需要时，在对话里查看机会</small></span><span class="badge">演示</span></button><button class="menu-item" data-pick-plugin="amap">${icon('compass')}<span class="item-copy">高德地图<small>地址查询 · POI · 外跳确认</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="compare">${icon('layers')}<span class="item-copy">淘宝 / 京东 / 闪购比价<small>跨平台同屏比价与极速达</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="meituan">${icon('building-2')}<span class="item-copy">美团生活<small>周边商户 · 团购与到店建议</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="mail">${icon('inbox')}<span class="item-copy">邮箱（Gmail / QQ）<small>检索摘要 · 草稿二次确认发信</small></span><span class="badge">加入对话</span></button><button class="menu-item" data-pick-plugin="coordination">${icon('calendar-days')}<span class="item-copy">日程协调 + 天气出行<small>忙闲求交与出行建议卡片</small></span><span class="badge">加入对话</span></button></div><div class="mcp-form"><strong>已登记的自定义 MCP（仅允许公开 https://）</strong>${state.mcpServers.map((s) => `<div class="mcp-server-row"><div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:500">${escapeHtml(s.name)}</div><div class="widget-row-meta" style="word-break:break-all">${escapeHtml(s.url)}</div></div><button class="btn outline" data-toggle-mcp="${escapeHtml(s.id)}">${s.on ? '已启用' : '已停用'}</button><button class="btn danger" data-remove-mcp="${escapeHtml(s.id)}">移除</button></div>`).join('') || '<p>暂无自定义 MCP 服务。</p>'}<label class="sr-only" for="mcp-name">MCP 名称</label><input id="mcp-name" class="mcp-input" placeholder="MCP 名称，例如：校园课表查询"><label class="sr-only" for="mcp-url">MCP 端点 URL</label><input id="mcp-url" class="mcp-input" placeholder="https://mcp.example.com/sse（自动拦截私网/环回）">${button('登记并使用此 MCP', 'add-mcp', 'primary', 'bot')}</div>`,
           ),
         'toggle-plugin': () => {
           state.pluginOn = !state.pluginOn;
@@ -2088,7 +2244,37 @@
           render();
           notify('已将机会能力加入当前对话。');
         },
-        coordination: () => notify('活动协调插件尚未实现，仅保留设计方向。'),
+        'add-mcp': () => {
+          const name = ($('#mcp-name')?.value || '').trim();
+          const url = ($('#mcp-url')?.value || '').trim();
+          if (!name || !url) {
+            notify('请填写 MCP 名称与 https:// 端点 URL。');
+            return;
+          }
+          if (!/^https:\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/.test(url) || /(localhost|127\.0\.0\.1|10\.|192\.168\.|169\.254\.)/i.test(url)) {
+            notify('安全校验失败：仅允许公开 https:// MCP 地址，已拦截内网或环回 URL。');
+            return;
+          }
+          state.mcpServers.push({ id: `mcp-${Date.now()}`, name, url, on: true });
+          state.plugin = 'mcp';
+          closeSheet();
+          render();
+          notify(`已登记自定义 MCP「${name}」并加入当前对话。`);
+        },
+        'send-mail-draft': () => {
+          state.mailSent = true;
+          render();
+          notify('已按你的确认执行模拟发送（未连接真实邮箱）。');
+        },
+        'confirm-jump': () => {
+          notify('已通过外链白名单与用户确认门（原型不打开真实外部站点）。');
+        },
+        coordination: () => {
+          state.plugin = 'coordination';
+          closeSheet();
+          render();
+          notify('已将日程协调与天气建议加入当前对话。');
+        },
         context: () =>
           state.terminal === 'receiver'
             ? openSheet('许宁的上下文', '<p>本次终端演示未配置个人上下文，仅使用本次主动输入。</p>')
@@ -2167,6 +2353,27 @@
           state.tools = false;
           render();
           $('#prompt').focus();
+          return;
+        }
+        if (b.dataset.pickPlugin) {
+          state.plugin = b.dataset.pickPlugin;
+          closeSheet();
+          render();
+          $('#prompt')?.focus();
+          notify(`已将「${PLUGIN_META[state.plugin]?.name || state.plugin}」加入当前对话，发送任意消息即可预览小组件。`);
+          return;
+        }
+        if (b.dataset.toggleMcp) {
+          const item = state.mcpServers.find((s) => s.id === b.dataset.toggleMcp);
+          if (item) {
+            item.on = !item.on;
+            actions.plugins();
+          }
+          return;
+        }
+        if (b.dataset.removeMcp) {
+          state.mcpServers = state.mcpServers.filter((s) => s.id !== b.dataset.removeMcp);
+          actions.plugins();
           return;
         }
         if (b.dataset.scenario) {

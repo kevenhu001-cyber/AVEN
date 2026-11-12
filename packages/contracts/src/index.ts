@@ -509,6 +509,17 @@ export const ToolPermissionSchema = z.enum([
   'opportunity:read:org',
   'opportunity:write:org',
   'organization:read:context',
+  'plugin:read:catalog',
+  'plugin:invoke:maps',
+  'plugin:invoke:commerce',
+  'plugin:invoke:calendar',
+  'plugin:read:mail',
+  'plugin:write:mail_draft',
+  'plugin:send:mail',
+  'plugin:invoke:lifestyle',
+  'plugin:invoke:social',
+  'plugin:manage:mcp',
+  'plugin:invoke:mcp',
 ]);
 export const TOOL_PERMISSIONS = {
   memoryReadSelf: 'memory:read:self',
@@ -516,6 +527,17 @@ export const TOOL_PERMISSIONS = {
   opportunityReadOrg: 'opportunity:read:org',
   opportunityWriteOrg: 'opportunity:write:org',
   organizationReadContext: 'organization:read:context',
+  pluginReadCatalog: 'plugin:read:catalog',
+  pluginInvokeMaps: 'plugin:invoke:maps',
+  pluginInvokeCommerce: 'plugin:invoke:commerce',
+  pluginInvokeCalendar: 'plugin:invoke:calendar',
+  pluginReadMail: 'plugin:read:mail',
+  pluginWriteMailDraft: 'plugin:write:mail_draft',
+  pluginSendMail: 'plugin:send:mail',
+  pluginInvokeLifestyle: 'plugin:invoke:lifestyle',
+  pluginInvokeSocial: 'plugin:invoke:social',
+  pluginManageMcp: 'plugin:manage:mcp',
+  pluginInvokeMcp: 'plugin:invoke:mcp',
 } as const satisfies Record<string, z.infer<typeof ToolPermissionSchema>>;
 export const MemoryStatusSchema = z.enum([
   'pending_confirmation',
@@ -2124,3 +2146,528 @@ export const CoordinateEventResponseSchema = z
   })
   .strict();
 export type CoordinateEventResponse = z.infer<typeof CoordinateEventResponseSchema>;
+
+// =============================================================================
+// Extensible Plugins & Conversational Functional Widgets
+// =============================================================================
+
+export const PluginCategorySchema = z.enum([
+  'maps',
+  'commerce',
+  'mail',
+  'lifestyle',
+  'calendar',
+  'social',
+  'productivity',
+  'mcp',
+]);
+export type PluginCategory = z.infer<typeof PluginCategorySchema>;
+
+export const PluginAuthTypeSchema = z.enum(['none', 'api_key', 'oauth2']);
+export type PluginAuthType = z.infer<typeof PluginAuthTypeSchema>;
+
+export const PluginCredentialStatusSchema = z.enum([
+  'mock_only',
+  'configured',
+  'missing_credentials',
+]);
+export type PluginCredentialStatus = z.infer<typeof PluginCredentialStatusSchema>;
+
+export const PluginProviderModeSchema = z.enum(['mock', 'live']);
+export type PluginProviderMode = z.infer<typeof PluginProviderModeSchema>;
+
+export const ConversationWidgetKindSchema = z.enum([
+  'map_location_card',
+  'product_comparison_card',
+  'schedule_candidates_card',
+  'action_preview_card',
+  'email_thread_list_card',
+  'email_compose_preview_card',
+  'instant_delivery_card',
+  'local_merchant_card',
+  'social_connection_card',
+  'cross_platform_compare_card',
+  'weather_travel_card',
+  'mcp_result_card',
+]);
+export type ConversationWidgetKind = z.infer<typeof ConversationWidgetKindSchema>;
+
+const PRIVATE_HOSTNAME_PATTERN =
+  /^(localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|0\.0\.0\.0|\[?(::1|fe[89ab][0-9a-f]:.*|fc[0-9a-f]{2}:.*|fd[0-9a-f]{2}:.*)\]?)$/i;
+
+const SAFE_HTTPS_HOST_PATTERN =
+  /^https:\/\/(?![^/?#]*@)([^:/?#[\]]+|\[[^\]]+\])(?::\d{1,5})?(?:[/?#].*)?$/i;
+
+export const SafeHttpsUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(2000)
+  .refine(
+    (raw) => {
+      const match = SAFE_HTTPS_HOST_PATTERN.exec(raw);
+      const hostname = match?.[1];
+      if (!hostname) return false;
+      if (PRIVATE_HOSTNAME_PATTERN.test(hostname)) return false;
+      return true;
+    },
+    { message: 'URL must be a public https:// URL without embedded credentials.' },
+  );
+
+export const PluginIdSchema = z.string().regex(/^[a-z][a-z0-9_.-]{1,64}$/);
+export const PluginActionNameSchema = z.string().regex(/^[a-z][a-z0-9_]{1,48}$/);
+
+export const MapLocationItemSchema = z
+  .object({
+    poiId: z.string().trim().min(1).max(120),
+    name: z.string().trim().min(1).max(160),
+    formattedAddress: z.string().trim().min(1).max(300),
+    province: z.string().trim().min(1).max(80).optional(),
+    city: z.string().trim().min(1).max(80).optional(),
+    district: z.string().trim().min(1).max(80).optional(),
+    category: z.string().trim().min(1).max(80).optional(),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    distanceMeters: z.number().int().min(0).max(1_000_000).optional(),
+    navigationUrl: SafeHttpsUrlSchema.optional(),
+  })
+  .strict();
+export type MapLocationItem = z.infer<typeof MapLocationItemSchema>;
+
+export const MapLocationWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('map_location_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    subtitle: z.string().trim().min(1).max(240).optional(),
+    query: z.string().trim().min(1).max(200),
+    city: z.string().trim().min(1).max(80).optional(),
+    providerMode: PluginProviderModeSchema,
+    sourceAttribution: z.string().trim().min(1).max(120),
+    locations: z.array(MapLocationItemSchema).min(1).max(10),
+  })
+  .strict();
+export type MapLocationWidget = z.infer<typeof MapLocationWidgetSchema>;
+
+export const ProductOfferItemSchema = z
+  .object({
+    itemId: z.string().trim().min(1).max(120),
+    platform: z.enum(['taobao', 'jd', 'other']),
+    title: z.string().trim().min(1).max(200),
+    shopName: z.string().trim().min(1).max(120),
+    priceCents: z.number().int().min(0).max(1_000_000_000),
+    originalPriceCents: z.number().int().min(0).max(1_000_000_000).optional(),
+    currency: z.literal('CNY').default('CNY'),
+    tags: z.array(z.string().trim().min(1).max(32)).max(6).default([]),
+    rating: z.number().min(0).max(5).optional(),
+    monthlySalesHint: z.string().trim().min(1).max(40).optional(),
+    productUrl: SafeHttpsUrlSchema,
+  })
+  .strict();
+export type ProductOfferItem = z.infer<typeof ProductOfferItemSchema>;
+
+export const ProductComparisonWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('product_comparison_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    subtitle: z.string().trim().min(1).max(240).optional(),
+    query: z.string().trim().min(1).max(200),
+    platformLabel: z.string().trim().min(1).max(80),
+    providerMode: PluginProviderModeSchema,
+    requiresUserConfirmationBeforeJump: z.literal(true),
+    items: z.array(ProductOfferItemSchema).min(1).max(10),
+  })
+  .strict();
+export type ProductComparisonWidget = z.infer<typeof ProductComparisonWidgetSchema>;
+
+export const ScheduleCandidatesWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('schedule_candidates_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    status: EventCoordinationStatusSchema,
+    timezone: IanaTimeZoneSchema,
+    providerMode: PluginProviderModeSchema,
+    clarificationPrompts: z.array(z.string().trim().min(1).max(300)).max(10),
+    candidates: z.array(CoordinationCandidateSlotSchema).max(10),
+    externalCalendarsModified: z.literal(false),
+  })
+  .strict();
+export type ScheduleCandidatesWidget = z.infer<typeof ScheduleCandidatesWidgetSchema>;
+
+export const ActionPreviewWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('action_preview_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().min(1).max(400),
+    actionLabel: z.string().trim().min(1).max(60),
+    targetUrl: SafeHttpsUrlSchema.optional(),
+    requiresConfirmation: z.literal(true),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type ActionPreviewWidget = z.infer<typeof ActionPreviewWidgetSchema>;
+
+export const EmailThreadSummarySchema = z
+  .object({
+    threadId: z.string().trim().min(1).max(120),
+    fromLabel: z.string().trim().min(1).max(120),
+    subject: z.string().trim().min(1).max(200),
+    snippet: z.string().trim().min(1).max(320),
+    receivedAt: z.iso.datetime(),
+    unread: z.boolean(),
+    hasAttachments: z.boolean().default(false),
+  })
+  .strict();
+export type EmailThreadSummary = z.infer<typeof EmailThreadSummarySchema>;
+
+export const EmailThreadListWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('email_thread_list_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    mailboxProvider: z.enum(['gmail', 'qqmail', 'other']),
+    query: z.string().trim().min(1).max(200),
+    providerMode: PluginProviderModeSchema,
+    threads: z.array(EmailThreadSummarySchema).max(10),
+  })
+  .strict();
+export type EmailThreadListWidget = z.infer<typeof EmailThreadListWidgetSchema>;
+
+export const EmailComposePreviewWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('email_compose_preview_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    draftId: z.string().trim().min(1).max(120),
+    mailboxProvider: z.enum(['gmail', 'qqmail', 'other']),
+    to: z.array(z.string().trim().min(3).max(160)).min(1).max(10),
+    cc: z.array(z.string().trim().min(3).max(160)).max(10).default([]),
+    subject: z.string().trim().min(1).max(200),
+    bodyPreview: z.string().trim().min(1).max(2000),
+    status: z.enum(['draft_preview', 'sent']),
+    requiresUserConfirmation: z.boolean(),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type EmailComposePreviewWidget = z.infer<typeof EmailComposePreviewWidgetSchema>;
+
+export const InstantDeliveryItemSchema = z
+  .object({
+    itemId: z.string().trim().min(1).max(120),
+    platform: z.enum(['taobao_flash', 'meituan']),
+    storeName: z.string().trim().min(1).max(140),
+    productTitle: z.string().trim().min(1).max(200),
+    priceCents: z.number().int().min(0).max(1_000_000_000),
+    deliveryFeeCents: z.number().int().min(0).max(100_000),
+    minOrderCents: z.number().int().min(0).max(100_000),
+    etaMinutes: z.number().int().min(1).max(360),
+    distanceMeters: z.number().int().min(0).max(100_000),
+    tags: z.array(z.string().trim().min(1).max(32)).max(6).default([]),
+    orderUrl: SafeHttpsUrlSchema,
+  })
+  .strict();
+export type InstantDeliveryItem = z.infer<typeof InstantDeliveryItemSchema>;
+
+export const InstantDeliveryWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('instant_delivery_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    query: z.string().trim().min(1).max(200),
+    deliveryAddress: z.string().trim().min(1).max(200),
+    providerMode: PluginProviderModeSchema,
+    requiresUserConfirmationBeforeJump: z.literal(true),
+    items: z.array(InstantDeliveryItemSchema).min(1).max(10),
+  })
+  .strict();
+export type InstantDeliveryWidget = z.infer<typeof InstantDeliveryWidgetSchema>;
+
+export const LocalMerchantItemSchema = z
+  .object({
+    merchantId: z.string().trim().min(1).max(120),
+    platform: z.enum(['meituan', 'other']),
+    name: z.string().trim().min(1).max(160),
+    category: z.string().trim().min(1).max(80),
+    city: z.string().trim().min(1).max(80),
+    address: z.string().trim().min(1).max(240),
+    rating: z.number().min(0).max(5),
+    avgPriceCents: z.number().int().min(0).max(1_000_000),
+    dealTitle: z.string().trim().min(1).max(160).optional(),
+    dealPriceCents: z.number().int().min(0).max(1_000_000).optional(),
+    openStatus: z.string().trim().min(1).max(60),
+    merchantUrl: SafeHttpsUrlSchema,
+  })
+  .strict();
+export type LocalMerchantItem = z.infer<typeof LocalMerchantItemSchema>;
+
+export const LocalMerchantWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('local_merchant_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    query: z.string().trim().min(1).max(200),
+    city: z.string().trim().min(1).max(80).optional(),
+    providerMode: PluginProviderModeSchema,
+    requiresUserConfirmationBeforeJump: z.literal(true),
+    merchants: z.array(LocalMerchantItemSchema).min(1).max(10),
+  })
+  .strict();
+export type LocalMerchantWidget = z.infer<typeof LocalMerchantWidgetSchema>;
+
+export const SocialConnectionWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('social_connection_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    mode: z.enum(['suggestion_preview', 'invitation_status']),
+    targetUserId: z.uuid(),
+    displayName: z.string().trim().min(1).max(120),
+    headline: z.string().trim().min(1).max(240),
+    matchReason: z.string().trim().min(1).max(240),
+    purpose: z.literal('connection_invitation'),
+    status: z.enum(['preview', 'pending', 'accepted', 'declined', 'revoked']),
+    selectedFields: z.array(z.string().trim().min(1).max(60)).min(1).max(12),
+    expiresInDays: z.number().int().min(1).max(30),
+    privacyNotice: z.string().trim().min(1).max(240),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type SocialConnectionWidget = z.infer<typeof SocialConnectionWidgetSchema>;
+
+export const CrossPlatformOfferItemSchema = z
+  .object({
+    platform: z.enum(['taobao', 'jd', 'taobao_flash', 'meituan', 'other']),
+    platformLabel: z.string().trim().min(1).max(60),
+    itemId: z.string().trim().min(1).max(120),
+    title: z.string().trim().min(1).max(200),
+    shopOrStoreName: z.string().trim().min(1).max(140),
+    priceCents: z.number().int().min(0).max(1_000_000_000),
+    fulfillmentHint: z.string().trim().min(1).max(80),
+    rating: z.number().min(0).max(5).optional(),
+    targetUrl: SafeHttpsUrlSchema,
+  })
+  .strict();
+export type CrossPlatformOfferItem = z.infer<typeof CrossPlatformOfferItemSchema>;
+
+export const CrossPlatformCompareWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('cross_platform_compare_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    query: z.string().trim().min(1).max(200),
+    bestPricePlatformLabel: z.string().trim().min(1).max(80),
+    fastestDeliveryPlatformLabel: z.string().trim().min(1).max(80),
+    providerMode: PluginProviderModeSchema,
+    requiresUserConfirmationBeforeJump: z.literal(true),
+    items: z.array(CrossPlatformOfferItemSchema).min(1).max(15),
+  })
+  .strict();
+export type CrossPlatformCompareWidget = z.infer<typeof CrossPlatformCompareWidgetSchema>;
+
+export const WeatherTravelWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('weather_travel_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    city: z.string().trim().min(1).max(80),
+    dateLabel: z.string().trim().min(1).max(40),
+    condition: z.string().trim().min(1).max(60),
+    tempMinC: z.number().min(-60).max(60),
+    tempMaxC: z.number().min(-60).max(60),
+    commuteAdvice: z.string().trim().min(1).max(240),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type WeatherTravelWidget = z.infer<typeof WeatherTravelWidgetSchema>;
+
+export const McpResultRowSchema = z
+  .object({
+    label: z.string().trim().min(1).max(120),
+    value: z.string().trim().max(500),
+  })
+  .strict();
+
+export const McpResultWidgetSchema = z
+  .object({
+    widgetId: z.string().trim().min(1).max(120),
+    kind: z.literal('mcp_result_card'),
+    pluginId: PluginIdSchema,
+    title: z.string().trim().min(1).max(160),
+    serverId: z.string().trim().min(1).max(120),
+    serverName: z.string().trim().min(1).max(80),
+    toolName: z.string().trim().min(1).max(80),
+    displayMode: z.enum(['key_value', 'summary']),
+    summaryText: z.string().trim().min(1).max(1000),
+    rows: z.array(McpResultRowSchema).max(25),
+    readOnly: z.boolean(),
+    externalNotice: z.string().trim().min(1).max(200),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type McpResultWidget = z.infer<typeof McpResultWidgetSchema>;
+
+export const ConversationWidgetSchema = z.discriminatedUnion('kind', [
+  MapLocationWidgetSchema,
+  ProductComparisonWidgetSchema,
+  ScheduleCandidatesWidgetSchema,
+  ActionPreviewWidgetSchema,
+  EmailThreadListWidgetSchema,
+  EmailComposePreviewWidgetSchema,
+  InstantDeliveryWidgetSchema,
+  LocalMerchantWidgetSchema,
+  SocialConnectionWidgetSchema,
+  CrossPlatformCompareWidgetSchema,
+  WeatherTravelWidgetSchema,
+  McpResultWidgetSchema,
+]);
+export type ConversationWidget = z.infer<typeof ConversationWidgetSchema>;
+
+export const PluginActionManifestSchema = z
+  .object({
+    name: PluginActionNameSchema,
+    title: z.string().trim().min(1).max(80),
+    description: z.string().trim().min(1).max(300),
+    requiredPermissions: z.array(ToolPermissionSchema).min(1).max(8),
+    widgetKinds: z.array(ConversationWidgetKindSchema).min(1).max(4),
+    idempotent: z.boolean(),
+    timeoutMs: z.number().int().min(100).max(60_000),
+    maxRetries: z.number().int().min(0).max(5),
+    inputJsonSchema: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+export type PluginActionManifest = z.infer<typeof PluginActionManifestSchema>;
+
+export const PluginManifestSchema = z
+  .object({
+    id: PluginIdSchema,
+    name: z.string().trim().min(1).max(80),
+    providerName: z.string().trim().min(1).max(80),
+    description: z.string().trim().min(1).max(400),
+    version: z.string().trim().min(1).max(32),
+    category: PluginCategorySchema,
+    authType: PluginAuthTypeSchema,
+    credentialStatus: PluginCredentialStatusSchema,
+    allowedExternalHosts: z.array(z.string().trim().min(1).max(120)).max(20),
+    supportsLiveAdapter: z.boolean(),
+    readOnly: z.boolean(),
+    actions: z.array(PluginActionManifestSchema).min(1).max(20),
+  })
+  .strict();
+export type PluginManifest = z.infer<typeof PluginManifestSchema>;
+
+export const PluginCatalogResponseSchema = z
+  .object({
+    plugins: z.array(PluginManifestSchema).max(100),
+    total: z.number().int().min(0).max(100),
+  })
+  .strict();
+export type PluginCatalogResponse = z.infer<typeof PluginCatalogResponseSchema>;
+
+export const PluginInvokeRequestSchema = z
+  .object({
+    action: PluginActionNameSchema,
+    input: z.record(z.string(), z.unknown()),
+    conversationId: z.uuid().optional(),
+    allowLive: z.boolean().default(false),
+  })
+  .strict();
+export type PluginInvokeRequest = z.infer<typeof PluginInvokeRequestSchema>;
+
+export const PluginInvokeResponseSchema = z
+  .object({
+    invocationId: z.uuid(),
+    pluginId: PluginIdSchema,
+    action: PluginActionNameSchema,
+    providerMode: PluginProviderModeSchema,
+    summary: z.string().trim().min(1).max(500),
+    data: z.record(z.string(), z.unknown()),
+    widgets: z.array(ConversationWidgetSchema).max(10),
+    auditRef: z.string().trim().min(1).max(120),
+    executedAt: z.iso.datetime(),
+  })
+  .strict();
+export type PluginInvokeResponse = z.infer<typeof PluginInvokeResponseSchema>;
+
+export const McpAuthTypeSchema = z.enum(['none', 'bearer', 'api_key_header']);
+export type McpAuthType = z.infer<typeof McpAuthTypeSchema>;
+
+export const McpDiscoveredToolSchema = z
+  .object({
+    name: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/),
+    title: z.string().trim().min(1).max(80),
+    description: z.string().trim().min(1).max(300),
+    readOnly: z.boolean().default(true),
+    inputJsonSchema: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+export type McpDiscoveredTool = z.infer<typeof McpDiscoveredToolSchema>;
+
+export const McpServerConfigCreateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    endpointUrl: SafeHttpsUrlSchema,
+    authType: McpAuthTypeSchema.default('none'),
+    headerName: z
+      .string()
+      .regex(/^[a-zA-Z][a-zA-Z0-9-]{1,60}$/)
+      .optional(),
+    credentialSecret: z.string().min(1).max(500).optional(),
+    allowedTools: z
+      .array(z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/))
+      .max(50)
+      .optional(),
+    timeoutMs: z.number().int().min(500).max(30_000).default(8000),
+    readOnlyDefault: z.boolean().default(true),
+  })
+  .strict()
+  .refine((value) => value.authType === 'none' || Boolean(value.credentialSecret?.trim()), {
+    message: 'credentialSecret is required when authType is bearer or api_key_header.',
+    path: ['credentialSecret'],
+  });
+export type McpServerConfigCreate = z.infer<typeof McpServerConfigCreateSchema>;
+
+export const McpServerSummarySchema = z
+  .object({
+    serverId: z.uuid(),
+    pluginId: PluginIdSchema,
+    name: z.string().trim().min(1).max(80),
+    endpointUrl: SafeHttpsUrlSchema,
+    authType: McpAuthTypeSchema,
+    hasCredential: z.boolean(),
+    timeoutMs: z.number().int().min(500).max(30_000),
+    status: z.enum(['connected_mock', 'connected_live']),
+    discoveredTools: z.array(McpDiscoveredToolSchema).max(50),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+export type McpServerSummary = z.infer<typeof McpServerSummarySchema>;
+
+export const McpServerListResponseSchema = z
+  .object({
+    servers: z.array(McpServerSummarySchema).max(50),
+    total: z.number().int().min(0).max(50),
+  })
+  .strict();
+export type McpServerListResponse = z.infer<typeof McpServerListResponseSchema>;
+
+export const McpServerRegisterResponseSchema = z
+  .object({
+    server: McpServerSummarySchema,
+    registeredPlugin: PluginManifestSchema,
+  })
+  .strict();
+export type McpServerRegisterResponse = z.infer<typeof McpServerRegisterResponseSchema>;

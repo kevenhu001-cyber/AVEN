@@ -12,6 +12,7 @@ import { IntentModule } from './intent/intent.module.js';
 import { MemoryModule } from './memory/memory.module.js';
 import { OpportunityModule } from './opportunity/opportunity.module.js';
 import { OrganizationModule } from './organization/organization.module.js';
+import { PluginModule } from './plugin/plugin.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { ReferralModule } from './referral/referral.module.js';
 import { RelationshipModule } from './relationship/relationship.module.js';
@@ -33,6 +34,7 @@ import { RelationshipModule } from './relationship/relationship.module.js';
     RelationshipModule,
     AvailabilityModule,
     EventModule,
+    PluginModule,
   ],
   controllers: [HealthController],
 })
