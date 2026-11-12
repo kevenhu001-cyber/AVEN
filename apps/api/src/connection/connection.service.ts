@@ -102,4 +102,27 @@ export class ConnectionService implements OnModuleDestroy {
       version,
     ]);
   }
+  sendMessage(auth: AuthContext, connectionId: string, content: string, clientMessageId: string) {
+    return this.execute(auth, 'SELECT app.send_peer_message($1::uuid, $2, $3::uuid) AS result', [
+      connectionId,
+      content,
+      clientMessageId,
+    ]);
+  }
+  listMessages(
+    auth: AuthContext,
+    connectionId: string,
+    cursorCreatedAt?: string,
+    cursorId?: string,
+    limit?: number,
+  ) {
+    return this.execute(
+      auth,
+      'SELECT app.list_peer_messages($1::uuid, $2::timestamptz, $3::uuid, $4) AS result',
+      [connectionId, cursorCreatedAt ?? null, cursorId ?? null, limit ?? 20],
+    );
+  }
+  deleteMessage(auth: AuthContext, messageId: string) {
+    return this.execute(auth, 'SELECT app.delete_peer_message($1::uuid) AS result', [messageId]);
+  }
 }

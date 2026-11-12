@@ -1686,6 +1686,70 @@ export const ConnectionMaintenanceResultSchema = z
   })
   .strict();
 
+export const SendPeerMessageRequestSchema = z
+  .object({
+    content: z
+      .string()
+      .trim()
+      .min(1, 'content must not be empty')
+      .max(4000, 'content must not exceed 4000 characters'),
+    clientMessageId: z.uuid(),
+  })
+  .strict();
+export type SendPeerMessageRequest = z.infer<typeof SendPeerMessageRequestSchema>;
+
+export const PeerMessageSchema = z
+  .object({
+    id: z.uuid(),
+    connectionId: z.uuid(),
+    senderUserId: z.uuid(),
+    content: z.string(),
+    clientMessageId: z.uuid(),
+    createdAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export type PeerMessage = z.infer<typeof PeerMessageSchema>;
+
+export const ListPeerMessagesQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+    cursorCreatedAt: z.iso.datetime({ offset: true }).optional(),
+    cursorId: z.uuid().optional(),
+  })
+  .strict()
+  .refine(
+    (q) =>
+      (q.cursorCreatedAt === undefined && q.cursorId === undefined) ||
+      (q.cursorCreatedAt !== undefined && q.cursorId !== undefined),
+    { message: 'cursorCreatedAt and cursorId must be provided together' },
+  );
+export type ListPeerMessagesQuery = z.infer<typeof ListPeerMessagesQuerySchema>;
+
+export const PeerMessageCursorSchema = z
+  .object({
+    createdAt: z.iso.datetime({ offset: true }),
+    id: z.uuid(),
+  })
+  .strict();
+export type PeerMessageCursor = z.infer<typeof PeerMessageCursorSchema>;
+
+export const ListPeerMessagesResponseSchema = z
+  .object({
+    connectionId: z.uuid(),
+    messages: z.array(PeerMessageSchema),
+    nextCursor: PeerMessageCursorSchema.nullable(),
+  })
+  .strict();
+export type ListPeerMessagesResponse = z.infer<typeof ListPeerMessagesResponseSchema>;
+
+export const DeletePeerMessageResponseSchema = z
+  .object({
+    success: z.literal(true),
+    messageId: z.uuid(),
+  })
+  .strict();
+export type DeletePeerMessageResponse = z.infer<typeof DeletePeerMessageResponseSchema>;
+
 export const NotificationKindSchema = z.enum([
   'sent',
   'accepted',

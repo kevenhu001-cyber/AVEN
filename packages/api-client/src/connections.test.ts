@@ -188,4 +188,64 @@ describe('personal connection client', () => {
     controller.abort();
     await expect(read).rejects.toMatchObject({ code: 'CANCELLED' });
   });
+
+  describe('peer messaging client', () => {
+    const message = {
+      id,
+      connectionId: id,
+      senderUserId: other,
+      content: 'Hello friend',
+      clientMessageId: id,
+      createdAt: at,
+    };
+
+    it('sends a message with CSRF header and trimmed content', async () => {
+      const { client, fetcher } = setup(message, 201);
+      const res = await client.sendMessage(
+        id,
+        { content: '  Hello friend  ', clientMessageId: id },
+        web,
+      );
+      expect(res).toEqual(message);
+      const [url, init] = fetcher.mock.calls[0] ?? [];
+      expect(url).toBe(`/api/v1/connections/${id}/messages`);
+      expect(init?.method).toBe('POST');
+      expect((init?.headers as Record<string, string>)['X-CSRF-Token']).toBe('csrf-value');
+      expect(JSON.parse(String(init?.body))).toEqual({
+        content: 'Hello friend',
+        clientMessageId: id,
+      });
+    });
+
+    it('lists messages with pagination query parameters', async () => {
+      const listResponse = {
+        connectionId: id,
+        messages: [message],
+        nextCursor: { createdAt: at, id },
+      };
+      const { client, fetcher } = setup(listResponse, 200);
+      const res = await client.listMessages(
+        id,
+        { limit: 10, cursorCreatedAt: at, cursorId: id },
+        mobile,
+      );
+      expect(res).toEqual(listResponse);
+      const [url, init] = fetcher.mock.calls[0] ?? [];
+      expect(url).toContain(`/api/v1/connections/${id}/messages?`);
+      expect(url).toContain('limit=10');
+      expect(init?.method).toBe('GET');
+      expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer session-value');
+    });
+
+    it('deletes a message using DELETE method and CSRF header', async () => {
+      const deleteResponse = { success: true, messageId: id };
+      const { client, fetcher } = setup(deleteResponse, 200);
+      const res = await client.deleteMessage(id, id, web);
+      expect(res).toEqual(deleteResponse);
+      const [url, init] = fetcher.mock.calls[0] ?? [];
+      expect(url).toBe(`/api/v1/connections/${id}/messages/${id}`);
+      expect(init?.method).toBe('DELETE');
+      expect((init?.headers as Record<string, string>)['X-CSRF-Token']).toBe('csrf-value');
+    });
+  });
 });

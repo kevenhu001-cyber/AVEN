@@ -7,18 +7,29 @@ import {
   ConnectionWidgetSchema,
   ConnectionWithdrawRequestSchema,
   CreateConnectionPreviewRequestSchema,
+  DeletePeerMessageResponseSchema,
+  ListPeerMessagesQuerySchema,
+  ListPeerMessagesResponseSchema,
   PeerConnectionListSchema,
+  PeerMessageSchema,
   RequestIdSchema,
   SendConnectionInvitationRequestSchema,
+  SendPeerMessageRequestSchema,
 } from '@aven/contracts';
-import type { CreateConnectionPreviewRequest } from '@aven/contracts';
+import type {
+  CreateConnectionPreviewRequest,
+  DeletePeerMessageResponse,
+  ListPeerMessagesResponse,
+  PeerMessage,
+  SendPeerMessageRequest,
+} from '@aven/contracts';
 
 export type ConnectionCallOptions = {
   auth: { kind: 'web'; csrfToken?: string } | { kind: 'mobile'; bearerToken: string };
   signal?: AbortSignal | undefined;
 };
 export type TransportOptions = {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'DELETE';
   body?: unknown;
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
@@ -33,9 +44,11 @@ type Schema<T> = { safeParse: (value: unknown) => { success: false } | { success
 
 export function authenticatedOptions(
   call: ConnectionCallOptions,
-  write: boolean,
+  method: 'GET' | 'POST' | 'DELETE' | boolean,
   invalid: () => Error,
 ): TransportOptions {
+  const httpMethod = typeof method === 'boolean' ? (method ? 'POST' : 'GET') : method;
+  const write = httpMethod === 'POST' || httpMethod === 'DELETE';
   const headers: Record<string, string> = {};
   const token = call.auth.kind === 'mobile' ? call.auth.bearerToken : call.auth.csrfToken;
   if ((write || call.auth.kind === 'mobile') && (!token || /\s/.test(token))) throw invalid();
@@ -45,7 +58,7 @@ export function authenticatedOptions(
     headers,
     credentials: call.auth.kind === 'mobile' ? 'omit' : 'include',
     signal: call.signal,
-    method: write ? 'POST' : 'GET',
+    method: httpMethod,
   };
 }
 
@@ -55,8 +68,10 @@ export function createConnectionsClient(request: ApiRequest, invalid: () => Erro
     if (!result.success) throw invalid();
     return result.data;
   }
-  const options = (call: ConnectionCallOptions, write = false) =>
-    authenticatedOptions(call, write, invalid);
+  const options = (
+    call: ConnectionCallOptions,
+    method: 'GET' | 'POST' | 'DELETE' | boolean = false,
+  ) => authenticatedOptions(call, method, invalid);
   const base = '/api/v1/connections';
   function path(id: string) {
     return `${base}/invitations/${validate(RequestIdSchema, id)}`;
@@ -117,6 +132,46 @@ export function createConnectionsClient(request: ApiRequest, invalid: () => Erro
     },
     async listConnections(call: ConnectionCallOptions) {
       return request(base, PeerConnectionListSchema.parse, options(call));
+    },
+    async listMessages(
+      connectionId: string,
+      query: { limit?: number; cursorCreatedAt?: string; cursorId?: string } = {},
+      call: ConnectionCallOptions,
+    ): Promise<ListPeerMessagesResponse> {
+      const connId = validate(RequestIdSchema, connectionId);
+      const q = validate(ListPeerMessagesQuerySchema, query);
+      const params = new URLSearchParams();
+      if (q.limit !== undefined) params.set('limit', String(q.limit));
+      if (q.cursorCreatedAt !== undefined) params.set('cursorCreatedAt', q.cursorCreatedAt);
+      if (q.cursorId !== undefined) params.set('cursorId', q.cursorId);
+      const qs = params.toString();
+      const url = `${base}/${connId}/messages${qs ? `?${qs}` : ''}`;
+      return request(url, ListPeerMessagesResponseSchema.parse, options(call, 'GET'));
+    },
+    async sendMessage(
+      connectionId: string,
+      input: SendPeerMessageRequest,
+      call: ConnectionCallOptions,
+    ): Promise<PeerMessage> {
+      const connId = validate(RequestIdSchema, connectionId);
+      const body = validate(SendPeerMessageRequestSchema, input);
+      return request(`${base}/${connId}/messages`, PeerMessageSchema.parse, {
+        ...options(call, 'POST'),
+        body,
+      });
+    },
+    async deleteMessage(
+      connectionId: string,
+      messageId: string,
+      call: ConnectionCallOptions,
+    ): Promise<DeletePeerMessageResponse> {
+      const connId = validate(RequestIdSchema, connectionId);
+      const msgId = validate(RequestIdSchema, messageId);
+      return request(
+        `${base}/${connId}/messages/${msgId}`,
+        DeletePeerMessageResponseSchema.parse,
+        options(call, 'DELETE'),
+      );
     },
   };
 }

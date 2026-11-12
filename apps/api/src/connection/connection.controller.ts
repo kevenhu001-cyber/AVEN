@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
   Inject,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,9 +20,14 @@ import {
   ConnectionWithdrawRequestSchema,
   ConnectionWidgetSchema,
   CreateConnectionPreviewRequestSchema,
+  DeletePeerMessageResponseSchema,
+  ListPeerMessagesQuerySchema,
+  ListPeerMessagesResponseSchema,
   PeerConnectionListSchema,
+  PeerMessageSchema,
   RequestIdSchema,
   SendConnectionInvitationRequestSchema,
+  SendPeerMessageRequestSchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
@@ -104,5 +111,49 @@ export class ConnectionController {
     return ConnectionInvitationSchema.parse(
       await this.connections.revoke(auth, parse(RequestIdSchema, id), false, null),
     );
+  }
+
+  @Post(':id/messages')
+  async sendMessage(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const connectionId = parse(RequestIdSchema, id);
+    const input = parse(SendPeerMessageRequestSchema, body);
+    return PeerMessageSchema.parse(
+      await this.connections.sendMessage(auth, connectionId, input.content, input.clientMessageId),
+    );
+  }
+
+  @Get(':id/messages')
+  async listMessages(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id') id: string,
+    @Query() query: unknown,
+  ) {
+    const connectionId = parse(RequestIdSchema, id);
+    const q = parse(ListPeerMessagesQuerySchema, query);
+    return ListPeerMessagesResponseSchema.parse(
+      await this.connections.listMessages(
+        auth,
+        connectionId,
+        q.cursorCreatedAt,
+        q.cursorId,
+        q.limit,
+      ),
+    );
+  }
+
+  @Delete(':connectionId/messages/:messageId')
+  @HttpCode(200)
+  async deleteMessage(
+    @CurrentAuth() auth: AuthContext,
+    @Param('connectionId') connectionId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    parse(RequestIdSchema, connectionId);
+    const msgId = parse(RequestIdSchema, messageId);
+    return DeletePeerMessageResponseSchema.parse(await this.connections.deleteMessage(auth, msgId));
   }
 }

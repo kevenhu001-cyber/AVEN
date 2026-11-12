@@ -8,6 +8,8 @@ AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安�
 
 系统仍未完成。已按代码重新核对 [系统缺口与推进顺序](docs/development/SYSTEM_STATUS.md)，并纠正开发计划中过满的 DONE：产品 UI/正式设计评审、活动通知/移动推送、共同会话、真实 AI、向量召回、真实日历、原生验收和运行保障仍待完成；不能把后端接口和原型当作完整应用。
 
+2026-11-12 新增 **P2P-04 个人连接会话消息与保留清理**：基于已建立的独立个人连接（`peer_connections`），交付点对点私聊消息收发（`POST /api/v1/connections/:id/messages`）、幂等去重与防冲突（`clientMessageId`）、时间倒序键集游标分页（`GET /api/v1/connections/:id/messages`）、单方软删除隐藏与双方均软删除后的 Worker 物理正文清除（`purged_at`）。隔离库与开发库通过 31 项全链路检查；36 个迁移、58 张租户表全部 FORCE RLS。单测 217 项通过。**没有聊天 UI 或移动推送**，仍非完整跨终端产品。详见 [本轮交付](docs/development/PEER_MESSAGES.md) 与 [API 契约](docs/api/PEER_MESSAGES.md)。
+
 2026-11-12 新增 **M6-06A2 活动协调站内通知后端**（连同 M6-06A1 个人连接通知实现站内通知闭环）：个人连接邀请/接受/拒绝/撤回/撤销与活动提案/确认/取消的同事务 Outbox、真实 BullMQ 消费、当前业务/偏好过滤、分页/已读、去重与失败重试、平台管理员死信重排，以及 90 天收件箱清理。隔离库与开发库各 62 项连接通知检查、18 项活动通知检查、203 项单测通过；35 个迁移、57 张租户表 FORCE RLS。**没有通知 UI 或移动推送**，仍非完整跨终端产品。见 [本轮交付](docs/development/NOTIFICATIONS.md) 与 [API 契约](docs/api/NOTIFICATIONS.md)。
 
 ## 安全核对进展

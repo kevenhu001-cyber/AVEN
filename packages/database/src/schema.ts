@@ -999,3 +999,27 @@ export const notificationDeliveryEvents = pgTable('notification_delivery_events'
   generation: integer('generation').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const peerMessages = pgTable(
+  'peer_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    connectionId: uuid('connection_id')
+      .notNull()
+      .references(() => peerConnections.id, { onDelete: 'cascade' }),
+    senderUserId: uuid('sender_user_id')
+      .notNull()
+      .references(() => users.id),
+    content: text('content').notNull(),
+    clientMessageId: uuid('client_message_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedBySender: boolean('deleted_by_sender').notNull().default(false),
+    deletedByRecipient: boolean('deleted_by_recipient').notNull().default(false),
+    purgedAt: timestamp('purged_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('uq_peer_messages_client_id').on(t.connectionId, t.clientMessageId),
+    index('idx_peer_messages_pagination').on(t.connectionId, t.createdAt, t.id),
+    index('idx_peer_messages_sender').on(t.senderUserId),
+  ],
+);

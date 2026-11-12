@@ -38,7 +38,7 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 
 ## 2. 当前基线与执行方式
 
-- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M2-01 已实现 Argon2id、不透明会话、CSRF、限流、邮箱验证与密码重置；M2-02 已实现资料更新、校园列表与校园成员申请；M2-03 已实现组织创建、成员、邀请/接受、角色与最后 owner 保护；M2-04 已强制 21 张表 RLS；M2-05 已通过跨账号/跨组织隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02–M3-07 已实现候选复核、生命周期、Provider/工具、Agent 运行时与流式、行动确认与评估预算；M4 已实现组织资料、机会生命周期、组织控制台、组织 Agent 与边界验证；M5 已实现意向与可解释候选、用途授权、引荐双向决定、原子建联、共享上下文与撤销传播；M6 已实现忙闲、忙闲用途授权共享、多方求交与活动状态机。当前共 34 个迁移、53 张 public 租户表与 3 张 app 租户表（全部 FORCE RLS）；P2P-01–03 补充个人连接、共享客户端/读取协议与正文保留清理。
+- M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M2-01 已实现 Argon2id、不透明会话、CSRF、限流、邮箱验证与密码重置；M2-02 已实现资料更新、校园列表与校园成员申请；M2-03 已实现组织创建、成员、邀请/接受、角色与最后 owner 保护；M2-04 已强制 21 张表 RLS；M2-05 已通过跨账号/跨组织隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02–M3-07 已实现候选复核、生命周期、Provider/工具、Agent 运行时与流式、行动确认与评估预算；M4 已实现组织资料、机会生命周期、组织控制台、组织 Agent 与边界验证；M5 已实现意向与可解释候选、用途授权、引荐双向决定、原子建联、共享上下文与撤销传播；M6 已实现忙闲、忙闲用途授权共享、多方求交与活动状态机。当前共 36 个迁移、55 张 public 租户表与 3 张 app 租户表（共 58 张，全部 FORCE RLS）；P2P-01–04 补充个人连接、共享客户端/读取协议、正文保留清理与会话消息收发/双删物理清除。
 - 已有原始规格、启动建议、本计划、M0-01 文档集及 M0-02/03/04/05/06/07/08、M1-01、M1-07 原型、M2-01–M2-05、M3-01 交付记录；README 说明当前状态。
 - 2026-11-11 复检：Node v24.19.0、npm 11.17.0、pnpm 12.18.0（Corepack）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、无 Android SDK/adb；Next/Nest/Expo 最小构建已实际通过。
 - PostgreSQL 17.11 与 Redis 7.4.12 已通过 Compose 启动并验证角色隔离；D1 空库迁移、已有库升级、seed 幂等、RLS 读策略、API/Worker 就绪检查与 Outbox 故障恢复已实际验证。扩展按 ADR-008 启用门单独验证；CI 尚未在 GitHub Actions 实跑。
@@ -359,9 +359,11 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 2026-11-12 系统复核：当前是“后端确定性能力 + Mock Agent + 设计原型”，尚非完整产品。详见 [系统缺口与推进顺序](SYSTEM_STATUS.md)。纠正 M0-08、M4-03、M5-04、M5-06、M6-02 为 PARTIAL，M5-09 为 REVIEW：原交付证据保留，但 CI 实跑、收件箱/设计验收、补充资料、会话/消息、真实日历和产品双端验收尚未满足整包范围。此为状态纠偏，不表示已实现功能回退。
 
+2026-11-12 P2P-04 消息与保留清理轮：基于已建立的个人连接交付点对点会话消息收发、时间倒序键集游标分页、单方软删除与双删 Worker 物理保留清理。新增 0036 迁移、`peer_messages` 表（FORCE RLS）及受控函数、API 端点、契约与 API 客户端方法。36 个迁移、58 张租户表全部 FORCE RLS；`messages:verify` 31/31 通过。详见 [交付记录](PEER_MESSAGES.md)。产品聊天 UI、移动即时推送与自动调度仍未实现。
+
 P2P-03 本轮补齐个人邀请预览与失效共享正文保留清理、来源到期后延长不复活、元数据保留和 Worker 权限边界。新增 0033，实际检查结果见 [本轮交付记录](CONNECTION_RETENTION.md)。没有交付自动调度、通知、产品聊天组件或真实 AI。
 
-优先顺序：M1-07 正式双端评审 → 登录/对话壳与连接小组件；可独立推进 M6-06A2 活动通知 → 个人连接会话/消息 → 通知推送及原生接通。真实 Provider 和向量召回需分别满足数据发送/模型与维度验证门，不能用 Mock 关闭。试点前还须完成拉黑举报、限流、删除与恢复演练、生产网络/邮件和 CI 实跑。
+优先顺序：M1-07 正式双端评审 → 登录/对话壳与连接小组件；可独立推进安全与试点准入（拉黑/举报/限流）或语义召回。真实 Provider 和向量召回需分别满足数据发送/模型与维度验证门，不能用 Mock 关闭。试点前还须完成拉黑举报、限流、删除与恢复演练、生产网络/邮件和 CI 实跑。
 
 2026-11-12 P2P-02 接入层：新增共享个人连接 API 客户端和小组件读取协议；逐次传入 Web Cookie/CSRF 或移动 Bearer，在同事务中返回会话角色、邀请元数据与当前授权快照。无新迁移、正文缓存或自动重试，不承载 UI 状态。12 项构建、71 项真实 HTTP/数据库检查、179 项单测、类型与 lint 通过。详见 [交付记录](CONNECTION_CLIENT_WIDGET.md)。本轮没有产品小组件或 Agent/插件绑定，M1-07 评审门不变；不能描述为聊天接入或跨终端设备验收。
 
@@ -388,6 +390,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | P2P-01 | DONE（后端范围） | 2026-11-12 | 0030–0032、连接模块、`connections:verify` | 个人邀请/双方决定/唯一建联；UI、消息和通知未实现 |
 | P2P-02 | DONE（接入层范围） | 2026-11-12 | 共享连接客户端、widget 读取协议，71 项 HTTP/DB 检查 | 没有产品小组件、Agent 绑定与真实设备验收 |
 | P2P-03 | DONE（保留清理范围） | 2026-11-12 | 0033、受控保留清理、显式维护与验证脚本 | 本轮执行结果见 CONNECTION_RETENTION.md；生产调度和全系统保留仍待交付 |
+| P2P-04 | DONE（消息与保留清理范围） | 2026-11-12 | 0036、`peer_messages` 表与 FORCE RLS、游标分页、单方软删除与双删清理、`messages:verify` 31/31 | 见 PEER_MESSAGES.md；仅后端契约与存储过程，聊天 UI/移动即时推送未实现 |
 | M0-01 | DONE | 2026-11-10 | `AGENTS.md`、`docs/product/PRD.md`、`docs/design/DESIGN_SYSTEM.md`、`docs/architecture/TDD.md`、`docs/database/SCHEMA.md`、`docs/api/README.md`、`docs/architecture/decisions/ADR-001..006`、更新后的 `README.md` | 仅文档交付；未安装依赖、未初始化应用、未执行迁移或应用测试 |
 | M0-01-R1 | DONE | 2026-11-10 | 1.1 契约与核心界面/端点、ADR-007/008；git diff --check、本地链接/锚点/表格/围栏、86 个对比度组合与范围检查；见 CONTRACT_REVIEW.md | 仅文档与静态检查；无应用/迁移/构建/真机验收，应用状态不变 |
 | M0-02 | DONE | 2026-11-10 | workspace、`pnpm-lock.yaml`、Turbo、strict TS、ESLint/dependency-cruiser、Prettier、`.env.example`；`pnpm install --frozen-lockfile`、`format:check`、`lint`、`check:expo`、`typecheck` 通过；见 FOUNDATION_REPORT.md | 仅工具链与最小依赖；数据库、迁移与业务未实现 |
