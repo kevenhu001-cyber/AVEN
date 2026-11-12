@@ -6,11 +6,16 @@ import {
 import type { ApiErrorCode, LivenessResponse, ReadinessResponse } from '@aven/contracts';
 import { createConnectionsClient } from './connections';
 import type { TransportOptions } from './connections';
+import { createCalendarConnectionsClient } from './calendar-connections';
 import { createEventsClient } from './events';
 import { createNotificationsClient } from './notifications';
 import { createModerationClient } from './moderation';
 import { createPluginsClient } from './plugins';
 import { createReferralsClient } from './referrals';
+export type {
+  CalendarConnectionsClient,
+  CalendarConnectionCallOptions,
+} from './calendar-connections';
 export type { NotificationCallOptions } from './notifications';
 export type { ConnectionCallOptions } from './connections';
 export type { EventsClient, EventCallOptions } from './events';
@@ -120,6 +125,10 @@ export function createApiClient(
   }
 
   return {
+    calendarConnections: createCalendarConnectionsClient(
+      request,
+      () => new ApiClientError('INVALID_REQUEST'),
+    ),
     connections: createConnectionsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     events: createEventsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     notifications: createNotificationsClient(request, () => new ApiClientError('INVALID_REQUEST')),

@@ -132,10 +132,18 @@
 4. 约束完整后，仅基于授权忙闲窗口与按**每位参与者各自 IANA 时区**（利用 `Intl.DateTimeFormat` 动态对齐 UTC 偏移以处理夏令时）转换的非工作阻断区间运行确定性求交，并按 `preferredTimeOfDay`（`morning` / `afternoon` / `evening` / `any`）对候选打分排序。
 5. 响应始终显式返回 `externalCalendarsModified: false`（`usedMockProvider` 标识当前是否使用 Mock Provider）。
 
-## 4. 外部日历
+## 4. 外部日历连接（M6-02，PARTIAL）
 
-- `calendar_connections` 表已建立，凭据加密隔离与同步游标字段就绪（迁移 `0025`）。
-- **尚未实现真实 OAuth 第三方日历接入**：没有连接器、没有授权跳转、没有同步任务。当前所有忙闲数据都来自手工录入。
+- 数据与存储函数底座：`calendar_connections` 表（迁移 `0025`）与 `0039_calendar_connection_functions.sql` 存储过程（`app.upsert_calendar_connection`、`app.list_calendar_connections`、`app.get_calendar_connection_for_sync`、`app.update_calendar_connection_state`、`app.apply_calendar_sync_delta`、`app.revoke_calendar_connection`），全部受 `SECURITY DEFINER` 与 `aven_app` 权限边界约束。
+- 凭据加密与隐私保护：OAuth token 载荷在服务端使用 AES-256-GCM + `aad=aven:calendar-oauth:v1:<principalId>:<provider>` 加密入库，状态/列表接口永不返回凭据密文；OAuth `stateToken` 使用 HMAC-SHA256 绑定当前主体与提供商且 600 秒过期。外部日历同步仅落盘忙碌时间窗、时区与忙闲状态（`source='oauth:<provider>'`），**不保存日程标题、描述或参与者详情**。
+- 增量游标、失败恢复与撤销：同步记录并推进 `sync_cursor`；若上游返回过期游标错误（`SYNC_CURSOR_EXPIRED`）自动清零游标执行一次窗口全量恢复；若授权失效（`TOKEN_REVOKED`）将状态标为 `reauth_required` 并拒绝；执行撤销时在同一事务内清除凭据密文、清空游标并删除对应 `oauth:<provider>` 同步忙闲块。
+- 已挂载端点（均受 `AuthGuard` 保护）：
+  - `GET /api/v1/availability/connections`：列出当前用户已连接的外部日历摘要；
+  - `POST /api/v1/availability/connections/authorize`：生成签名 `stateToken` 与外部授权跳转 URL；
+  - `POST /api/v1/availability/connections/callback`：校验 `stateToken`、交换 token 并加密持久化；
+  - `POST /api/v1/availability/connections/:provider/sync`：按窗口拉取并原子应用忙闲增量（支持游标过期恢复）；
+  - `POST /api/v1/availability/connections/:provider/revoke`：原子撤销外部日历凭据并清理同步忙闲块。
+- **尚未完成**：真实 Google Calendar / Microsoft Outlook / Feishu / CalDAV 开放平台客户端密钥与线上 HTTPS 适配器联调（当前默认 `MockCalendarOAuthAdapter`，请求 `allowLive: true` 且未配置密钥时显式返回 `503`），以及具备真实 PostgreSQL 环境下的 `0039` 迁移与 `m6:verify` 实库验证。
 
 ## 5. 验证记录
 
@@ -146,5 +154,5 @@
 
 - M6-05 真实外部 AI Provider 实测与在连接真实数据库/Redis 环境下的 `m6:verify` 全流程复跑。
 - M6-06 移动推送投递与产品通知 UI（个人连接与活动协调站内通知后端闭环已交付，见 [通知文档](../development/NOTIFICATIONS.md)）。
-- 外部日历 OAuth 连接器与同步任务。
+- 真实外部日历 OAuth 开放平台密钥与线上增量推送 Webhook / Worker 定时同步任务；具备 PostgreSQL 环境下的 `0039` 迁移与 `db:verify` / `m6:verify` 实跑复验。
 - 忙闲共享的界面与时间窗授权细化（当前授权覆盖到期限，不区分具体时间窗）。

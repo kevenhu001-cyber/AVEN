@@ -17,6 +17,15 @@ import {
   AvailabilityShareListResponseSchema,
   AvailabilityShareSchema,
   AvailabilityWindowResponseSchema,
+  CalendarConnectAuthorizeRequestSchema,
+  CalendarConnectAuthorizeResponseSchema,
+  CalendarConnectCallbackRequestSchema,
+  CalendarConnectionListResponseSchema,
+  CalendarConnectionSummarySchema,
+  CalendarOAuthProviderSchema,
+  CalendarRevokeResponseSchema,
+  CalendarSyncRequestSchema,
+  CalendarSyncResultSchema,
   CreateAvailabilityShareRequestSchema,
   QueryAvailabilityWindowRequestSchema,
   RequestIdSchema,
@@ -29,6 +38,7 @@ import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { parse } from '../http-validation.js';
 import { AvailabilityService } from './availability.service.js';
+import { CalendarConnectionService } from './calendar-connection.service.js';
 
 function parseId(value: string): string {
   const parsed = RequestIdSchema.safeParse(value);
@@ -39,7 +49,61 @@ function parseId(value: string): string {
 @Controller('api/v1/availability')
 @UseGuards(AuthGuard)
 export class AvailabilityController {
-  constructor(@Inject(AvailabilityService) private readonly availability: AvailabilityService) {}
+  constructor(
+    @Inject(AvailabilityService) private readonly availability: AvailabilityService,
+    @Inject(CalendarConnectionService)
+    private readonly calendarConnections: CalendarConnectionService,
+  ) {}
+
+  @Get('connections')
+  async listConnections(@CurrentAuth() auth: AuthContext) {
+    const connections = await this.calendarConnections.listConnections(auth);
+    return CalendarConnectionListResponseSchema.parse({ connections });
+  }
+
+  @Post('connections/authorize')
+  @HttpCode(200)
+  async beginAuthorize(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    const input = parse(CalendarConnectAuthorizeRequestSchema, body);
+    return CalendarConnectAuthorizeResponseSchema.parse(
+      await this.calendarConnections.beginAuthorize(auth, input),
+    );
+  }
+
+  @Post('connections/callback')
+  @HttpCode(200)
+  async completeCallback(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    const input = parse(CalendarConnectCallbackRequestSchema, body);
+    return CalendarConnectionSummarySchema.parse(
+      await this.calendarConnections.handleCallback(auth, input),
+    );
+  }
+
+  @Post('connections/:provider/sync')
+  @HttpCode(200)
+  async syncConnection(
+    @CurrentAuth() auth: AuthContext,
+    @Param('provider') providerRaw: string,
+    @Body() body: unknown,
+  ) {
+    const provider = parse(CalendarOAuthProviderSchema, providerRaw);
+    const input = parse(CalendarSyncRequestSchema, {
+      ...(typeof body === 'object' && body !== null ? body : {}),
+      provider,
+    });
+    return CalendarSyncResultSchema.parse(
+      await this.calendarConnections.syncConnection(auth, input),
+    );
+  }
+
+  @Post('connections/:provider/revoke')
+  @HttpCode(200)
+  async revokeConnection(@CurrentAuth() auth: AuthContext, @Param('provider') providerRaw: string) {
+    const provider = parse(CalendarOAuthProviderSchema, providerRaw);
+    return CalendarRevokeResponseSchema.parse(
+      await this.calendarConnections.revokeConnection(auth, provider),
+    );
+  }
 
   @Post('blocks')
   @HttpCode(200)

@@ -95,6 +95,11 @@ describe('API skeleton over real HTTP', () => {
       { method: 'GET', path: '/api/v1/plugins/mcp/servers' },
       { method: 'POST', path: '/api/v1/plugins/mcp/servers' },
       { method: 'POST', path: '/api/v1/plugins/amap.maps/invoke' },
+      { method: 'GET', path: '/api/v1/availability/connections' },
+      { method: 'POST', path: '/api/v1/availability/connections/authorize' },
+      { method: 'POST', path: '/api/v1/availability/connections/callback' },
+      { method: 'POST', path: '/api/v1/availability/connections/google_calendar/sync' },
+      { method: 'POST', path: '/api/v1/availability/connections/google_calendar/revoke' },
     ];
     for (const item of cases) {
       const response = await fetch(`${baseUrl}${item.path}`, { method: item.method });

@@ -2671,3 +2671,121 @@ export const McpServerRegisterResponseSchema = z
   })
   .strict();
 export type McpServerRegisterResponse = z.infer<typeof McpServerRegisterResponseSchema>;
+
+export const CalendarOAuthProviderSchema = z.enum([
+  'google_calendar',
+  'microsoft_outlook',
+  'feishu_calendar',
+  'caldav_ics',
+]);
+export type CalendarOAuthProvider = z.infer<typeof CalendarOAuthProviderSchema>;
+
+export const CalendarConnectionStatusSchema = z.enum([
+  'active',
+  'revoked',
+  'sync_error',
+  'reauth_required',
+]);
+export type CalendarConnectionStatus = z.infer<typeof CalendarConnectionStatusSchema>;
+
+export const CalendarConnectAuthorizeRequestSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    redirectUri: SafeHttpsUrlSchema.optional(),
+    loginHint: z.string().trim().min(3).max(160).optional(),
+    allowLive: z.boolean().default(false),
+  })
+  .strict();
+export type CalendarConnectAuthorizeRequest = z.infer<typeof CalendarConnectAuthorizeRequestSchema>;
+
+export const CalendarConnectAuthorizeResponseSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    authorizationUrl: z.url().max(2000),
+    stateToken: z.string().min(16).max(512),
+    expiresAt: z.iso.datetime(),
+    scopes: z.array(z.string().trim().min(1).max(120)).min(1).max(20),
+    providerMode: PluginProviderModeSchema,
+  })
+  .strict();
+export type CalendarConnectAuthorizeResponse = z.infer<
+  typeof CalendarConnectAuthorizeResponseSchema
+>;
+
+export const CalendarConnectCallbackRequestSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    code: z.string().trim().min(4).max(1024),
+    stateToken: z.string().min(16).max(512),
+    redirectUri: SafeHttpsUrlSchema.optional(),
+    allowLive: z.boolean().default(false),
+  })
+  .strict();
+export type CalendarConnectCallbackRequest = z.infer<typeof CalendarConnectCallbackRequestSchema>;
+
+export const CalendarConnectionSummarySchema = z
+  .object({
+    id: z.uuid(),
+    provider: CalendarOAuthProviderSchema,
+    status: CalendarConnectionStatusSchema,
+    keyVersion: z.number().int().min(1),
+    syncCursor: z.string().trim().min(1).max(512).nullable(),
+    lastSyncedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .strict();
+export type CalendarConnectionSummary = z.infer<typeof CalendarConnectionSummarySchema>;
+
+export const CalendarConnectionListResponseSchema = z
+  .object({
+    connections: z.array(CalendarConnectionSummarySchema).max(20),
+  })
+  .strict();
+export type CalendarConnectionListResponse = z.infer<typeof CalendarConnectionListResponseSchema>;
+
+export const CalendarSyncRequestSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    windowStart: z.iso.datetime().optional(),
+    windowEnd: z.iso.datetime().optional(),
+    forceFullSync: z.boolean().default(false),
+    allowLive: z.boolean().default(false),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      !value.windowStart ||
+      !value.windowEnd ||
+      Date.parse(value.windowEnd) > Date.parse(value.windowStart),
+    {
+      message: 'windowEnd must be strictly after windowStart.',
+      path: ['windowEnd'],
+    },
+  );
+export type CalendarSyncRequest = z.infer<typeof CalendarSyncRequestSchema>;
+
+export const CalendarSyncResultSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    status: CalendarConnectionStatusSchema,
+    providerMode: PluginProviderModeSchema,
+    importedBlocksCount: z.number().int().min(0),
+    deletedBlocksCount: z.number().int().min(0),
+    previousCursor: z.string().nullable(),
+    nextCursor: z.string().nullable(),
+    recoveredFromExpiredCursor: z.boolean().default(false),
+    lastSyncedAt: z.iso.datetime().nullable(),
+    privacyNotice: z.string().trim().min(1).max(240),
+  })
+  .strict();
+export type CalendarSyncResult = z.infer<typeof CalendarSyncResultSchema>;
+
+export const CalendarRevokeResponseSchema = z
+  .object({
+    provider: CalendarOAuthProviderSchema,
+    revoked: z.literal(true),
+    deletedSyncedBlocksCount: z.number().int().min(0),
+  })
+  .strict();
+export type CalendarRevokeResponse = z.infer<typeof CalendarRevokeResponseSchema>;

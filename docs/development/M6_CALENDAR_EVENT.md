@@ -15,6 +15,12 @@
 - `@aven/domain`：新增 `coordinateEventSchedule`、`zonedWallClockToUtc` 与按参与者当地 IANA 时区工作时段构造非工作阻断区间的确定性求解器，处理夏令时回拨与跨日午夜区间，按 `preferredTimeOfDay` 排序候选，返回 `needs_clarification` / `no_common_slots` / `candidates_ready`；补充 5 项单测。
 - `@aven/api-client` & `apps/api`：新增 `POST /api/v1/events/coordinate`（Nest `EventCoordinationService` + `EventController`）与 `client.events.coordinate`，先在所有非本人参与者上校验 `event_coordination` 忙闲共享授权再执行提取与求解，显式返回 `externalCalendarsModified: false`；补充 2 项客户端单测与 4 项服务端单测，并在 `scripts/m6-journey-verify.ts` 中追加 4 项端到端校验用例。
 
+### M6-02 外部日历 OAuth 连接与同步底座（PARTIAL）
+
+- `packages/contracts`：新增 `CalendarOAuthProviderSchema`（`google_calendar` / `microsoft_outlook` / `feishu_calendar` / `caldav_ics`）、`CalendarConnectAuthorize*`、`CalendarConnectCallbackRequestSchema`、`CalendarConnectionSummarySchema`（严格剥离凭据字段）、`CalendarSync*` 与 `CalendarRevokeResponseSchema`，补充契约单测。
+- `packages/database/migrations/0039_calendar_connection_functions.sql`：基于 `0025` 的 `calendar_connections` FORCE RLS 表补齐 `app.upsert_calendar_connection`、`app.list_calendar_connections`、`app.get_calendar_connection_for_sync`、`app.update_calendar_connection_state`、`app.apply_calendar_sync_delta` 与 `app.revoke_calendar_connection`（撤销时同一事务清空凭据与 `oauth:<provider>` 同步忙闲块）。因当前 Windows 工作机无 Docker/PostgreSQL，该迁移尚未实库运行 `db:verify`。
+- `apps/api/src/availability/` 与 `@aven/api-client`：交付 `calendar-crypto.ts`（AES-256-GCM + AAD 凭据加解密与 HMAC OAuth `stateToken` 防跨用户重放）、`calendar-oauth.adapter.ts`（可插拔适配器契约、`MockCalendarOAuthAdapter` 及 `allowLive: true` 无密钥 `503` fail closed）、`CalendarConnectionService`（增量游标、`SYNC_CURSOR_EXPIRED` 自动回退全量同步恢复、`TOKEN_REVOKED` 标记 `reauth_required` 与原子撤回）、5 个 `/api/v1/availability/connections*` 端点与 `client.calendarConnections` 客户端，补充单测验证加密隔离、隐私不落标题、失败恢复与未登录 `401`。
+
 ## 安全核对与修复
 
 2026-11-11 核对发现原 `app.query_availability_window` 只校验调用者已登录，未校验被查询主体授权，跨用户忙闲数据存在越权读取风险。修复分两步：
@@ -67,13 +73,13 @@
 
 - **M6-05 当前为 Mock 默认 + 确定性求解（`PARTIAL`）**：`MockProvider` 下使用确定性规则解析自然语言与缺省澄清；真实外部 AI Provider 尚未接入验证，且当前 Windows 工作机无 Docker/PostgreSQL/Redis 环境，`scripts/m6-journey-verify.ts` 中新增的 M6-05 HTTP/DB 检查尚未在真实库上实跑。
 - **M6-06 移动推送与通知 UI 未实现**：个人连接与活动协调站内通知后端（Outbox/BullMQ/偏好过滤）已另见 [NOTIFICATIONS.md](NOTIFICATIONS.md)，但移动推送与通知 UI 仍待开发。
-- **M6-02 只完成数据底座**：`calendar_connections` 表与凭据隔离、同步游标字段就绪，但没有第三方 OAuth 连接器、授权跳转与同步任务。
+- **M6-02 外部日历 OAuth 处于 `PARTIAL`**：已完成凭据加解密、HMAC state 校验、游标增量/过期回退恢复、隐私保护投影与原子撤回后端闭环及 Mock 适配器；真实 Google/Microsoft/Feishu/CalDAV 开放平台凭据、线上适配器实现与后台定时增量同步仍未接入，且 `0039_calendar_connection_functions.sql` 尚未在真实 PostgreSQL 库上执行 `db:verify`。
 - 忙闲共享授权只区分主体，不区分具体时间窗；共享在期限内覆盖全部忙闲块。
 - 没有忙闲与活动的 Web/Mobile 页面（受 M1-07 设计评审门阻塞）。
 - `apps/api` 与 `packages/domain` 的 M6-05 覆盖单元测试（含夏令时回拨与跨时区工作时段）与离线校验已通过，但端到端真实数据库/Redis 回归仍待实时依赖环境补跑。
 
 ## 下一步
 
-- 在具备 Docker/PostgreSQL/Redis 的环境中实跑 `corepack pnpm m6:verify`，验证含 M6-05 新增 4 项在内的真实 HTTP/DB 检查，并接入脱敏评测集验证真实 AI Provider 的约束提取准确率。
+- 在具备 Docker/PostgreSQL/Redis 的环境中实跑 `corepack pnpm db:verify` 与 `corepack pnpm m6:verify`，验证 `0039` 迁移与 M6-02/M6-05 真实 HTTP/DB 检查，并接入脱敏评测集验证真实 AI Provider 的约束提取准确率。
 - M6-06：真实移动推送投递、产品通知 UI 与生产调度告警。
-- M6-02：选定一种日历连接方式并完成凭据加密、撤销、同步游标与失败恢复。
+- M6-02：接入一种真实外部日历开放平台凭据与线上 HTTPS 适配器，并接入后台 Webhook/定时增量同步任务。
