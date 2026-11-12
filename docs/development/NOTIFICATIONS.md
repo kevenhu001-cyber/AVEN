@@ -73,10 +73,31 @@ NOTIFICATION_MAINTENANCE_BATCH_SIZE=100 corepack pnpm notifications:maintain
 
 正常 `dev:worker` 启动通知派发与消费者；API 写入时不直接触碰 Redis，队列失败不回滚邀请业务。维护命令只执行一批；生产定时编排与告警仍未配置。数据库回执承诺的是原子站内副作用与至少一次投递下去重，不承诺外部服务 exactly-once。
 
-- 活动提案/确认/取消通知、移动推送、推送凭据、通知 UI、实时 SSE/WebSocket 通知均未交付。当前用户仍需界面/客户端主动请求通知列表，不能称为跨终端推送。
-- 只有本迁移后的 connection_events 会触发通知；保留历史数据不代表向用户补发历史消息。通知失败不会扩大共享授权，单条通知与详情分别鉴权。
-- 显式个人连接端点的撤销/撤回会产生对应通知；通用 ConsentGrant 撤销会立即使旧邀请通知不可见，但未单独补发撤销通知。
+- 移动推送、推送凭据、通知 UI、实时 SSE/WebSocket 通知仍未交付。当前用户仍需界面/客户端主动请求通知列表，不能称为跨终端推送。
 - 消费回执、Outbox、源事件和运维审计的完整保留/对账告警与容量规划仍待 M7；死信 API 已有权限/审计，但没有管理 UI。并发更新后的已送达元数据或系统外副本不承诺收回。
-- 没有依赖升级、产品页面修改或设备验收；没有重复工程诊断页 E2E。既有 Expo 推荐补丁/真机/发布构建缺口未关闭。
-- 开发与隔离验证共用本机 Redis 队列名，须顺序运行且避免另一个环境的通知 Worker 同时消费；生产环境需独立 Redis/命名空间。验证脚本的故障夹具只针对本次开发事件，退出时清除触发器并撤销临时管理员角色；不得在生产或真实数据环境运行。
-- 下一轮可推进 M6-06A2 活动站内通知，再推进个人连接会话/消息契约；产品 UI 仍需满足 M1-07 正式双端评审门。
+
+## M6-06A2 活动协调站内通知交付（2026-11-12）
+
+交付范围：活动提议时间（`proposed`）、全员接受确认（`confirmed`）、活动取消（`cancelled`）的站内通知后端与队列链路。
+
+### 实际交付与架构
+- 迁移 `0035_event_notifications.sql`：新增 `event_coordination_events` 审计表（FORCE RLS）；在 `app.propose_event_time`、`app.respond_event_participant` 和 `app.cancel_event` 业务事务内记录协调事件。
+- 同事务触发器 `trg_event_coordination_notification`：对每位目标接收者原子生成唯一的 Outbox 事件与 `notification_deliveries` 回执；业务回滚时不产生幽灵通知。
+- 扩展 `notifications` 与 `notification_deliveries`：支持 `coordination_event_id`，解耦单表单一外键限制；target 区分 `connection_invitation` 与 `event`。
+- 扩展偏好：新增 `event_invitations` 与 `event_updates`，支持偏好乐观锁并发与静默抑制。
+- 零私密数据泄露：活动通知严格遵循元数据模式，仅返回 `kind` 与 `target: { type: 'event', id }`，不包含活动标题、描述、地点或参会人名单。
+
+### 实际验证
+| 命令 | 结果 |
+|---|---|
+| `corepack pnpm db:verify` | 184 项数据库检查通过；35 个迁移、57 张租户表全量 FORCE RLS |
+| `corepack pnpm notifications:verify` | 62/62 项个人连接通知全链路检查通过（回归无影响） |
+| `corepack pnpm notifications:verify:events` | 18/18 项活动提议/确认/取消/偏好抑制全链路检查通过 |
+| `corepack pnpm m6:verify` | 37/37 忙闲/授权/活动回归通过 |
+| `corepack pnpm test` | 25 个文件、203/203 单元测试全绿 |
+| `corepack pnpm typecheck` | 20/20 任务通过 |
+| `corepack pnpm lint` | 0 警告、0 架构依赖违规 |
+| `corepack pnpm check:readiness` | API/Worker、迁移门 0035、消费者与故障路径全部通过 |
+| `corepack pnpm format:check` / `git diff --check` | 格式检查全绿，无多余空格 |
+
+下一步可推进个人连接会话/消息契约；产品 UI 仍需满足 M1-07 正式双端评审门。

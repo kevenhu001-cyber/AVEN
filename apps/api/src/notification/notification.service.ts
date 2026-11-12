@@ -1,5 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import type { OnModuleDestroy } from '@nestjs/common';
+import type { UpdateNotificationPreferencesRequest } from '@aven/contracts';
 import { createApplicationPool, withRequestContext, type DatabasePool } from '@aven/database';
 import type { AuthContext } from '../auth/auth.types.js';
 
@@ -34,15 +35,18 @@ export class NotificationService implements OnModuleDestroy {
   preferences(auth: AuthContext) {
     return this.execute(auth, 'SELECT app.get_notification_preferences() AS result');
   }
-  updatePreferences(
-    auth: AuthContext,
-    input: { connectionInvitations: boolean; connectionUpdates: boolean; expectedVersion: number },
-  ) {
-    return this.execute(auth, 'SELECT app.update_notification_preferences($1,$2,$3) AS result', [
-      input.connectionInvitations,
-      input.connectionUpdates,
-      input.expectedVersion,
-    ]);
+  updatePreferences(auth: AuthContext, input: UpdateNotificationPreferencesRequest) {
+    return this.execute(
+      auth,
+      'SELECT app.update_notification_preferences($1,$2,$3,$4,$5) AS result',
+      [
+        input.connectionInvitations ?? null,
+        input.connectionUpdates ?? null,
+        input.expectedVersion,
+        input.eventInvitations ?? null,
+        input.eventUpdates ?? null,
+      ],
+    );
   }
   read(auth: AuthContext, id: string) {
     return this.execute(auth, 'SELECT app.read_notification($1) AS result', [id]);

@@ -1692,12 +1692,19 @@ export const NotificationKindSchema = z.enum([
   'declined',
   'withdrawn',
   'revoked',
+  'proposed',
+  'confirmed',
+  'cancelled',
+]);
+export const NotificationTargetSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('connection_invitation'), id: z.uuid() }).strict(),
+  z.object({ type: z.literal('event'), id: z.uuid() }).strict(),
 ]);
 export const NotificationSchema = z
   .object({
     id: z.uuid(),
     kind: NotificationKindSchema,
-    target: z.object({ type: z.literal('connection_invitation'), id: z.uuid() }).strict(),
+    target: NotificationTargetSchema,
     createdAt: z.iso.datetime({ offset: true }),
     readAt: z.iso.datetime({ offset: true }).nullable(),
   })
@@ -1724,16 +1731,23 @@ export const NotificationPreferencesSchema = z
   .object({
     connectionInvitations: z.boolean(),
     connectionUpdates: z.boolean(),
+    eventInvitations: z.boolean().default(true),
+    eventUpdates: z.boolean().default(true),
     version: z.number().int().nonnegative(),
   })
   .strict();
 export const UpdateNotificationPreferencesSchema = z
   .object({
-    connectionInvitations: z.boolean(),
-    connectionUpdates: z.boolean(),
+    connectionInvitations: z.boolean().optional(),
+    connectionUpdates: z.boolean().optional(),
+    eventInvitations: z.boolean().optional(),
+    eventUpdates: z.boolean().optional(),
     expectedVersion: z.number().int().min(0).max(2147483646),
   })
   .strict();
+export type UpdateNotificationPreferencesRequest = z.infer<
+  typeof UpdateNotificationPreferencesSchema
+>;
 export const RetryNotificationSchema = z
   .object({ expectedGeneration: z.number().int().min(0).max(2147483646) })
   .strict();

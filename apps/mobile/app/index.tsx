@@ -45,14 +45,28 @@ function errorCode(error: unknown): string {
 
 /* ─── Animated loading dots ─── */
 function LoadingDots({ color }: { color: string }) {
-  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+  const dots = [
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+  ];
   useEffect(() => {
     const animations = dots.map((dot, i) =>
       Animated.loop(
         Animated.sequence([
           Animated.delay(i * 160),
-          Animated.timing(dot, { toValue: 1, duration: 400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
         ]),
       ),
     );
@@ -64,7 +78,16 @@ function LoadingDots({ color }: { color: string }) {
       {dots.map((dot, i) => (
         <Animated.View
           key={i}
-          style={[styles.dot, { backgroundColor: color, opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }), transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.2] }) }] }]}
+          style={[
+            styles.dot,
+            {
+              backgroundColor: color,
+              opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
+              transform: [
+                { scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.2] }) },
+              ],
+            },
+          ]}
         />
       ))}
     </View>
@@ -72,7 +95,13 @@ function LoadingDots({ color }: { color: string }) {
 }
 
 /* ─── Status dot + label ─── */
-function StatusBadge({ kind, theme }: { kind: State['kind']; theme: (typeof colors)[keyof typeof colors] }) {
+function StatusBadge({
+  kind,
+  theme,
+}: {
+  kind: State['kind'];
+  theme: (typeof colors)[keyof typeof colors];
+}) {
   const map = {
     idle: { color: theme['foreground-tertiary'], label: '待检查' },
     loading: { color: theme.warning, label: '检查中' },
@@ -141,10 +170,7 @@ export default function FoundationScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* ─── Header ─── */}
         <View style={styles.header}>
           <Text style={[styles.brand, { color: theme.foreground }]}>AVEN</Text>
@@ -166,7 +192,10 @@ export default function FoundationScreen() {
         {/* ─── API Connection Card ─── */}
         <View style={[styles.card, { backgroundColor: theme['surface-secondary'] }]}>
           <View style={styles.cardHeader}>
-            <Text accessibilityRole="header" style={[styles.cardTitle, { color: theme.foreground }]}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.cardTitle, { color: theme.foreground }]}
+            >
               API 连接
             </Text>
             <StatusBadge kind={state.kind} theme={theme} />
@@ -226,9 +255,7 @@ export default function FoundationScreen() {
             )}
             {state.kind === 'success' && (
               <View style={styles.resultBlock}>
-                <Text style={[styles.resultText, { color: theme.success }]}>
-                  API 进程可访问
-                </Text>
+                <Text style={[styles.resultText, { color: theme.success }]}>API 进程可访问</Text>
                 <Text selectable style={[styles.mono, { color: theme['foreground-tertiary'] }]}>
                   {state.requestId}
                 </Text>
@@ -245,7 +272,10 @@ export default function FoundationScreen() {
         {/* ─── Readiness Card ─── */}
         <View style={[styles.card, { backgroundColor: theme['surface-secondary'] }]}>
           <View style={styles.cardHeader}>
-            <Text accessibilityRole="header" style={[styles.cardTitle, { color: theme.foreground }]}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.cardTitle, { color: theme.foreground }]}
+            >
               依赖就绪
             </Text>
             <StatusBadge kind={readyState.kind} theme={theme} />
@@ -263,7 +293,10 @@ export default function FoundationScreen() {
               onPress={() => void checkReady()}
               style={({ pressed }) => [
                 styles.pillButton,
-                { backgroundColor: theme.primary, opacity: readyDisabled ? 0.4 : pressed ? 0.85 : 1 },
+                {
+                  backgroundColor: theme.primary,
+                  opacity: readyDisabled ? 0.4 : pressed ? 0.85 : 1,
+                },
               ]}
             >
               {readyState.kind === 'loading' ? (
@@ -304,9 +337,7 @@ export default function FoundationScreen() {
             )}
             {readyState.kind === 'success' && (
               <View style={styles.resultBlock}>
-                <Text style={[styles.resultText, { color: theme.success }]}>
-                  全部依赖已就绪
-                </Text>
+                <Text style={[styles.resultText, { color: theme.success }]}>全部依赖已就绪</Text>
                 <Text style={[styles.hint, { color: theme['foreground-tertiary'] }]}>
                   数据库、Redis 与迁移版本均已确认
                 </Text>
@@ -325,7 +356,8 @@ export default function FoundationScreen() {
 
         {/* ─── Footer note ─── */}
         <Text style={[styles.footer, { color: theme['foreground-tertiary'] }]}>
-          数据库、队列、账号、机会、授权和 AI 均尚未开放。{'\n'}JS 导出成功不等于原生包或真机验收通过。
+          数据库、队列、账号、机会、授权和 AI 均尚未开放。{'\n'}JS
+          导出成功不等于原生包或真机验收通过。
         </Text>
       </ScrollView>
     </SafeAreaView>

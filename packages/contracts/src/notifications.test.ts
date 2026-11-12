@@ -51,4 +51,35 @@ describe('notification boundaries', () => {
     expect(RetryNotificationSchema.safeParse({ expectedGeneration: 0 }).success).toBe(true);
     expect(RetryNotificationSchema.safeParse({}).success).toBe(false);
   });
+  it('supports event notifications and event preferences', () => {
+    const eventNotification = {
+      id,
+      kind: 'proposed',
+      target: { type: 'event', id },
+      createdAt: at,
+      readAt: null,
+    };
+    expect(NotificationSchema.safeParse(eventNotification).success).toBe(true);
+    expect(NotificationSchema.safeParse({ ...eventNotification, kind: 'confirmed' }).success).toBe(
+      true,
+    );
+    expect(NotificationSchema.safeParse({ ...eventNotification, kind: 'cancelled' }).success).toBe(
+      true,
+    );
+    expect(
+      NotificationSchema.safeParse({
+        ...eventNotification,
+        target: { type: 'unknown', id },
+      }).success,
+    ).toBe(false);
+
+    const eventPrefs = {
+      connectionInvitations: true,
+      connectionUpdates: true,
+      eventInvitations: false,
+      eventUpdates: true,
+      expectedVersion: 1,
+    };
+    expect(UpdateNotificationPreferencesSchema.safeParse(eventPrefs).success).toBe(true);
+  });
 });

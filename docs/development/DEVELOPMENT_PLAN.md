@@ -206,7 +206,7 @@ M0 不以空页面或能运行安装命令替代数据库、Worker 与移动端�
 | M6-03 | 可用时间求交 | TypeScript 确定性计算日期范围、时长、参与者和工作时段；覆盖无交集、跨天和夏令时样例 | [x] DONE |
 | M6-04 | 活动状态 | 草稿、提案、等待确认、成立、取消、结束；参与人响应独立记录；候选变化使旧确认失效 | [x] DONE |
 | M6-05 | AI 协调 | 模型提取约束，业务求解器计算候选；缺失约束要求补充；不直接修改所有人的外部日历 | [ ] 未开始 |
-| M6-06 | 通知投递 | 站内通知及所选移动推送；Outbox、幂等、失败重试、去重、用户偏好和死信人工处理 | [~] PARTIAL：个人连接站内通知已交付；活动/移动推送/UI 待实现 |
+| M6-06 | 通知投递 | 站内通知及所选移动推送；Outbox、幂等、失败重试、去重、用户偏好和死信人工处理 | [~] PARTIAL：个人连接与活动协调站内通知已交付；移动推送/UI 待实现 |
 
 验收门槛：真实多人提供授权忙闲后产生合法候选，按明确确认规则成立活动；取消/改期可追踪；忙闲接口不暴露日程标题或私人细节；通知失败不损坏活动状态。
 
@@ -431,9 +431,10 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M6-01R | DONE | 2026-11-11 | `0029_availability_sharing.sql`（`app.create_availability_share`、`app.list_availability_shares`、`app.revoke_availability_share` 与带授权判定的 `app.query_availability_window`）、`POST/GET/DELETE /api/v1/availability/shares`、ADR-010；`pnpm m6:verify` 30/30、`pnpm db:verify` 184 项通过 | 忙闲用途授权共享已验证：默认拒绝、单向授权、期限上限 90 天、撤销后立即阻断、投影不含私人字段 |
 | M5-08 | NOT_STARTED | 2026-11-11 | 无 | Android development build 主线未开始：当前无 Android SDK，`apps/mobile` 仅有首页骨架 |
 | M6-05 | NOT_STARTED | 2026-11-11 | 无 | AI 活动约束提取与协调求解未实现 |
-| M6-06 | PARTIAL | 2026-11-12 | 0034、通知 API/Worker/客户端、NOTIFICATIONS.md | 个人连接站内通知已交付；活动通知、移动推送、产品 UI 与生产运维尚缺 |
-| M6-06A | PARTIAL | 2026-11-12 | A1 个人连接站内通知已交付 | A2 活动通知尚未实现；不据此关闭整个 M6-06 |
+| M6-06 | PARTIAL | 2026-11-12 | 0034、0035、通知 API/Worker/客户端、NOTIFICATIONS.md | 个人连接与活动协调站内通知已交付；移动推送、产品 UI 与生产运维尚缺 |
+| M6-06A | DONE（站内通知后端与队列） | 2026-11-12 | A1 个人连接与 A2 活动协调站内通知已交付 | 站内通知 Outbox/BullMQ/偏好/已读闭环已完成；移动推送/UI 不在此包 |
 | M6-06A1 | DONE（个人连接通知后端） | 2026-11-12 | 0034、4 张 FORCE RLS 表、通知 API/客户端/Worker、notifications:verify | 本轮执行结果见 NOTIFICATIONS.md；只有个人连接站内链路，无 UI/推送 |
+| M6-06A2 | DONE（活动协调通知后端） | 2026-11-12 | 0035、event_coordination_events FORCE RLS 表、原子 Outbox 触发器、deliver_notification 扩展、notifications:verify:events | 本轮执行结果见 NOTIFICATIONS.md；活动提案/确认/取消全流转站内通知，无 UI/推送 |
 
 2026-11-11 安全核对：原 `app.query_availability_window` 只检查调用者已登录，未校验被查询主体授权，跨用户忙闲数据存在越权读取风险。新增迁移 `0027_availability_privacy`，临时只允许本人查询；多人求交在用途授权机制实现前不可用。**修复已在 2026-11-11 后续轮次完成**：迁移 `0029_availability_sharing` 落地显式用途授权（忙闲所有者创建带期限的共享授权，撤销后立即阻断），本机已应用 `0027`–`0029` 并复验 `pnpm m6:verify` 30/30、`pnpm db:verify` 184 项、`pnpm m5:verify` 21/21、`pnpm isolation:verify` 21/21。未应用迁移的数据库仍受影响，不能用于真实数据。详见 [M6 交付记录](M6_CALENDAR_EVENT.md) 与 [ADR-010](../architecture/decisions/0010-availability-authorization.md)。
 

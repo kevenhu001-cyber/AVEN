@@ -934,19 +934,32 @@ export const connectionEvents = pgTable('connection_events', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-// M6-06A1: metadata-only in-app notifications; policies/functions live in SQL.
+// M6-06A: metadata-only in-app notifications (personal connections + event coordination); policies/functions live in SQL.
+export const eventCoordinationEvents = pgTable('event_coordination_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'cascade' }),
+  actorUserId: uuid('actor_user_id')
+    .notNull()
+    .references(() => users.id),
+  eventType: text('event_type').notNull(),
+  version: integer('version').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 export const notificationPreferences = pgTable('notification_preferences', {
   userId: uuid('user_id')
     .primaryKey()
     .references(() => users.id),
   connectionInvitations: boolean('connection_invitations').notNull().default(true),
   connectionUpdates: boolean('connection_updates').notNull().default(true),
+  eventInvitations: boolean('event_invitations').notNull().default(true),
+  eventUpdates: boolean('event_updates').notNull().default(true),
   version: integer('version').notNull().default(1),
 });
 export const notificationDeliveries = pgTable('notification_deliveries', {
-  eventId: uuid('event_id')
-    .primaryKey()
-    .references(() => connectionEvents.id),
+  eventId: uuid('event_id').primaryKey(),
+  coordinationEventId: uuid('coordination_event_id').references(() => eventCoordinationEvents.id),
   recipientUserId: uuid('recipient_user_id')
     .notNull()
     .references(() => users.id),
@@ -968,9 +981,10 @@ export const notifications = pgTable('notifications', {
   recipientUserId: uuid('recipient_user_id')
     .notNull()
     .references(() => users.id),
-  invitationId: uuid('invitation_id')
-    .notNull()
-    .references(() => connectionInvitations.id),
+  invitationId: uuid('invitation_id').references(() => connectionInvitations.id),
+  coordinationEventId: uuid('coordination_event_id').references(() => events.id, {
+    onDelete: 'cascade',
+  }),
   kind: text('kind').notNull(),
   readAt: timestamp('read_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -47,8 +47,10 @@ export function createNotificationsClient(request: ApiRequest, invalid: () => Er
     },
     async updatePreferences(
       input: {
-        connectionInvitations: boolean;
-        connectionUpdates: boolean;
+        connectionInvitations?: boolean;
+        connectionUpdates?: boolean;
+        eventInvitations?: boolean;
+        eventUpdates?: boolean;
         expectedVersion: number;
       },
       call: NotificationCallOptions,
