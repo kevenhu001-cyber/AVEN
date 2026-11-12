@@ -1,9 +1,14 @@
 'use client';
-import { Icon } from './icon';
+
 import { useEffect, useRef, useState } from 'react';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { PrivateProps } from './api';
+import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { useAgentChat } from './use-agent-chat';
+
 const labels = {
   sending: '正在确认发送…',
   unknown: '正在等待核对发送结果',
@@ -15,17 +20,20 @@ const labels = {
   failed: '本次回复未完成',
   disconnected: '回复读取已断开',
 };
+
 export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boolean }) {
   const chat = useAgentChat(suspended, onExpired);
   const transcript = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const nearBottom = useRef(true);
   const [latest, setLatest] = useState(false);
+
   useEffect(() => {
     if (nearBottom.current && transcript.current)
       transcript.current.scrollTop = transcript.current.scrollHeight;
     else setLatest(true);
   }, [chat.turns]);
+
   useEffect(() => {
     const node = input.current;
     if (node) {
@@ -33,18 +41,23 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
       node.style.height = `${Math.min(node.scrollHeight, 156)}px`;
     }
   }, [chat.draft]);
+
   const active = [...chat.turns]
     .reverse()
     .find((turn) => ['queued', 'running', 'cancelling'].includes(turn.status));
+
   // Keep the hook mounted while private content is hidden during session checks.
   if (suspended) return null;
+
   return (
     <section className="chat-space" aria-label="与 AVEN 对话">
       <div className="chat-toolbar">
-        <span className="mode-label">AI · Mock</span>
-        <button className="text-button" onClick={chat.reset} disabled={chat.busy}>
+        <Badge variant="outline" className="mode-label rounded-full font-normal">
+          AI · Mock
+        </Badge>
+        <Button variant="ghost" onClick={chat.reset} disabled={chat.busy}>
           新对话
-        </button>
+        </Button>
       </div>
       <div
         className="chat-transcript"
@@ -85,27 +98,28 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
                 <span>{labels[turn.status]}</span>
               </div>
               {turn.error && (
-                <p className="notice" role="status">
+                <Alert variant="warning" className="my-2">
                   {turn.error}
-                </p>
+                </Alert>
               )}
               {turn.status === 'unknown' && (
-                <button className="secondary" onClick={() => void chat.retryCreate(turn)}>
+                <Button variant="secondary" onClick={() => void chat.retryCreate(turn)}>
                   核对发送结果
-                </button>
+                </Button>
               )}
               {turn.status === 'disconnected' && turn.runId && (
-                <button className="secondary" onClick={() => void chat.resume(turn)}>
+                <Button variant="secondary" onClick={() => void chat.resume(turn)}>
                   重新读取回复
-                </button>
+                </Button>
               )}
             </article>
           ))}
         </div>
       </div>
       {latest && (
-        <button
-          className="latest-button secondary"
+        <Button
+          variant="secondary"
+          className="latest-button"
           onClick={() => {
             if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
             nearBottom.current = true;
@@ -113,7 +127,7 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
           }}
         >
           回到最新消息
-        </button>
+        </Button>
       )}
       <form
         className="chat-composer"
@@ -148,24 +162,26 @@ export function Chat({ suspended, onExpired }: PrivateProps & { suspended: boole
           }}
         />
         {active ? (
-          <button
+          <Button
             type="button"
+            size="icon"
             className="round-button"
             disabled={active.status === 'cancelling'}
             onClick={() => void chat.cancel(active)}
             aria-label="停止回复"
           >
             <Icon name="square" />
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             type="submit"
+            size="icon"
             className="round-button"
             disabled={!chat.draft.trim() || chat.busy}
             aria-label="发送消息"
           >
             <Icon name="arrow-up" />
-          </button>
+          </Button>
         )}
       </form>
       <p className="composer-note">Enter 发送 · Shift + Enter 换行 · 当前对话仅在本页显示</p>

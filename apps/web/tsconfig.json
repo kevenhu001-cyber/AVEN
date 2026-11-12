@@ -1,6 +1,9 @@
 {
   "extends": "@aven/config/tsconfig.base.json",
   "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "lib": ["dom", "dom.iterable", "es2022"],
     "allowJs": true,
     "noEmit": true,

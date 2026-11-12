@@ -1,18 +1,28 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CreateConnectionPreviewRequestSchema,
-  type MemoryItem,
   type ConnectionInvitation,
   type ConnectionWidget,
+  type MemoryItem,
 } from '@aven/contracts';
-import { api, authExpired, errorText, writeUncertain, webCall, type PrivateProps } from './api';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { api, authExpired, errorText, webCall, writeUncertain, type PrivateProps } from './api';
 import { PeerChat } from './peer-chat';
+
 type Connection = Awaited<ReturnType<typeof api.connections.listConnections>>['data'][number];
 type Preview = Awaited<ReturnType<typeof api.connections.preview>>;
+
 function date(value: string) {
   return new Date(value).toLocaleString('zh-CN');
 }
+
 const statuses = {
   pending: '等待回应',
   accepted: '已接受',
@@ -20,6 +30,7 @@ const statuses = {
   withdrawn: '已撤回',
   expired: '已过期',
 };
+
 export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId: string }) {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [invitations, setInvitations] = useState<ConnectionInvitation[]>([]);
@@ -29,6 +40,7 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
   const [peer, setPeer] = useState<string | null>(null);
   const [selected, setSelected] = useState<ConnectionInvitation | null>(null);
   const loader = useRef<AbortController | null>(null);
+
   const load = useCallback(() => {
     loader.current?.abort();
     const controller = new AbortController();
@@ -52,6 +64,7 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
         if (!controller.signal.aborted) setLoading(false);
       });
   }, [onExpired]);
+
   function reload() {
     setLoading(true);
     setError('');
@@ -60,10 +73,12 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
     setSelected(null);
     void load();
   }
+
   useEffect(() => {
     void load();
     return () => loader.current?.abort();
   }, [load]);
+
   if (peer)
     return (
       <PeerChat
@@ -96,50 +111,67 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
         onDone={reload}
       />
     );
+
   return (
-    <div>
-      <p className="muted">通过对方主动分享的连接码发起邀请。只有双方同意，才会建立连接。</p>
-      <label className="stack-label">
-        我的连接码
-        <input readOnly value={`aven:${userId}`} onFocus={(event) => event.target.select()} />
-      </label>
-      <p className="small muted">可以主动分享给想认识的人。连接码不授予读取资料或登录的权限。</p>
-      <div className="section-heading">
-        <button onClick={() => setCreating(true)}>发起连接邀请</button>
-        <button className="text-button" onClick={reload} disabled={loading}>
-          刷新连接
-        </button>
+    <div className="flex flex-col gap-3">
+      <p className="muted m-0">通过对方主动分享的连接码发起邀请。只有双方同意，才会建立连接。</p>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="my-connection-code">我的连接码</Label>
+        <Input
+          id="my-connection-code"
+          readOnly
+          value={`aven:${userId}`}
+          onFocus={(event) => event.target.select()}
+        />
       </div>
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
+      <p className="small muted m-0">
+        可以主动分享给想认识的人。连接码不授予读取资料或登录的权限。
+      </p>
+      <div className="section-heading">
+        <Button onClick={() => setCreating(true)}>发起连接邀请</Button>
+        <Button variant="ghost" onClick={reload} disabled={loading}>
+          刷新连接
+        </Button>
+      </div>
+      {error && <Alert variant="warning">{error}</Alert>}
       {loading && <p role="status">正在读取连接…</p>}
       <h3>我的连接</h3>
       {!loading && !connections.length && <p className="muted">还没有双方确认的连接。</p>}
       {connections.map((connection) => (
-        <button className="list-row" key={connection.id} onClick={() => setPeer(connection.id)}>
+        <Button
+          variant="secondary"
+          className="list-row h-auto justify-between px-4 py-3 font-normal"
+          key={connection.id}
+          onClick={() => setPeer(connection.id)}
+        >
           <span>
             已建立的连接<small>{date(connection.establishedAt)}</small>
           </span>
           <span>开始聊天 →</span>
-        </button>
+        </Button>
       ))}
       <h3>邀请记录</h3>
       {!loading && !invitations.length && <p className="muted">暂时没有邀请。</p>}
       {invitations.map((invitation) => (
-        <button className="list-row" key={invitation.id} onClick={() => setSelected(invitation)}>
+        <Button
+          variant="secondary"
+          className="list-row h-auto justify-between px-4 py-3 font-normal"
+          key={invitation.id}
+          onClick={() => setSelected(invitation)}
+        >
           <span>
             {invitation.senderUserId === userId ? '我发出的邀请' : '收到一份连接邀请'}
             <small>{date(invitation.createdAt)}</small>
           </span>
-          <span>{statuses[invitation.status]}</span>
-        </button>
+          <Badge variant={invitation.status === 'accepted' ? 'success' : 'outline'}>
+            {statuses[invitation.status]}
+          </Badge>
+        </Button>
       ))}
     </div>
   );
 }
+
 function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => void }) {
   const [recipient, setRecipient] = useState('');
   const [items, setItems] = useState<MemoryItem[]>([]);
@@ -152,6 +184,7 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
   const [unknown, setUnknown] = useState(false);
   const lock = useRef(false);
   const key = useRef(crypto.randomUUID());
+
   useEffect(() => {
     const controller = new AbortController();
     void api.memories
@@ -168,6 +201,7 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
       });
     return () => controller.abort();
   }, [onExpired]);
+
   async function prepare() {
     const input = {
       recipientUserId: recipient.trim().replace(/^aven:/i, ''),
@@ -193,6 +227,7 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
       setBusy(false);
     }
   }
+
   async function send() {
     if (!preview || lock.current) return;
     lock.current = true;
@@ -216,40 +251,41 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
       setBusy(false);
     }
   }
+
   return (
-    <div>
-      <button className="text-button" onClick={onDone} disabled={busy || unknown}>
-        返回连接
-      </button>
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
+    <div className="flex flex-col gap-3">
+      <div>
+        <Button variant="ghost" onClick={onDone} disabled={busy || unknown}>
+          返回连接
+        </Button>
+      </div>
+      {error && <Alert variant="warning">{error}</Alert>}
       {preview ? (
-        <section aria-label="连接共享预览">
+        <section className="flex flex-col gap-3" aria-label="连接共享预览">
           <h3>发送前，看看共享什么</h3>
-          <p className="small">接收方连接码</p>
+          <p className="small m-0">接收方连接码</p>
           <code className="wrap">aven:{preview.recipientUserId}</code>
-          <p>用途：本次个人连接邀请</p>
-          <p>共享截止：{date(preview.grantExpiresAt)}</p>
+          <p className="m-0">用途：本次个人连接邀请</p>
+          <p className="m-0">共享截止：{date(preview.grantExpiresAt)}</p>
           {preview.snapshot.map((item) => (
-            <article className="memory-card" key={item.sourceId}>
-              <p>{item.value}</p>
-            </article>
+            <Card key={item.sourceId}>
+              <CardContent className="p-4">
+                <p className="m-0">{item.value}</p>
+              </CardContent>
+            </Card>
           ))}
-          <p className="small muted">
+          <p className="small muted m-0">
             只分享上面列出的实际内容，不包含未选信息、私人对话或日历。接受连接不会扩大用途。
           </p>
-          <p className="small muted">
+          <p className="small muted m-0">
             本预览有效至 {date(preview.expiresAt)}。来源改变后需要重新预览。
           </p>
           <div className="button-row">
-            <button disabled={busy} onClick={() => void send()}>
+            <Button disabled={busy} onClick={() => void send()}>
               {busy ? '正在核对…' : unknown ? '核对本次发送结果' : '确认并发送邀请'}
-            </button>
-            <button
-              className="secondary"
+            </Button>
+            <Button
+              variant="secondary"
               disabled={busy || unknown}
               onClick={() => {
                 setPreview(null);
@@ -257,22 +293,23 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
               }}
             >
               重新选择
-            </button>
+            </Button>
           </div>
         </section>
       ) : (
-        <section>
+        <section className="flex flex-col gap-3">
           <h3>向对方介绍你自己</h3>
-          <label className="stack-label">
-            对方的连接码
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="recipient-code">对方的连接码</Label>
+            <Input
+              id="recipient-code"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="请对方分享完整连接码"
               maxLength={50}
               disabled={busy}
             />
-          </label>
+          </div>
           <label className="stack-label">
             本次共享期限
             <select value={days} onChange={(e) => setDays(Number(e.target.value))} disabled={busy}>
@@ -308,17 +345,18 @@ function NewInvitation({ onExpired, onDone }: PrivateProps & { onDone: () => voi
               </span>
             </label>
           ))}
-          <button
+          <Button
             onClick={() => void prepare()}
             disabled={busy || !selected.length || !recipient.trim()}
           >
             {busy ? '正在生成预览…' : '查看共享预览'}
-          </button>
+          </Button>
         </section>
       )}
     </div>
   );
 }
+
 function InvitationDetail({
   invitation,
   onExpired,
@@ -328,6 +366,7 @@ function InvitationDetail({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+
   useEffect(() => {
     const controller = new AbortController();
     void api.connections
@@ -344,6 +383,7 @@ function InvitationDetail({
       });
     return () => controller.abort();
   }, [invitation.id, onExpired]);
+
   async function act(action: 'accepted' | 'declined' | 'withdraw' | 'revoke') {
     if (!widget || lock.current) return;
     if (
@@ -377,52 +417,49 @@ function InvitationDetail({
       setBusy(false);
     }
   }
+
   return (
-    <section aria-label="邀请详情">
-      <button className="text-button" onClick={onDone} disabled={busy}>
-        返回连接
-      </button>
+    <section className="flex flex-col gap-3" aria-label="邀请详情">
+      <div>
+        <Button variant="ghost" onClick={onDone} disabled={busy}>
+          返回连接
+        </Button>
+      </div>
       <h3>{statuses[widget?.invitation.status ?? invitation.status]}</h3>
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
+      {error && <Alert variant="warning">{error}</Alert>}
       {widget ? (
         <>
-          <p>用途：本次连接邀请 · 截止 {date(widget.invitation.expiresAt)}</p>
+          <p className="m-0">用途：本次连接邀请 · 截止 {date(widget.invitation.expiresAt)}</p>
           {widget.snapshot.items.map((item) => (
-            <p className="memory-card" key={item.sourceId}>
-              {item.value}
-            </p>
+            <Card key={item.sourceId}>
+              <CardContent className="p-4">
+                <p className="m-0">{item.value}</p>
+              </CardContent>
+            </Card>
           ))}
-          <p className="small muted">只显示对方明确共享的内容。建立连接不自动获得其他资料。</p>
+          <p className="small muted m-0">只显示对方明确共享的内容。建立连接不自动获得其他资料。</p>
           <div className="button-row">
             {widget.role === 'recipient' &&
               widget.invitation.status === 'pending' &&
               widget.invitation.grantStatus === 'active' && (
                 <>
-                  <button disabled={busy} onClick={() => void act('accepted')}>
+                  <Button disabled={busy} onClick={() => void act('accepted')}>
                     接受连接
-                  </button>
-                  <button
-                    className="secondary"
-                    disabled={busy}
-                    onClick={() => void act('declined')}
-                  >
+                  </Button>
+                  <Button variant="secondary" disabled={busy} onClick={() => void act('declined')}>
                     暂时不连接
-                  </button>
+                  </Button>
                 </>
               )}
             {widget.role === 'sender' && widget.invitation.status === 'pending' && (
-              <button className="secondary" disabled={busy} onClick={() => void act('withdraw')}>
+              <Button variant="secondary" disabled={busy} onClick={() => void act('withdraw')}>
                 撤回邀请
-              </button>
+              </Button>
             )}
             {widget.role === 'sender' && widget.invitation.grantStatus === 'active' && (
-              <button className="secondary" disabled={busy} onClick={() => void act('revoke')}>
+              <Button variant="secondary" disabled={busy} onClick={() => void act('revoke')}>
                 撤销共享
-              </button>
+              </Button>
             )}
           </div>
         </>

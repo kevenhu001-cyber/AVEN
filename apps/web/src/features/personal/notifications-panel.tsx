@@ -1,7 +1,13 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { NotificationCursor, Notification } from '@aven/contracts';
+import type { Notification, NotificationCursor } from '@aven/contracts';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { api, authExpired, errorText, webCall, type PrivateProps } from './api';
+
 const labels = {
   sent: '收到连接邀请',
   accepted: '连接邀请已接受',
@@ -12,6 +18,7 @@ const labels = {
   confirmed: '活动已确认',
   cancelled: '活动已取消',
 };
+
 export function NotificationsPanel({
   onExpired,
   onConnections,
@@ -23,6 +30,7 @@ export function NotificationsPanel({
   const [error, setError] = useState('');
   const loader = useRef<AbortController | null>(null);
   const lock = useRef(false);
+
   const load = useCallback(
     (older?: NotificationCursor) => {
       loader.current?.abort();
@@ -55,10 +63,12 @@ export function NotificationsPanel({
     },
     [onExpired],
   );
+
   useEffect(() => {
     void load();
     return () => loader.current?.abort();
   }, [load]);
+
   async function read(id: string) {
     if (lock.current) return;
     lock.current = true;
@@ -72,12 +82,13 @@ export function NotificationsPanel({
       lock.current = false;
     }
   }
+
   return (
-    <section>
+    <section className="flex flex-col gap-3">
       <div className="section-heading">
-        <p>未读 {unread} 条</p>
-        <button
-          className="text-button"
+        <p className="m-0">未读 {unread} 条</p>
+        <Button
+          variant="ghost"
           disabled={loading}
           onClick={() => {
             setLoading(true);
@@ -87,40 +98,45 @@ export function NotificationsPanel({
           }}
         >
           刷新通知
-        </button>
+        </Button>
       </div>
-      <p className="small muted">站内通知通过队列投递，当前需要手动刷新。</p>
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
+      <p className="small muted m-0">站内通知通过队列投递，当前需要手动刷新。</p>
+      {error && <Alert variant="warning">{error}</Alert>}
       {!loading && !items.length && <p className="muted">暂时没有通知。</p>}
-      {items.map((item) => (
-        <article className="notification-row" key={item.id}>
-          <h3>{labels[item.kind]}</h3>
-          <p className="small muted">
-            {new Date(item.createdAt).toLocaleString('zh-CN')} · {item.readAt ? '已读' : '未读'}
-          </p>
-          <div className="button-row">
-            {!item.readAt && (
-              <button className="secondary" onClick={() => void read(item.id)}>
-                标为已读
-              </button>
+      <div className="flex flex-col gap-3">
+        {items.map((item) => (
+          <Card key={item.id}>
+            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+              <CardTitle>{labels[item.kind]}</CardTitle>
+              <Badge variant={item.readAt ? 'outline' : 'accent'}>
+                {item.readAt ? '已读' : '未读'}
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <p className="small muted m-0">{new Date(item.createdAt).toLocaleString('zh-CN')}</p>
+            </CardContent>
+            {(!item.readAt || item.target.type === 'connection_invitation') && (
+              <CardFooter>
+                {!item.readAt && (
+                  <Button variant="secondary" onClick={() => void read(item.id)}>
+                    标为已读
+                  </Button>
+                )}
+                {item.target.type === 'connection_invitation' && (
+                  <Button variant="ghost" onClick={onConnections}>
+                    查看连接邀请
+                  </Button>
+                )}
+              </CardFooter>
             )}
-            {item.target.type === 'connection_invitation' && (
-              <button className="text-button" onClick={onConnections}>
-                查看连接邀请
-              </button>
-            )}
-          </div>
-        </article>
-      ))}
+          </Card>
+        ))}
+      </div>
       {loading && <p role="status">正在读取通知…</p>}
       {cursor && (
-        <button className="secondary" onClick={() => void load(cursor)} disabled={loading}>
+        <Button variant="secondary" onClick={() => void load(cursor)} disabled={loading}>
           更早通知
-        </button>
+        </Button>
       )}
     </section>
   );

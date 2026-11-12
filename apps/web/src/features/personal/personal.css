@@ -1,68 +1,70 @@
 @import './fonts.css';
 
-.personal-app {
-  --chat-bubble: var(--aven-radius-bubble);
-  --chat-card: var(--aven-radius-card);
-  --chat-pill: var(--aven-radius-full);
-  color: var(--aven-color-foreground);
-  font-family: var(--aven-font-family-sans);
-  font-size: var(--aven-font-size-body);
-}
-.personal-app button {
-  min-height: 44px;
-  padding: 9px 18px;
-  border-radius: var(--chat-pill);
-  font-size: 14px;
-  line-height: 1.5;
-  border: 1px solid transparent;
-}
-.personal-app button:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-.personal-app button:focus-visible,
-.personal-app a:focus-visible,
-.personal-app input:focus-visible,
-.personal-app textarea:focus-visible,
-.personal-app select:focus-visible {
-  outline: 2px solid var(--aven-color-focus-ring);
-  outline-offset: 3px;
-}
-.personal-app input,
-.personal-app textarea,
-.personal-app select {
-  font: inherit;
-  min-width: 0;
-  width: 100%;
-  color: var(--aven-color-foreground);
-  background: var(--aven-color-surface);
-  border: 1px solid var(--aven-color-control-border);
-  border-radius: 18px;
-  padding: 11px 14px;
-}
-.personal-app textarea {
-  resize: vertical;
-}
-.personal-app h1 {
-  font-size: 26px;
-  line-height: 1.4;
-  font-weight: 500;
-  margin: 8px 0 12px;
-}
-.personal-app h2 {
-  font-size: 20px;
-  line-height: 1.5;
-  margin: 0;
-}
-.personal-app h3 {
-  font-size: 16px;
-  line-height: 1.5;
-  margin: 16px 0 10px;
-  font-weight: 500;
-}
-.personal-app p {
-  line-height: 1.7;
-  overflow-wrap: anywhere;
+@layer base {
+  .personal-app {
+    --chat-bubble: var(--aven-radius-bubble);
+    --chat-card: var(--aven-radius-card);
+    --chat-pill: var(--aven-radius-full);
+    color: var(--aven-color-foreground);
+    font-family: var(--aven-font-family-sans);
+    font-size: var(--aven-font-size-body);
+  }
+  .personal-app button {
+    min-height: 44px;
+    padding: 9px 18px;
+    border-radius: var(--chat-pill);
+    font-size: 14px;
+    line-height: 1.5;
+    border: 1px solid transparent;
+  }
+  .personal-app button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  .personal-app button:focus-visible,
+  .personal-app a:focus-visible,
+  .personal-app input:focus-visible,
+  .personal-app textarea:focus-visible,
+  .personal-app select:focus-visible {
+    outline: 2px solid var(--aven-color-focus-ring);
+    outline-offset: 3px;
+  }
+  .personal-app input,
+  .personal-app textarea,
+  .personal-app select {
+    font: inherit;
+    min-width: 0;
+    width: 100%;
+    color: var(--aven-color-foreground);
+    background: var(--aven-color-surface);
+    border: 1px solid var(--aven-color-control-border);
+    border-radius: 18px;
+    padding: 11px 14px;
+  }
+  .personal-app textarea {
+    resize: vertical;
+  }
+  .personal-app h1 {
+    font-size: 26px;
+    line-height: 1.4;
+    font-weight: 500;
+    margin: 8px 0 12px;
+  }
+  .personal-app h2 {
+    font-size: 20px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .personal-app h3 {
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 16px 0 10px;
+    font-weight: 500;
+  }
+  .personal-app p {
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
 }
 .personal-app .muted {
   color: var(--aven-color-foreground-secondary);

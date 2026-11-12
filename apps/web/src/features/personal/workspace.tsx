@@ -1,15 +1,24 @@
 'use client';
-import { Icon } from './icon';
+
 import { useCallback, useState, type FormEvent } from 'react';
 import type { MeResponse } from '@aven/contracts';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { api, errorText, type PrivateProps } from './api';
-import { Mascot } from './mascot';
 import { Chat } from './chat';
-import { Modal } from './modal';
-import { MemoriesPanel } from './memories-panel';
 import { ConnectionsPanel } from './connections-panel';
+import { Icon } from './icon';
+import { Mascot } from './mascot';
+import { MemoriesPanel } from './memories-panel';
+import { Modal } from './modal';
 import { NotificationsPanel } from './notifications-panel';
+
 type Panel = 'memory' | 'connections' | 'notifications' | 'account' | null;
+
 export function Workspace({
   me,
   suspended,
@@ -27,42 +36,52 @@ export function Workspace({
   const [panel, setPanel] = useState<Panel>(null);
   const [menu, setMenu] = useState(false);
   const close = useCallback(() => setPanel(null), []);
+
   const nav = (
     <nav className="personal-nav" aria-label="个人导航">
-      <button
+      <Button
+        variant={panel === null ? 'secondary' : 'ghost'}
+        className="w-full justify-start rounded-[18px] text-foreground"
         onClick={() => {
           setPanel(null);
           setMenu(false);
         }}
       >
         对话
-      </button>
-      <button
+      </Button>
+      <Button
+        variant={panel === 'memory' ? 'secondary' : 'ghost'}
+        className="w-full justify-start rounded-[18px] text-foreground"
         onClick={() => {
           setPanel('memory');
           setMenu(false);
         }}
       >
         记忆与上下文
-      </button>
-      <button
+      </Button>
+      <Button
+        variant={panel === 'connections' ? 'secondary' : 'ghost'}
+        className="w-full justify-start rounded-[18px] text-foreground"
         onClick={() => {
           setPanel('connections');
           setMenu(false);
         }}
       >
         我的连接
-      </button>
-      <button
+      </Button>
+      <Button
+        variant={panel === 'notifications' ? 'secondary' : 'ghost'}
+        className="w-full justify-start rounded-[18px] text-foreground"
         onClick={() => {
           setPanel('notifications');
           setMenu(false);
         }}
       >
         通知
-      </button>
+      </Button>
     </nav>
   );
+
   return (
     <main className="personal-app app-shell">
       {!suspended && (
@@ -73,14 +92,18 @@ export function Workspace({
           </div>
           {nav}
           <div className="sidebar-bottom">
-            <button className="profile-button" onClick={() => setPanel('account')}>
+            <Button
+              variant="ghost"
+              className="profile-button h-auto w-full justify-start px-2.5 py-2 text-foreground"
+              onClick={() => setPanel('account')}
+            >
               <span className="name-avatar">{Array.from(me.user.displayName)[0]}</span>
               <span>
                 {me.user.displayName}
                 <small>个人空间</small>
               </span>
-            </button>
-            <a className="small muted" href="/diagnostics">
+            </Button>
+            <a className="small muted px-2.5" href="/diagnostics">
               工程诊断
             </a>
           </div>
@@ -89,49 +112,59 @@ export function Workspace({
       <div className="personal-main">
         {!suspended && (
           <header className="personal-header">
-            <button
-              className="icon-button mobile-nav-button"
+            <Button
+              variant="outline"
+              size="icon"
+              className="mobile-nav-button border-border bg-card text-foreground"
               aria-label="打开导航"
               onClick={() => setMenu(true)}
             >
               <Icon name="menu" />
-            </button>
+            </Button>
             <div className="assistant-identity">
               <Mascot />
               <span>AVEN</span>
             </div>
-            <span className="release-label">Web 开发验证版</span>
-            <button
-              className="icon-button"
+            <Badge variant="outline" className="release-label rounded-full font-normal">
+              Web 开发验证版
+            </Badge>
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-border bg-card text-foreground"
               aria-label="我的账号"
               onClick={() => setPanel('account')}
             >
               <Icon name="ellipsis" />
-            </button>
+            </Button>
           </header>
         )}
         {suspended && (
-          <section className="session-cover" aria-label="会话校验">
+          <section className="session-cover flex flex-col items-center gap-4" aria-label="会话校验">
             <Mascot large state="thinking" />
             <h1>先确认一下当前会话</h1>
             <p role="status">{problem || '正在重新验证，私人内容暂时隐藏。'}</p>
-            <button onClick={onRetry}>重新验证会话</button>
+            <Button onClick={onRetry}>重新验证会话</Button>
           </section>
         )}
         <Chat suspended={suspended} onExpired={onExpired} />
       </div>
       {!suspended && menu && (
         <Modal title="AVEN" onClose={() => setMenu(false)}>
-          {nav}
-          <button
-            className="profile-button"
-            onClick={() => {
-              setPanel('account');
-              setMenu(false);
-            }}
-          >
-            {me.user.displayName}
-          </button>
+          <div className="flex flex-col gap-3">
+            {nav}
+            <Separator />
+            <Button
+              variant="ghost"
+              className="profile-button h-auto w-full justify-start text-foreground"
+              onClick={() => {
+                setPanel('account');
+                setMenu(false);
+              }}
+            >
+              {me.user.displayName}
+            </Button>
+          </div>
         </Modal>
       )}
       {!suspended && panel && (
@@ -162,6 +195,7 @@ export function Workspace({
     </main>
   );
 }
+
 function Account({
   me,
   onRetry,
@@ -174,6 +208,7 @@ function Account({
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
   async function verify(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -189,17 +224,25 @@ function Account({
       setBusy(false);
     }
   }
+
   return (
-    <section>
-      <h3>{me.user.displayName}</h3>
-      <p className="wrap">{me.user.email}</p>
-      <p>{me.user.emailVerified ? '邮箱已验证' : '邮箱尚未验证'}</p>
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="m-0">{me.user.displayName}</h3>
+          <p className="wrap m-0 text-sm text-muted-foreground">{me.user.email}</p>
+        </div>
+        <Badge variant={me.user.emailVerified ? 'success' : 'warning'}>
+          {me.user.emailVerified ? '邮箱已验证' : '邮箱尚未验证'}
+        </Badge>
+      </div>
       {!me.user.emailVerified && (
         <form className="stack-form" onSubmit={(event) => void verify(event)}>
-          <p className="small muted">连接邀请等操作需要验证邮箱。请使用验证邮件中的验证码。</p>
-          <label>
-            邮箱验证码
-            <input
+          <p className="small muted m-0">连接邀请等操作需要验证邮箱。请使用验证邮件中的验证码。</p>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="verify-email-token">邮箱验证码</Label>
+            <Input
+              id="verify-email-token"
               value={token}
               onChange={(event) => setToken(event.target.value)}
               minLength={20}
@@ -208,24 +251,23 @@ function Account({
               autoComplete="off"
               disabled={busy}
             />
-          </label>
-          <button type="submit" disabled={busy}>
+          </div>
+          <Button type="submit" disabled={busy}>
             {busy ? '正在验证…' : '验证邮箱'}
-          </button>
+          </Button>
         </form>
       )}
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
-      <p className="small muted">
+      {error && <Alert variant="warning">{error}</Alert>}
+      <Separator />
+      <p className="small muted m-0">
         AI 当前为
         Mock；真实邮箱、外部插件与模型尚未接通。历史对话列表、自动通知刷新和原生端将在后续接入。
       </p>
-      <button className="secondary" onClick={onLogout}>
-        退出登录
-      </button>
+      <div>
+        <Button variant="secondary" onClick={onLogout}>
+          退出登录
+        </Button>
+      </div>
     </section>
   );
 }

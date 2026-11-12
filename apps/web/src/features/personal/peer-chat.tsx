@@ -1,7 +1,13 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { PeerMessage, PeerMessageCursor } from '@aven/contracts';
-import { api, authExpired, errorText, writeUncertain, webCall, type PrivateProps } from './api';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { api, authExpired, errorText, webCall, writeUncertain, type PrivateProps } from './api';
+
 export function PeerChat({
   connectionId,
   userId,
@@ -18,6 +24,7 @@ export function PeerChat({
   const [pendingUnknown, setPendingUnknown] = useState(false);
   const lock = useRef(false);
   const loader = useRef<AbortController | null>(null);
+
   const load = useCallback(
     (older?: PeerMessageCursor) => {
       loader.current?.abort();
@@ -52,10 +59,12 @@ export function PeerChat({
     },
     [connectionId, onExpired],
   );
+
   useEffect(() => {
     void load();
     return () => loader.current?.abort();
   }, [load]);
+
   async function send(event?: FormEvent) {
     event?.preventDefault();
     if (lock.current) return;
@@ -86,6 +95,7 @@ export function PeerChat({
       setBusy(false);
     }
   }
+
   async function remove(message: PeerMessage) {
     if (lock.current || !window.confirm('从你的会话中删除这条消息？这不会替对方删除。')) return;
     lock.current = true;
@@ -104,14 +114,15 @@ export function PeerChat({
       setBusy(false);
     }
   }
+
   return (
-    <section aria-label="连接会话">
+    <section className="flex flex-col gap-3" aria-label="连接会话">
       <div className="section-heading">
-        <button className="text-button" onClick={onBack}>
+        <Button variant="ghost" onClick={onBack}>
           返回连接
-        </button>
-        <button
-          className="text-button"
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setMessages([]);
             setCursor(null);
@@ -122,18 +133,14 @@ export function PeerChat({
           disabled={loading || busy}
         >
           刷新消息
-        </button>
+        </Button>
       </div>
-      <p className="small muted">与你的连接聊天 · 当前使用手动刷新，没有即时推送。</p>
-      {error && (
-        <p className="notice" role="status">
-          {error}
-        </p>
-      )}
+      <p className="small muted m-0">与你的连接聊天 · 当前使用手动刷新，没有即时推送。</p>
+      {error && <Alert variant="warning">{error}</Alert>}
       {cursor && (
-        <button className="secondary" disabled={loading} onClick={() => void load(cursor)}>
+        <Button variant="secondary" disabled={loading} onClick={() => void load(cursor)}>
           更早消息
-        </button>
+        </Button>
       )}
       {loading && <p role="status">正在读取消息…</p>}
       <div className="peer-messages">
@@ -145,20 +152,23 @@ export function PeerChat({
           >
             <p className="small muted">{message.senderUserId === userId ? '你' : '对方'}</p>
             <p>{message.content}</p>
-            <button
-              className="text-button small"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2.5 text-muted-foreground"
               onClick={() => void remove(message)}
               disabled={busy}
             >
               删除此消息
-            </button>
+            </Button>
           </article>
         ))}
       </div>
       <form className="stack-form" onSubmit={(event) => void send(event)}>
-        <label>
-          给对方留言
-          <textarea
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="peer-message-input">给对方留言</Label>
+          <Textarea
+            id="peer-message-input"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={4000}
@@ -166,10 +176,10 @@ export function PeerChat({
             disabled={busy || pendingUnknown}
             rows={2}
           />
-        </label>
-        <button type="submit" disabled={busy || (!draft.trim() && !pendingUnknown)}>
+        </div>
+        <Button type="submit" disabled={busy || (!draft.trim() && !pendingUnknown)}>
           {busy ? '正在发送…' : pendingUnknown ? '核对并重试同一消息' : '发送给对方'}
-        </button>
+        </Button>
       </form>
     </section>
   );

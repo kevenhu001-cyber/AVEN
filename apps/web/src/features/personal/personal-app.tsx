@@ -1,6 +1,9 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MeResponse } from '@aven/contracts';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { api, authExpired, errorText, webCall } from './api';
 import { AuthForm } from './auth-form';
 import { Workspace } from './workspace';
@@ -13,11 +16,13 @@ export function PersonalApp() {
   const [problem, setProblem] = useState('');
   const checker = useRef<AbortController | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
+
   const invalidate = useCallback(() => {
     checker.current?.abort();
     setMe(null);
     setStatus('ready');
   }, []);
+
   const check = useCallback(() => {
     checker.current?.abort();
     const controller = new AbortController();
@@ -41,11 +46,13 @@ export function PersonalApp() {
         }
       });
   }, []);
+
   const recheck = useCallback(async () => {
     setStatus('checking');
     setProblem('');
     await check();
   }, [check]);
+
   useEffect(() => {
     void check();
     const visible = () => {
@@ -81,10 +88,12 @@ export function PersonalApp() {
       window.removeEventListener('online', broadcast);
     };
   }, [check, recheck]);
+
   async function signedIn() {
     channel.current?.postMessage('changed');
     await recheck();
   }
+
   async function logout() {
     setStatus('checking');
     try {
@@ -99,6 +108,7 @@ export function PersonalApp() {
       }
     }
   }
+
   if (me)
     return (
       <Workspace
@@ -111,20 +121,18 @@ export function PersonalApp() {
         onLogout={() => void logout()}
       />
     );
+
   if (status !== 'ready')
     return (
       <main className="personal-app auth-screen">
-        <section className="auth-card">
+        <section className="auth-card flex flex-col items-center gap-4">
           <Mascot large state="thinking" />
           <h1>{status === 'checking' ? '正在验证会话' : '暂时无法连接'}</h1>
-          {problem && (
-            <p className="notice" role="status">
-              {problem}
-            </p>
-          )}
-          {status === 'error' && <button onClick={() => void recheck()}>重新连接</button>}
+          {problem && <Alert variant="warning">{problem}</Alert>}
+          {status === 'error' && <Button onClick={() => void recheck()}>重新连接</Button>}
         </section>
       </main>
     );
+
   return <AuthForm onLogin={signedIn} />;
 }

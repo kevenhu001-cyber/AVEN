@@ -1,6 +1,8 @@
 'use client';
-import { Icon } from './icon';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+
+import type { ReactNode } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 export function Modal({
   title,
   children,
@@ -10,34 +12,19 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const id = useId();
-  useEffect(() => {
-    const opener = document.activeElement;
-    const node = dialog.current!;
-    node.showModal();
-    return () => {
-      node.close();
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-    };
-  }, []);
   return (
-    <dialog
-      ref={dialog}
-      className="personal-dialog personal-app"
-      aria-labelledby={id}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <div className="dialog-heading">
-        <h2 id={id}>{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="关闭面板">
-          <Icon name="x" />
-        </button>
-      </div>
-      {children}
-    </dialog>
+      <DialogContent className="personal-app" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        {children}
+      </DialogContent>
+    </Dialog>
   );
 }

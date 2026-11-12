@@ -1,8 +1,14 @@
 'use client';
+
 import { useRef, useState, type FormEvent } from 'react';
 import { LoginRequestSchema, RegisterRequestSchema } from '@aven/contracts';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { api, errorText } from './api';
 import { Mascot } from './mascot';
+
 export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -11,6 +17,7 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const [message, setMessage] = useState('');
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (lock.current) return;
@@ -46,6 +53,7 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
       setBusy(false);
     }
   }
+
   return (
     <main className="auth-screen personal-app">
       <section className="auth-card" aria-labelledby="auth-title">
@@ -54,9 +62,10 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
         <p className="muted">聊聊想法，认识合适的人。每次分享，由你决定。</p>
         <form onSubmit={(event) => void submit(event)} aria-busy={busy}>
           {mode === 'register' && (
-            <label>
-              怎么称呼你
-              <input
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="auth-name">怎么称呼你</Label>
+              <Input
+                id="auth-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="nickname"
@@ -64,11 +73,12 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
                 maxLength={120}
                 disabled={busy}
               />
-            </label>
+            </div>
           )}
-          <label>
-            邮箱
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="auth-email">邮箱</Label>
+            <Input
+              id="auth-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -77,10 +87,11 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
               maxLength={320}
               disabled={busy}
             />
-          </label>
-          <label>
-            密码
-            <input
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="auth-password">密码</Label>
+            <Input
+              id="auth-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -90,18 +101,15 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
               required
               disabled={busy}
             />
-          </label>
-          {message && (
-            <p className="notice" role="status">
-              {message}
-            </p>
-          )}
-          <button className="primary" type="submit" disabled={busy}>
+          </div>
+          {message && <Alert variant="warning">{message}</Alert>}
+          <Button className="w-full" type="submit" disabled={busy}>
             {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
-          </button>
+          </Button>
         </form>
-        <button
-          className="text-button"
+        <Button
+          variant="ghost"
+          className="mb-3"
           disabled={busy}
           onClick={() => {
             setMode(mode === 'login' ? 'register' : 'login');
@@ -110,7 +118,7 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
           }}
         >
           {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
-        </button>
+        </Button>
         <p className="small muted">开发验证版 · AI 使用 Mock 服务 · 尚未开放真实模型与邮箱连接</p>
         <a className="small muted" href="/diagnostics">
           工程诊断
