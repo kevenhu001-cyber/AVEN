@@ -67,7 +67,8 @@
     "messages:verify": "pnpm build && tsx scripts/peer-messages-verify.ts",
     "moderation:verify": "pnpm build && tsx scripts/moderation-verify.ts",
     "supplements:verify": "pnpm build && tsx scripts/referral-supplements-verify.ts",
-    "personal-web:verify:account": "node scripts/personal-web-account-verify.mjs"
+    "personal-web:verify:account": "node scripts/personal-web-account-verify.mjs",
+    "personal-web:verify:safety-action": "node scripts/personal-web-safety-action-verify.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",

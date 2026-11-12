@@ -64,6 +64,8 @@ jobs:
       - run: pnpm build:packages
       - run: pnpm --filter @aven/mobile typecheck
       - run: pnpm exec vitest run apps/mobile/src packages/api-client/src
+        env:
+          NODE_ENV: test
       - run: pnpm --filter @aven/mobile prebuild:android
       # Expo's generated release variant uses the generated debug signing key.
       # This is an internal test APK with an embedded JS bundle, not store signing.
