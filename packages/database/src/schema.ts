@@ -611,6 +611,26 @@ export const referralDecisions = pgTable('referral_decisions', {
   ...timestamps,
 });
 
+export const referralSupplements = pgTable(
+  'referral_supplements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    referralId: uuid('referral_id')
+      .notNull()
+      .references(() => referrals.id, { onDelete: 'cascade' }),
+    supplementVersion: integer('supplement_version').notNull(),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_referral_supplement_ver').on(table.referralId, table.supplementVersion),
+    index('idx_referral_supplements_ref').on(table.referralId, table.supplementVersion),
+  ],
+);
+
 export const consentGrants = pgTable('consent_grants', {
   id: uuid('id').primaryKey().defaultRandom(),
   grantorPrincipalId: uuid('grantor_principal_id')

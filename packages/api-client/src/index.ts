@@ -8,9 +8,11 @@ import { createConnectionsClient } from './connections';
 import type { TransportOptions } from './connections';
 import { createNotificationsClient } from './notifications';
 import { createModerationClient } from './moderation';
+import { createReferralsClient } from './referrals';
 export type { NotificationCallOptions } from './notifications';
 export type { ConnectionCallOptions } from './connections';
 export type { ModerationCallOptions } from './moderation';
+export type { ReferralsClient, ReferralCallOptions } from './referrals';
 
 export class ApiClientError extends Error {
   constructor(
@@ -117,6 +119,7 @@ export function createApiClient(
     connections: createConnectionsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     notifications: createNotificationsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     moderation: createModerationClient(request, () => new ApiClientError('INVALID_REQUEST')),
+    referrals: createReferralsClient(request, () => new ApiClientError('INVALID_REQUEST')),
     async getLiveness(signal?: AbortSignal): Promise<LivenessResponse> {
       return request(
         '/health/live',

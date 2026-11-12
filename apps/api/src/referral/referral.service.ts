@@ -9,6 +9,8 @@ import {
   ConsentPreviewSchema,
   ReferralDecisionSchema,
   ReferralSchema,
+  ReferralSupplementListResponseSchema,
+  ReferralSupplementSchema,
   type ConsentPreview,
   type CreateConsentPreviewRequest,
   type CreateReferralRequest,
@@ -18,6 +20,9 @@ import {
   type ReferralDecisionType,
   type ReferralSide,
   type ReferralStatus,
+  type ReferralSupplement,
+  type ReferralSupplementListResponse,
+  type SubmitReferralSupplementRequest,
   type WithdrawReferralRequest,
 } from '@aven/contracts';
 import { createApplicationPool, withRequestContext, type DatabasePool } from '@aven/database';
@@ -101,7 +106,8 @@ function mapReferral(row: ReferralRow, decisions?: ReferralDecision[]): Referral
     organizationName: row.organization_name,
     candidateId: row.candidate_id ?? null,
     status: row.status,
-    contentVersion: row.content_version ?? row.version ?? 1,
+    contentVersion: row.content_version ?? 1,
+    version: row.version ?? 1,
     decisions: decisions ?? [],
     applicantDecision: row.applicant_decision,
     orgDecision: row.org_decision,
@@ -280,6 +286,95 @@ export class ReferralService implements OnModuleDestroy {
         [grantId, reason ?? 'User requested revocation'],
       );
       return Boolean(res.rows[0]?.revoke_consent);
+    });
+  }
+
+  async submitSupplement(
+    auth: AuthContext,
+    referralId: string,
+    input: SubmitReferralSupplementRequest,
+  ): Promise<ReferralSupplement> {
+    return withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      try {
+        const res = await client.query<{
+          supplement_id: string;
+          referral_id: string;
+          supplement_version: number;
+          content: string;
+          created_at: Date;
+        }>('SELECT * FROM app.submit_referral_supplement($1, $2, $3)', [
+          referralId,
+          input.content,
+          input.expectedVersion ?? 1,
+        ]);
+        const row = res.rows[0];
+        if (!row) throw new NotFoundException('Referral not found.');
+        return ReferralSupplementSchema.parse({
+          id: row.supplement_id,
+          referralId: row.referral_id,
+          supplementVersion: row.supplement_version,
+          authorUserId: auth.userId,
+          content: row.content,
+          createdAt: new Date(row.created_at).toISOString(),
+        });
+      } catch (err) {
+        if (err instanceof Error && 'code' in err) {
+          const code = (err as { code: string }).code;
+          if (code === '40001') {
+            throw new ConflictException('Referral version conflict.');
+          }
+          if (code === '42501') {
+            throw new ForbiddenException('Not authorized to supplement referral.');
+          }
+          if (code === '22023') {
+            throw new ConflictException((err as Error).message);
+          }
+          if (code === 'P0002') {
+            throw new NotFoundException('Referral not found.');
+          }
+        }
+        throw err;
+      }
+    });
+  }
+
+  async listSupplements(
+    auth: AuthContext,
+    referralId: string,
+  ): Promise<ReferralSupplementListResponse> {
+    return withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      try {
+        const res = await client.query<{
+          id: string;
+          referral_id: string;
+          supplement_version: number;
+          author_user_id: string;
+          content: string;
+          created_at: Date;
+        }>('SELECT * FROM app.list_referral_supplements($1)', [referralId]);
+        return ReferralSupplementListResponseSchema.parse({
+          referralId,
+          supplements: res.rows.map((row) => ({
+            id: row.id,
+            referralId: row.referral_id,
+            supplementVersion: row.supplement_version,
+            authorUserId: row.author_user_id,
+            content: row.content,
+            createdAt: new Date(row.created_at).toISOString(),
+          })),
+        });
+      } catch (err) {
+        if (err instanceof Error && 'code' in err) {
+          const code = (err as { code: string }).code;
+          if (code === '42501') {
+            throw new ForbiddenException('Not authorized to view referral supplements.');
+          }
+          if (code === 'P0002') {
+            throw new NotFoundException('Referral not found.');
+          }
+        }
+        throw err;
+      }
     });
   }
 }

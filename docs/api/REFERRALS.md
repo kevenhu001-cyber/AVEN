@@ -36,6 +36,8 @@
 | `GET` | `/api/v1/referrals/:id/shared-snapshot` | 按授权快照读取共享内容 |
 | `POST` | `/api/v1/referrals/:id/decisions` | 发起方或组织方作出决定 |
 | `POST` | `/api/v1/referrals/:id/withdraw` | 发起方撤回 |
+| `POST` | `/api/v1/referrals/:id/supplements` | 申请人提交补充资料（1-4000 字符，递增 contentVersion 并重置组织决定至 pending） |
+| `GET` | `/api/v1/referrals/:id/supplements` | 参与双方读取引荐的全部补充资料记录 |
 | `POST` | `/api/v1/consents/grants/:id/revoke` | 撤销授权 |
 
 ### 2.1 状态机
@@ -80,16 +82,20 @@
 | 读取他人引荐 | 404 |
 | 预览过期后创建引荐 | 409 |
 | 版本冲突的决定 | 409 |
+| 非申请人提交补充资料 | 403 |
+| 非参与方读取补充资料列表 | 403 |
+| 终态（accepted/declined/withdrawn/expired）引荐提交补充资料 | 409 |
+| 补充资料版本并发冲突 | 409 |
 | 撤销他人授权 | 403 |
 | 撤销不存在的授权 | 404 |
 
 ## 5. 验证记录
 
 - `corepack pnpm m5:verify`：预览快照、范围限制、引荐创建、组织收件箱、共享快照读取、双方接受、授权撤销后共享上下文即时阻断等真实 HTTP/数据库检查通过。
+- `corepack pnpm supplements:verify`：补充资料提交流程、内容版本递增、组织重置待审、终态防护、Worker 批量超期维护、直接写库阻断等 25 项全量检查通过。
 - `corepack pnpm isolation:verify`：跨账号/跨组织隔离与连接池上下文检查通过。
 
 ## 6. 未实现
 
-- 引荐补充资料（`supplements`）的独立接口与界面。
-- 授权到期扫描任务与 `stale` 标记的自动执行。
+- 移动端引荐补充资料交互 UI（依赖前端设计）。
 - 站内/邮件通知（依赖 M6-06）。

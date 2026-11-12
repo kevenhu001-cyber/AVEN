@@ -17,8 +17,11 @@ import {
   ReferralListResponseSchema,
   ReferralSchema,
   ReferralSharedSnapshotResponseSchema,
+  ReferralSupplementListResponseSchema,
+  ReferralSupplementSchema,
   RequestIdSchema,
   RevokeConsentRequestSchema,
+  SubmitReferralSupplementRequestSchema,
   WithdrawReferralRequestSchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
@@ -105,5 +108,25 @@ export class ReferralController {
     const input = parse(RevokeConsentRequestSchema, body ?? {});
     const revoked = await this.referrals.revokeConsent(auth, parseId(id), input.reason);
     return { revoked };
+  }
+
+  @Post('referrals/:id/supplements')
+  @HttpCode(201)
+  async submitSupplement(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const input = parse(SubmitReferralSupplementRequestSchema, body);
+    return ReferralSupplementSchema.parse(
+      await this.referrals.submitSupplement(auth, parseId(id), input),
+    );
+  }
+
+  @Get('referrals/:id/supplements')
+  async listSupplements(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
+    return ReferralSupplementListResponseSchema.parse(
+      await this.referrals.listSupplements(auth, parseId(id)),
+    );
   }
 }

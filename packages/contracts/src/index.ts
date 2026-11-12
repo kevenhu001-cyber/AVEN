@@ -1083,6 +1083,7 @@ export const ReferralSchema = z
     candidateId: z.uuid().nullable().optional(),
     status: ReferralStatusSchema,
     contentVersion: z.number().int().positive().optional(),
+    version: z.number().int().positive().optional(),
     decisions: z.array(ReferralDecisionSchema).optional(),
     applicantDecision: ReferralDecisionTypeSchema.optional(),
     orgDecision: ReferralDecisionTypeSchema.optional(),
@@ -1104,6 +1105,31 @@ export const ReferralSharedSnapshotResponseSchema = z
   .object({
     referralId: z.uuid(),
     snapshot: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+
+export const ReferralSupplementSchema = z
+  .object({
+    id: z.uuid(),
+    referralId: z.uuid(),
+    supplementVersion: z.number().int().positive(),
+    authorUserId: z.uuid(),
+    content: z.string().trim().min(1).max(4000),
+    createdAt: z.iso.datetime(),
+  })
+  .strict();
+
+export const SubmitReferralSupplementRequestSchema = z
+  .object({
+    content: z.string().trim().min(1).max(4000),
+    expectedVersion: z.number().int().positive().default(1),
+  })
+  .strict();
+
+export const ReferralSupplementListResponseSchema = z
+  .object({
+    referralId: z.uuid(),
+    supplements: z.array(ReferralSupplementSchema),
   })
   .strict();
 
@@ -1293,6 +1319,9 @@ export type ReferralDecision = z.infer<typeof ReferralDecisionSchema>;
 export type Referral = z.infer<typeof ReferralSchema>;
 export type ReferralListResponse = z.infer<typeof ReferralListResponseSchema>;
 export type ReferralSharedSnapshotResponse = z.infer<typeof ReferralSharedSnapshotResponseSchema>;
+export type ReferralSupplement = z.infer<typeof ReferralSupplementSchema>;
+export type SubmitReferralSupplementRequest = z.infer<typeof SubmitReferralSupplementRequestSchema>;
+export type ReferralSupplementListResponse = z.infer<typeof ReferralSupplementListResponseSchema>;
 export type RelationshipStatus = z.infer<typeof RelationshipStatusSchema>;
 export type RelationshipMemberRole = z.infer<typeof RelationshipMemberRoleSchema>;
 export type EstablishRelationshipRequest = z.infer<typeof EstablishRelationshipRequestSchema>;

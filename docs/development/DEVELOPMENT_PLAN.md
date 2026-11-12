@@ -186,7 +186,7 @@ M0 不以空页面或能运行安装命令替代数据库、Worker 与移动端�
 | M5-01 | 需求与过滤基线 | 个人创建需求；真实机会按学校、领域、阶段、期限、意愿和屏蔽关系过滤；保存版本及证据 | [x] DONE |
 | M5-02 | 语义召回与排序 | 启用 pgvector/具体模型维度迁移；逐来源/策略版本的允许集合，特征排序/召回/解释评估；不足时明确空结果 | [~] PARTIAL：仅确定性特征打分，无向量召回 |
 | M5-03 | 用途授权 | 字段策略、服务端短期预览、业务对象/用途绑定、不可变快照与复合外键；引荐/关系用途独立确认，关系可为空上下文 | [x] DONE |
-| M5-04 | 引荐与双向决定 | 候选/正式引荐分表，/referrals 发送/补充/决定/撤回；终态重发保留历史，内容版本与行版本分开，禁止组织提前读候选 | [~] PARTIAL：发送/决定后端已验证，补充资料接口未实现 |
+| M5-04 | 引荐与双向决定 | 候选/正式引荐分表，/referrals 发送/补充/决定/撤回；终态重发保留历史，内容版本与行版本分开，补充资料重置组织决定，禁止组织提前读候选 | [x] DONE |
 | M5-05 | 关系建立事务 | 接受时重新校验机会、成员权限、双方决定与授权；锁/版本校验；唯一约束防重复空间；Outbox 同事务写入 | [x] DONE |
 | M5-06 | 关系空间 | Overview、成员、共同目标、会话与共享上下文；参与者校验；共享快照绑定原授权与来源版本 | [~] PARTIAL：成员/共享上下文后端已验证，会话/消息 API 未实现 |
 | M5-07 | 撤销传播 | 读取入口立即检查撤销；清理/失效缓存、索引和任务；共享链接无绕过；其他独立有效授权单独判断 | [x] DONE |
@@ -354,6 +354,8 @@ POST JSON 创建 run，GET SSE 通过支持 Cookie/Bearer 的 fetch 客户端消
 
 ## 18. 规划轮交付与下一步
 
+2026-11-12 M5-04 补充资料与生命周期维护轮：交付引荐补充资料（`referral_supplements`）、内容版本递增（`content_version`）、组织决定重置（`pending`）与 Worker 批量超期引荐/授权扫描维护（`app.maintain_referrals`）。新增 0038 迁移，61 张租户表（全部 FORCE RLS）；`supplements:verify` 25/25 通过。详见 [交付记录](REFERRAL_SUPPLEMENTS.md)。至此 M5-04 从 PARTIAL 恢复为 DONE。
+
 2026-11-12 M6-06A1：新增个人邀请 sent/accepted/declined/withdrawn/revoked 的站内通知，同事务 Outbox、独立队列与去重回执、当前业务/偏好复核、分页/已读、5 次失败/死信、平台管理员按代数重排和 90 天维护。34 个迁移、56 张租户表 FORCE RLS。实际检查见 [交付记录](NOTIFICATIONS.md)。活动通知、移动推送、产品 UI、生产调度与告警尚未完成，M6-06/M6-06A 保持 PARTIAL。
 
 
@@ -423,7 +425,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M5-01 | DONE | 2026-11-11 | `0022_intents_and_matching.sql`、`intents` 表与 FORCE RLS、`apps/api/src/intent/*`、`/api/v1/intents`；`pnpm m5:verify` 通过 | 个人意向创建、更新、状态机与乐观锁并发控制已验证 |
 | M5-02 | PARTIAL | 2026-11-11 | `0022_intents_and_matching.sql`、`match_candidates` 表、`app.generate_match_candidates`；计算特征分与结构化证据原因（`reasons`、`featureScores`）；`pnpm m5:verify` 通过 | 可解释匹配推荐与候选隔离已验证；**向量语义召回未实现**（仓库无 pgvector 列与 embedding 表，`v1` 为确定性特征打分） |
 | M5-03 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`consent_previews` 表、`POST /api/v1/consents/previews`、短期到期与 payload hash 快照；`pnpm m5:verify` 通过 | 用途受限授权预览已验证 |
-| M5-04 | PARTIAL | 2026-11-11 | `0023_consent_and_referrals.sql`、`referrals`、`referral_decisions`、`consent_grants`、`consent_grant_items`、`consent_events`；`POST /api/v1/referrals`、`/decisions`；`pnpm m5:verify` 通过 | 双方双向接受决定状态机与用途绑定已验证；2026-11-12 复核：补充资料接口未实现，整包为 PARTIAL |
+| M5-04 | DONE | 2026-11-12 | `0038_referral_supplements.sql`、`referral_supplements`（FORCE RLS）、`POST/GET /api/v1/referrals/:id/supplements`、`content_version` 递增与组织决定重置、`app.maintain_referrals` Worker 批量维护；`pnpm supplements:verify` 25/25 通过 | 补充资料提交流程、内容版本化递增、组织审核重置、终态保护与 Worker 批量超期维护已闭环验证 |
 | M5-05 | DONE | 2026-11-11 | `0024_relationships_and_sharing.sql`、`relationships`、`relationship_members`、`app.establish_relationship`、`POST /api/v1/relationships`；`pnpm m5:verify` 通过 | 接受后原子建联与唯一性事务约束已验证 |
 | M5-06 | PARTIAL | 2026-11-11 | `0024_relationships_and_sharing.sql`、`shared_context_items`、`GET /api/v1/relationships/:id/context`；`pnpm m5:verify` 通过 | 关系空间成员权限与关系用途快照受控读取已验证；2026-11-12 复核：会话/消息 API 未实现，整包为 PARTIAL |
 | M5-07 | DONE | 2026-11-11 | `0023_consent_and_referrals.sql`、`POST /api/v1/consents/grants/:id/revoke`、`app.get_relationship_shared_context` 实时阻断；`pnpm m5:verify` 通过 | 授权撤销实时失效与下游共享即时阻断已验证 |
