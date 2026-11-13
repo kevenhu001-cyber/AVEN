@@ -3,7 +3,10 @@ export type JsonSchemaProperty = {
   enum?: string[];
   default?: unknown;
   description?: string;
+  minLength?: number;
   maxLength?: number;
+  minItems?: number;
+  maxItems?: number;
   minimum?: number;
   maximum?: number;
 };
@@ -65,4 +68,42 @@ export function buildPluginInput(
     input[key] = raw;
   }
   return input;
+}
+
+/** Early feedback only; the server remains authoritative for the full action schema. */
+export function invalidPluginFields(
+  schema: PluginInputSchema,
+  values: Record<string, string>,
+): string[] {
+  return Object.entries(schema.properties ?? {}).flatMap(([key, property]) => {
+    const raw = values[key] ?? '';
+    if (!raw.trim()) return [];
+    if (property.enum && !property.enum.includes(raw)) return [key];
+    if (property.type === 'number' || property.type === 'integer') {
+      const value = Number(raw);
+      if (
+        !Number.isFinite(value) ||
+        (property.type === 'integer' && !Number.isInteger(value)) ||
+        (property.minimum !== undefined && value < property.minimum) ||
+        (property.maximum !== undefined && value > property.maximum)
+      )
+        return [key];
+    }
+    if (
+      property.type === 'string' &&
+      ((property.minLength !== undefined && raw.length < property.minLength) ||
+        (property.maxLength !== undefined && raw.length > property.maxLength))
+    )
+      return [key];
+    if (property.type === 'array') {
+      const count = raw.split(/[,，\n]/).filter((item) => item.trim()).length;
+      if (
+        ((schema.required ?? []).includes(key) && count === 0) ||
+        (property.minItems !== undefined && count < property.minItems) ||
+        (property.maxItems !== undefined && count > property.maxItems)
+      )
+        return [key];
+    }
+    return [];
+  });
 }

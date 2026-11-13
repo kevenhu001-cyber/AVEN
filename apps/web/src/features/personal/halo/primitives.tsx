@@ -169,7 +169,13 @@ export function Menu({
         aria-haspopup="menu"
         aria-expanded={phase === 'open'}
         aria-controls={phase !== 'closed' ? id : undefined}
-        onClick={() => (phase === 'open' ? close() : setPhase('open'))}
+        onClick={() => {
+          if (phase === 'open') close();
+          else {
+            window.clearTimeout(timer.current);
+            setPhase('open');
+          }
+        }}
       />
       {phase !== 'closed' && (
         <div

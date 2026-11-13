@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPluginInput,
   initialPluginValues,
+  invalidPluginFields,
   missingRequiredFields,
   type PluginInputSchema,
 } from './plugin-input';
@@ -82,5 +83,52 @@ describe('plugin input helpers', () => {
       { maxPriceYuan: 'abc' },
     );
     expect(input).toEqual({});
+  });
+});
+
+describe('plugin parameter validation', () => {
+  const bounded: PluginInputSchema = {
+    properties: {
+      limit: { type: 'integer', minimum: 1, maximum: 10 },
+      price: { type: 'number', minimum: 0 },
+      sort: { type: 'string', enum: ['price'] },
+      query: { type: 'string', minLength: 2, maxLength: 4 },
+      to: { type: 'array', minItems: 1, maxItems: 2 },
+    },
+    required: ['to'],
+  };
+  it('rejects fractional integers, nonfinite numbers, unknown enums and invalid lengths', () => {
+    expect(
+      invalidPluginFields(bounded, {
+        limit: '1.5',
+        price: 'Infinity',
+        sort: 'unknown',
+        query: 'a',
+        to: ',，',
+      }),
+    ).toEqual(['limit', 'price', 'sort', 'query', 'to']);
+  });
+  it('checks both numeric bounds and array limits', () => {
+    expect(invalidPluginFields(bounded, { limit: '11', price: '-1', to: 'a,b,c' })).toEqual([
+      'limit',
+      'price',
+      'to',
+    ]);
+    expect(invalidPluginFields(bounded, { limit: '0', query: '12345' })).toEqual([
+      'limit',
+      'query',
+    ]);
+  });
+  it('accepts boundary values, decimal numbers and multilingual separators', () => {
+    expect(
+      invalidPluginFields(bounded, {
+        limit: '10',
+        price: '0.5',
+        sort: 'price',
+        query: '你好',
+        to: 'a，b',
+      }),
+    ).toEqual([]);
+    expect(invalidPluginFields(bounded, {})).toEqual([]);
   });
 });

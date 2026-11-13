@@ -97,3 +97,19 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('还没写完', { exact: true })).toHaveCount(0);
 });
+
+test('chat menu remains open when reopened during its exit transition', async ({ page }) => {
+  await page.route('**/api/v1/auth/me', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify(me) }),
+  );
+  await page.goto('/');
+  await page.getByRole('button', { name: '与 AVEN 对话', exact: true }).click();
+  const trigger = page.getByRole('button', { name: '更多', exact: true });
+  await trigger.click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.getByRole('menu').press('Escape');
+  await trigger.evaluate((button: HTMLButtonElement) => button.click());
+  await expect(page.getByRole('menu')).toHaveAttribute('data-state', 'open');
+  await page.waitForTimeout(250);
+  await expect(page.getByRole('menu')).toHaveAttribute('data-state', 'open');
+});

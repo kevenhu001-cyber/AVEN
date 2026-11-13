@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PluginActionManifest, PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import type { CatalogState, ConnectorResult } from '../halo/types';
 import {
   buildPluginInput,
   initialPluginValues,
+  invalidPluginFields,
   missingRequiredFields,
   type PluginInputSchema,
 } from './plugin-input';
@@ -162,6 +163,7 @@ export function ConnectAppsList({
                   )}
                   {expanded && action && action.plugin.id === plugin.id && (
                     <ActionForm
+                      key={`${action.plugin.id}:${action.action.name}`}
                       plugin={action.plugin}
                       action={action.action}
                       onClose={() => setAction(null)}
@@ -202,10 +204,19 @@ export function ActionForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const missing = missingRequiredFields(schema, values);
+  const invalid = invalidPluginFields(schema, values);
+  const fieldName = (key: string) => fieldLabels[key] ?? properties[key]?.description ?? key;
 
   async function invoke() {
-    if (busy || missing.length) return;
+    if (busy || missing.length || invalid.length) return;
     setBusy(true);
     setError('');
     try {
@@ -214,6 +225,7 @@ export function ActionForm({
         { action: action.name, input: buildPluginInput(schema, values), allowLive: false },
         webCall(),
       );
+      if (!mounted.current) return;
       onResult({
         key: result.invocationId,
         pluginId: plugin.id,
@@ -224,10 +236,11 @@ export function ActionForm({
         widgets: result.widgets,
       });
     } catch (cause) {
+      if (!mounted.current) return;
       if (authExpired(cause)) onExpired();
       else setError(errorText(cause));
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
 
@@ -296,6 +309,8 @@ export function ActionForm({
                 type={property.type === 'number' || property.type === 'integer' ? 'number' : 'text'}
                 value={values[key] ?? ''}
                 maxLength={property.maxLength}
+                step={property.type === 'integer' ? 1 : 'any'}
+                aria-invalid={invalid.includes(key)}
                 min={property.minimum}
                 max={property.maximum}
                 aria-required={required.includes(key)}
@@ -308,10 +323,18 @@ export function ActionForm({
           </div>
         );
       })}
-      {missing.length > 0 && <Alert variant="warning">请先填写必填项：{missing.join('、')}</Alert>}
+      {missing.length > 0 && (
+        <Alert variant="warning">请先填写必填项：{missing.map(fieldName).join('、')}</Alert>
+      )}
+      {invalid.length > 0 && (
+        <Alert variant="warning">请检查参数的格式或范围：{invalid.map(fieldName).join('、')}</Alert>
+      )}
       {error && <Alert variant="warning">{error}</Alert>}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => void invoke()} disabled={busy || missing.length > 0}>
+        <Button
+          onClick={() => void invoke()}
+          disabled={busy || missing.length > 0 || invalid.length > 0}
+        >
           {busy ? '正在调用…' : '调用（Mock 模式）'}
         </Button>
         <Button variant="secondary" onClick={onClose} disabled={busy}>
