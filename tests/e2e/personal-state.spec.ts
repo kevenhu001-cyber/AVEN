@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 const id = 'e521efc6-60c7-4725-aabe-9c31cff1bab9';
 const timestamp = '2026-11-12T00:00:00.000Z';
 // Transport fixtures only; live business verification is scripts/personal-web-verify.mjs.
@@ -30,6 +30,178 @@ test('session service failure stays retryable and hides private workspace', asyn
   await expect(page.getByRole('heading', { name: '暂时无法连接' })).toBeVisible();
   await expect(page.getByRole('button', { name: '重新连接', exact: true })).toBeEnabled();
   await expect(page.getByLabel('与 AVEN 对话')).toHaveCount(0);
+});
+
+// Byte-stream fixture: unlike route.fulfill, this exercises incremental fetch/SSE parsing.
+async function markdownStream(page: Page, chunks: string[], terminal = 'turn.completed') {
+  const runId = '11111111-1111-4111-8111-111111111111';
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: me }));
+  await page.route('**/api/v1/open-connector', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/agent/turns', (route) =>
+    route.fulfill({
+      status: 201,
+      json: {
+        runId,
+        conversationId: '22222222-2222-4222-8222-222222222222',
+        status: 'queued',
+        streamUrl: `/api/v1/agent/runs/${runId}/events`,
+      },
+    }),
+  );
+  await page.addInitScript(
+    ({ runId, chunks, terminal }) => {
+      const fetcher = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        if (!String(input).endsWith(`/runs/${runId}/events`)) return fetcher(input, init);
+        const encoder = new TextEncoder();
+        const frames = [
+          { type: 'turn.started' },
+          ...chunks.map((text) => ({ type: 'message.delta', text })),
+          ...(terminal ? [{ type: terminal }] : []),
+        ];
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            let index = 0;
+            let stopped = false;
+            const abort = () => {
+              stopped = true;
+              controller.error(new DOMException('Aborted', 'AbortError'));
+            };
+            init?.signal?.addEventListener('abort', abort, { once: true });
+            function next() {
+              if (stopped) return;
+              const frame = frames[index++];
+              if (!frame) {
+                if (terminal) {
+                  init?.signal?.removeEventListener('abort', abort);
+                  controller.close();
+                }
+                return;
+              }
+              const data = {
+                schema_version: 1,
+                run_id: runId,
+                sequence: index,
+                timestamp: new Date().toISOString(),
+                ...frame,
+              };
+              controller.enqueue(
+                encoder.encode(
+                  `id: ${index}\nevent: ${frame.type}\ndata: ${JSON.stringify(data)}\n\n`,
+                ),
+              );
+              window.setTimeout(next, 180);
+            }
+            next();
+          },
+        });
+        return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+      };
+    },
+    { runId, chunks, terminal },
+  );
+}
+
+test('streamed Markdown renders math, code, safe links and searchable text', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  const chunks = [
+    '# 研究笔记\n\n**重点** 与 [来源](https://example.test/reference)\n\n- 第一项\n- 第二项\n\n公式 \\(x^',
+    '2\\)\n\n\\[\\frac{1}{2}\\]\n\n```ts\nconst answer = ',
+    '42;\n```\n\n| 项目 | 说明 |\n| --- | --- |\n| 结果 | 重点 |\n\n![远程图](https://example.test/tracker.png)\n\n[危险链接](javascript:alert(1))\n\n<script>UNTRUSTED_SCRIPT</script>',
+  ];
+  let remoteLoads = 0;
+  await page.route('https://example.test/**', (route) => {
+    remoteLoads++;
+    return route.abort();
+  });
+  await markdownStream(page, chunks);
+  await page.goto('/chat');
+  await page.getByLabel('向 AVEN 提问', { exact: true }).fill('请输出研究笔记');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  const bubble = page.locator('.assistant-bubble');
+  await expect(bubble.getByRole('heading', { name: '研究笔记' })).toBeVisible();
+  await expect(bubble).toHaveAttribute('data-streaming', 'true');
+  await expect(bubble.locator('.markdown-reveal').first()).toHaveCSS(
+    'animation-name',
+    'markdown-reveal',
+  );
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(bubble.locator('.markdown-reveal').first()).toHaveCSS('animation-name', 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  await expect(bubble.locator('.katex')).toHaveCount(2);
+  await expect(bubble.getByRole('table')).toBeVisible();
+  await expect(bubble.locator('li')).toHaveCount(2);
+  await expect(bubble.getByRole('link', { name: '来源' })).toHaveAttribute(
+    'href',
+    'https://example.test/reference',
+  );
+  await expect(bubble.getByRole('link', { name: '危险链接' })).toHaveCount(0);
+  await expect(bubble.locator('img, script')).toHaveCount(0);
+  await expect(bubble).not.toContainText('UNTRUSTED_SCRIPT');
+  expect(remoteLoads).toBe(0);
+  await bubble.getByRole('button', { name: '复制代码', exact: true }).click();
+  await expect(bubble.getByRole('button', { name: '已复制代码', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('const answer = 42;');
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menuitem', { name: '在聊天中查找', exact: true }).click();
+  await page.getByPlaceholder('在聊天中查找').fill('重点');
+  await expect(bubble.locator('mark')).toHaveCount(2);
+  await expect(bubble.locator('mark[data-current="true"]')).toHaveCount(1);
+  await page.getByRole('button', { name: '下一个', exact: true }).click();
+  await expect(bubble.locator('mark[data-current="true"]')).toHaveAttribute('data-match', '1');
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(overflow).toBe(false);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.getByPlaceholder('在聊天中查找').fill('');
+  await expect(bubble.locator('.markdown-reveal')).toHaveCount(0);
+});
+
+test('failed streamed replies clear rendered Markdown', async ({ page, context }) => {
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await markdownStream(page, ['**待清除正文**'], 'turn.failed');
+  await page.goto('/chat');
+  await page.getByRole('button', { name: '帮我整理今天的想法', exact: true }).click();
+  await expect(page.getByText('本次回复未完成', { exact: true })).toBeVisible();
+  await expect(page.locator('.assistant-bubble')).toHaveCount(0);
+});
+
+test('cancel preserves incomplete code and invalid math without leaving generation active', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await markdownStream(page, ['错误公式 $\\unknownmacro{x}$\n\n```js\nconst partial = 1;'], '');
+  await page.route('**/api/v1/agent/runs/*/cancel', (route) =>
+    route.fulfill({
+      json: {
+        runId: '11111111-1111-4111-8111-111111111111',
+        status: 'cancelled',
+      },
+    }),
+  );
+  await page.goto('/chat');
+  await page.getByRole('button', { name: '帮我整理今天的想法', exact: true }).click();
+  const bubble = page.locator('.assistant-bubble');
+  await expect(bubble.locator('pre')).toContainText('const partial = 1;');
+  await expect(bubble).toContainText('unknownmacro');
+  await page.getByRole('button', { name: '停止回复', exact: true }).click();
+  await expect(page.getByText('已停止', { exact: true })).toBeVisible();
+  await expect(bubble).toHaveAttribute('data-streaming', 'false');
+  await expect(bubble.getByRole('button', { name: '复制代码', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '停止回复', exact: true })).toHaveCount(0);
 });
 test('login errors never render upstream private text', async ({ page }) => {
   await page.route('**/api/v1/auth/me', (route) =>

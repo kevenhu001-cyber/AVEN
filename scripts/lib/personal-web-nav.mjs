@@ -20,6 +20,13 @@ export async function openChat(page) {
   await settle(page);
 }
 
+/** Search rendered reply text; Markdown syntax and formula internals are excluded. */
+export async function findInChat(page, query) {
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menuitem', { name: '在聊天中查找', exact: true }).click();
+  await page.getByPlaceholder('在聊天中查找', { exact: true }).fill(query);
+}
+
 export async function newChat(page) {
   await openHome(page);
   await page.getByRole('button', { name: '新对话', exact: true }).click();

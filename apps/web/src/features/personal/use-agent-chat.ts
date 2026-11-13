@@ -253,8 +253,14 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
         result.status === 'completed' ||
         result.status === 'failed'
       ) {
+        // Drain the last received delta before aborting. A scheduled frame must not
+        // overwrite the terminal status with `running` after cancellation.
+        flushText(turn.key);
         controller.current?.abort();
-        patch(turn.key, { status: result.status });
+        patch(turn.key, {
+          status: result.status,
+          ...(result.status === 'failed' ? { answer: '', cursor: 0 } : {}),
+        });
       }
     } catch (error) {
       if (authExpired(error)) onExpired();

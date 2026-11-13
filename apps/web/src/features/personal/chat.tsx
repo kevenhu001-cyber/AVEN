@@ -13,6 +13,10 @@ import { countHighlights, highlightSegments, stepMatch } from './halo/text';
 import { buildTimeline, isNearBottom, recallVisible } from './halo/timeline';
 import type { ChatExtra } from './halo/types';
 import { WidgetCard } from './plugins/widget-card';
+import { MarkdownMessage } from './markdown/message';
+import { countMarkdownHighlights } from './markdown/text';
+import 'katex/dist/katex.min.css';
+import './markdown/message.css';
 import type { ChatTurn, useAgentChat } from './use-agent-chat';
 
 const labels = {
@@ -270,7 +274,7 @@ export function Chat({
       offsets.set(`${entry.key}:in`, total);
       total += countHighlights(entry.item.turn.input, highlight);
       offsets.set(`${entry.key}:out`, total);
-      total += countHighlights(entry.item.turn.answer, highlight);
+      total += countMarkdownHighlights(entry.item.turn.answer, highlight);
     }
   const activeTurn = [...chat.turns]
     .reverse()
@@ -525,18 +529,19 @@ export function Chat({
                     />
                   </p>
                   {turn.answer ? (
-                    <p
+                    <div
                       className="chat-bubble assistant-bubble"
                       data-streaming={turn.status === 'running'}
                       data-fresh={answerFresh ? 'true' : undefined}
                     >
-                      <RichText
+                      <MarkdownMessage
                         text={turn.answer}
                         query={highlight}
                         offset={offsets.get(`${entry.key}:out`) ?? 0}
                         current={shown}
+                        animate={answerFresh}
                       />
-                    </p>
+                    </div>
                   ) : (
                     waiting && (
                       <p

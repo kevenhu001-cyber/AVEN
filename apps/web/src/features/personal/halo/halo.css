@@ -1778,13 +1778,10 @@
   animation: halo-rise 380ms var(--aven-easing-emphasized) both;
 }
 .assistant-bubble[data-streaming='true'] {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--aven-color-accent) 22%, transparent),
-    0 10px 32px -22px color-mix(in srgb, var(--aven-color-accent) 70%, transparent);
-  transition: box-shadow 320ms var(--aven-easing-standard);
+  outline: 1px solid var(--aven-color-border-strong);
 }
 .halo-typing {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aven-color-border) 60%, transparent);
+  outline: 1px solid var(--aven-color-border);
 }
 .halo-turn-meta {
   display: flex;

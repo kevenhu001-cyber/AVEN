@@ -1,0 +1,168 @@
+.personal-app .assistant-bubble:has(.markdown-message) {
+  min-width: 0;
+  white-space: normal;
+}
+.markdown-message {
+  min-width: 0;
+}
+.markdown-message :where(p, ul, ol, blockquote, pre, table) {
+  margin: 0.7em 0;
+}
+.markdown-message > :first-child {
+  margin-top: 0;
+}
+.markdown-message > :last-child {
+  margin-bottom: 0;
+}
+.markdown-message :where(h1, h2, h3, h4, h5, h6) {
+  margin: 1em 0 0.45em;
+  font-weight: var(--aven-font-weight-semibold);
+  line-height: 1.35;
+}
+.markdown-message h1 {
+  font-size: 1.35em;
+}
+.markdown-message h2 {
+  font-size: 1.2em;
+}
+.markdown-message :where(h3, h4, h5, h6) {
+  font-size: 1.05em;
+}
+.markdown-message :where(ul, ol) {
+  padding-left: 1.5em;
+}
+.markdown-message ul {
+  list-style: disc;
+}
+.markdown-message ol {
+  list-style: decimal;
+}
+.markdown-message li + li {
+  margin-top: 0.25em;
+}
+.markdown-message li > p {
+  margin: 0.25em 0;
+}
+.markdown-message blockquote {
+  border-left: 2px solid var(--aven-color-border-strong);
+  padding-left: 1em;
+  color: var(--aven-color-foreground-secondary);
+}
+.markdown-message a {
+  color: var(--aven-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.markdown-message :where(code, pre) {
+  font-family: var(--aven-font-family-mono);
+  font-size: 0.9em;
+}
+.markdown-message :not(pre) > code {
+  padding: 0.1em 0.3em;
+  border-radius: var(--aven-radius-sm);
+  background: var(--aven-color-background-secondary);
+  white-space: break-spaces;
+}
+.markdown-code-block {
+  margin: 0.75em 0;
+  overflow: hidden;
+  border: 1px solid var(--aven-color-border-strong);
+  border-radius: var(--aven-radius-md);
+  background: var(--aven-color-background);
+}
+.markdown-code-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75em;
+  padding: 0.35em 0.75em;
+  border-bottom: 1px solid var(--aven-color-border);
+  color: var(--aven-color-foreground-secondary);
+  font-size: 0.8em;
+}
+.markdown-code-toolbar button {
+  min-height: 36px;
+  padding: 0 0.5em;
+  border-radius: var(--aven-radius-sm);
+}
+.markdown-code-toolbar button:hover {
+  background: var(--aven-color-surface-hover);
+}
+.markdown-code-toolbar button:focus-visible {
+  outline: 2px solid var(--aven-color-focus-ring);
+  outline-offset: 2px;
+}
+.markdown-message pre {
+  max-width: 100%;
+  margin: 0;
+  padding: 0.85em;
+  overflow-x: auto;
+  white-space: pre;
+  overflow-wrap: normal;
+  tab-size: 2;
+}
+.markdown-message pre code {
+  font-size: inherit;
+}
+.markdown-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+.markdown-message table {
+  border-collapse: collapse;
+  font-size: 0.9em;
+  margin: 0;
+}
+.markdown-message :where(th, td) {
+  border: 1px solid var(--aven-color-border-strong);
+  padding: 0.4em 0.65em;
+  text-align: start;
+  min-width: 5em;
+}
+.markdown-message th {
+  background: var(--aven-color-background-secondary);
+}
+.markdown-message .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
+.markdown-message .katex {
+  font-size: 1.05em;
+}
+.markdown-message :not(.katex-display) > .katex {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
+}
+.markdown-message .katex-error {
+  color: var(--aven-color-foreground-secondary) !important;
+  white-space: pre-wrap;
+}
+.markdown-image-placeholder {
+  color: var(--aven-color-foreground-secondary);
+}
+.markdown-message hr {
+  margin: 1em 0;
+  border-color: var(--aven-color-border-strong);
+}
+.markdown-reveal {
+  animation: markdown-reveal 220ms ease-out both;
+}
+@keyframes markdown-reveal {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .markdown-reveal {
+    animation: none;
+  }
+}
