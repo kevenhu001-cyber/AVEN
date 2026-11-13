@@ -1,3 +1,4 @@
+import { mockChatReply } from './mock-chat-reply.js';
 import { AIError } from './errors.js';
 import {
   messageTokens,
@@ -17,9 +18,6 @@ import {
   type StreamEvent,
   type StreamTextInput,
 } from './provider.js';
-
-const defaultMockText = '这是 Mock AI 的确定性回复。';
-const defaultStreamText = '这是 Mock AI 的确定性流式回复。';
 
 function hashText(text: string): number {
   let hash = 2166136261;
@@ -66,7 +64,7 @@ export class MockProvider implements AIProvider {
     throwIfAborted(input.signal);
     const messages = parseMessages(input.messages);
     const { maxTokens } = parseGenerationOptions(input);
-    const text = Array.from(this.text ?? defaultMockText)
+    const text = Array.from(this.text ?? mockChatReply(messages))
       .slice(0, maxTokens)
       .join('');
     return {
@@ -107,7 +105,7 @@ export class MockProvider implements AIProvider {
 
   async *streamText(input: StreamTextInput): AsyncIterable<StreamEvent> {
     const messages = parseMessages(input.messages);
-    const text = this.text ?? defaultStreamText;
+    const text = this.text ?? mockChatReply(messages);
     const characters = Array.from(text);
     for (let index = 0; index < characters.length; index += 6) {
       if (input.signal?.aborted) {

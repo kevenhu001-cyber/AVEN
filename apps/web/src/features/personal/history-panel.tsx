@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { MessageContent, CopyMessage } from './message-content';
+import { Icon } from './icon';
 import type { AgentHistoryItem } from '@aven/contracts';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
@@ -10,7 +12,7 @@ export function HistoryPanel({ onExpired }: PrivateProps) {
   const [cursor, setCursor] = useState<{ createdAt: string; id: string } | null>(null);
   const [answer, setAnswer] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const [message, setMessage] = useState('');
   const controller = useRef<AbortController | null>(null);
   const lock = useRef(false);
@@ -19,6 +21,8 @@ export function HistoryPanel({ onExpired }: PrivateProps) {
     lock.current = true;
     setBusy(true);
     setMessage('');
+    setAnswer('');
+    setSelected(null);
     const abort = new AbortController();
     controller.current = abort;
     try {
@@ -55,6 +59,9 @@ export function HistoryPanel({ onExpired }: PrivateProps) {
             if (authExpired(error)) onExpired();
             else setMessage(errorText(error));
           }
+        })
+        .finally(() => {
+          if (!signal.aborted) setBusy(false);
         }),
     [onExpired],
   );
@@ -105,17 +112,38 @@ export function HistoryPanel({ onExpired }: PrivateProps) {
       </Button>
       {message && <Alert variant="warning">{message}</Alert>}
       {busy && <p role="status">正在读取…</p>}
-      {!busy && !items.length && <p>暂时没有对话记录。</p>}
+      {!busy && !items.length && (
+        <div className="workspace-empty">
+          <Icon name="history" />
+          <h3>对话从这里开始</h3>
+          <p>开始聊天后，保留期内的回复会显示在这里。</p>
+        </div>
+      )}
       {items.map((item) => (
         <div className="memory-card flex flex-col gap-2" key={item.id}>
           <strong>{new Date(item.createdAt).toLocaleString('zh-CN')}</strong>
           <span>
-            {item.provider} · {item.model} · {item.status}
+            {item.provider === 'mock' ? '模拟对话' : item.provider} ·{' '}
+            {
+              {
+                queued: '等待回复',
+                running: '生成中',
+                cancelling: '正在停止',
+                completed: '已完成',
+                cancelled: '已停止',
+                failed: '未完成',
+              }[item.status]
+            }
           </span>
           <Button variant="secondary" disabled={busy} onClick={() => void replay(item)}>
             重新读取此轮回复
           </Button>
-          {selected === item.id && answer && <p className="wrap whitespace-pre-wrap">{answer}</p>}
+          {selected === item.id && answer && (
+            <div className="history-answer">
+              <MessageContent text={answer} />
+              {!busy && <CopyMessage text={answer} />}
+            </div>
+          )}
         </div>
       ))}
       {cursor && (

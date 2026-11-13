@@ -1,27 +1,47 @@
-import { ArrowUp, Ellipsis, Menu, Plug, Square, X } from 'lucide-react';
-
-export function Icon({
-  name,
-}: {
-  name: 'menu' | 'ellipsis' | 'arrow-up' | 'square' | 'x' | 'plug';
-}) {
-  const props = {
-    size: 20,
-    strokeWidth: 2,
-    'aria-hidden': true as const,
-  };
-  switch (name) {
-    case 'menu':
-      return <Menu {...props} />;
-    case 'ellipsis':
-      return <Ellipsis {...props} />;
-    case 'arrow-up':
-      return <ArrowUp {...props} />;
-    case 'square':
-      return <Square {...props} />;
-    case 'x':
-      return <X {...props} />;
-    case 'plug':
-      return <Plug {...props} />;
-  }
+import {
+  ArrowUp,
+  ArrowRight,
+  ArrowDown,
+  Bell,
+  Check,
+  Copy,
+  Ellipsis,
+  History,
+  Layers,
+  LayoutGrid,
+  Link,
+  Menu,
+  MessageCircle,
+  Plus,
+  Plug,
+  Settings,
+  Square,
+  SquarePen,
+  X,
+} from 'lucide-react';
+const icons = {
+  menu: Menu,
+  ellipsis: Ellipsis,
+  'arrow-up': ArrowUp,
+  'arrow-right': ArrowRight,
+  'arrow-down': ArrowDown,
+  square: Square,
+  x: X,
+  plug: Plug,
+  plus: Plus,
+  message: MessageCircle,
+  layers: Layers,
+  link: Link,
+  bell: Bell,
+  grid: LayoutGrid,
+  history: History,
+  settings: Settings,
+  compose: SquarePen,
+  copy: Copy,
+  check: Check,
+};
+export type IconName = keyof typeof icons;
+export function Icon({ name }: { name: IconName }) {
+  const Glyph = icons[name];
+  return <Glyph size={22} strokeWidth={1.75} aria-hidden="true" />;
 }

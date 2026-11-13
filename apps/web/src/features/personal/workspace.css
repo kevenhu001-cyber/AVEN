@@ -1,0 +1,759 @@
+/* Chat workspace: shared reading width, dark neutral surfaces, no decorative motion. */
+.workspace-theme {
+  --aven-color-background: #080808;
+  --aven-color-surface: #1b1b1b;
+  --aven-color-surface-secondary: #222222;
+  --aven-color-surface-hover: #2b2b2b;
+  --aven-color-foreground: #eeeeee;
+  --aven-color-foreground-secondary: #999999;
+  --aven-color-primary: #f4f4f4;
+  --aven-color-primary-foreground: #111111;
+  --aven-color-border: #303030;
+  --aven-color-control-border: #484848;
+  --aven-color-focus-ring: #d6d6d6;
+  --aven-color-overlay: rgb(0 0 0 / 75%);
+  --aven-color-warning-surface: #29241c;
+  --reading-width: 720px;
+  color-scheme: dark;
+  color: var(--aven-color-foreground);
+  background: var(--aven-color-background);
+}
+.workspace-theme *,
+.workspace-theme {
+  box-shadow: none;
+  text-shadow: none;
+}
+.workspace-theme .mascot {
+  filter: invert(1);
+}
+.workspace-theme.app-shell {
+  grid-template-columns: 228px minmax(0, 1fr);
+  background: #080808;
+}
+.workspace-theme .personal-sidebar {
+  background: #141414;
+  border: 0;
+  padding: 26px 14px 18px;
+  gap: 24px;
+}
+.workspace-theme .sidebar-brand {
+  gap: 10px;
+  padding-inline: 10px;
+  letter-spacing: 0.05em;
+}
+.workspace-theme .sidebar-brand .mascot {
+  width: 30px;
+  height: 30px;
+}
+.workspace-theme .new-chat-button {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid #353535;
+  border-radius: 14px;
+  background: #222;
+  color: #eee;
+}
+.workspace-theme .personal-nav {
+  gap: 4px;
+}
+.workspace-theme .workspace-nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #aaa;
+}
+.workspace-theme .workspace-nav-item[aria-current='page'] {
+  color: #fff;
+  background: #252525;
+}
+.workspace-theme .workspace-nav-item svg {
+  flex-shrink: 0;
+}
+.workspace-theme .profile-button {
+  padding: 10px 8px;
+  border-radius: 12px;
+}
+.workspace-theme .profile-name {
+  flex: 1;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.workspace-theme .profile-button small {
+  font-size: 11px;
+}
+.workspace-theme .name-avatar {
+  width: 34px;
+  height: 34px;
+  background: #303030;
+}
+.workspace-theme .personal-header {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 88px;
+  padding: 18px 30px;
+  gap: 16px;
+}
+.workspace-theme .assistant-identity {
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  font-size: 18px;
+  letter-spacing: 0.01em;
+}
+.workspace-theme .assistant-identity .mascot {
+  width: 42px;
+  height: 42px;
+}
+.workspace-theme .assistant-identity small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+.workspace-theme .header-circle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #222;
+  color: #ddd;
+}
+.workspace-theme .new-chat-icon {
+  margin-left: auto;
+}
+.workspace-theme .personal-main {
+  overflow: hidden;
+}
+.workspace-chat-host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.workspace-chat-host[hidden] {
+  display: none;
+}
+.workspace-theme .chat-space {
+  flex: 1;
+  min-height: 0;
+}
+.workspace-theme .chat-transcript {
+  padding: 16px 28px 20px;
+  scroll-padding: 20px;
+}
+.workspace-theme .chat-transcript.is-empty {
+  display: flex;
+  flex-direction: column;
+}
+.workspace-theme .chat-thread {
+  width: 100%;
+  max-width: var(--reading-width);
+  margin: 0 auto;
+}
+.workspace-theme .chat-welcome {
+  width: min(100%, 510px);
+  margin: auto;
+  padding: 30px 0;
+}
+.workspace-theme .chat-welcome .mascot {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 28px;
+}
+.workspace-theme .chat-welcome h1 {
+  font-size: clamp(25px, 2.7vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  margin: 0 0 12px;
+}
+.workspace-theme .chat-welcome p {
+  color: #999;
+  margin: 0 0 30px;
+  font-size: 15px;
+}
+.workspace-theme .chat-starters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-theme .chat-starters button {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(100%, 320px);
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: transparent;
+  color: #bcbcbc;
+  font-size: 13px;
+  text-align: left;
+  padding: 10px 16px;
+}
+.workspace-theme .chat-starters button:hover {
+  color: #eee;
+  background: #1b1b1b;
+}
+.workspace-theme .chat-starters svg {
+  width: 16px;
+  height: 16px;
+}
+.workspace-theme .chat-turn {
+  margin-bottom: 26px;
+}
+.workspace-theme .chat-bubble {
+  max-width: 92%;
+  font-size: 16px;
+  line-height: 26px !important;
+  padding: 14px 18px;
+  margin: 0 0 12px;
+  border-radius: 24px;
+  white-space: normal;
+}
+.workspace-theme .user-bubble {
+  margin: 0 0 24px auto;
+  max-width: 85%;
+  color: #eee;
+  background: #252525;
+  white-space: pre-wrap;
+}
+.workspace-theme .assistant-bubble {
+  background: #1e1e1e;
+  border-bottom-left-radius: 7px;
+  color: #eee;
+}
+.workspace-theme .message-content {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.workspace-theme .message-content p {
+  font-size: inherit;
+  line-height: 26px;
+  margin: 0 0 14px;
+  white-space: pre-wrap;
+}
+.workspace-theme .message-content > :last-child {
+  margin-bottom: 0;
+}
+.workspace-theme .message-content h3 {
+  font-size: 17px;
+  margin: 12px 0;
+  font-weight: 600;
+}
+.workspace-theme .message-content h3:first-child {
+  margin-top: 0;
+}
+.workspace-theme .message-content :is(ul, ol) {
+  margin: 12px 0 14px;
+  padding-left: 24px;
+}
+.workspace-theme .message-content ul {
+  list-style: disc;
+}
+.workspace-theme .message-content ol {
+  list-style: decimal;
+}
+.workspace-theme .message-content li {
+  padding-left: 2px;
+  margin: 6px 0;
+  line-height: 26px;
+}
+.workspace-theme .message-content strong {
+  font-weight: 600;
+}
+.workspace-theme .message-content :not(pre) > code {
+  padding: 2px 5px;
+  background: #333;
+  border-radius: 5px;
+  font-size: 0.88em;
+}
+.workspace-theme .message-content blockquote {
+  border-left: 2px solid #555;
+  padding-left: 12px;
+  color: #aaa;
+  margin: 12px 0;
+}
+.workspace-theme .message-code {
+  margin: 12px 0;
+  border: 1px solid #3c3c3c;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #121212;
+  max-width: 100%;
+}
+.workspace-theme .code-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px 0 14px;
+  background: #282828;
+  color: #aaa;
+  font-size: 12px;
+}
+.workspace-theme .message-code pre {
+  margin: 0;
+  padding: 14px;
+  max-width: 100%;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+.workspace-theme .message-code pre code {
+  font-size: 13px;
+  white-space: pre;
+}
+.workspace-theme .turn-actions {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  margin-top: -6px;
+  color: #999;
+}
+.workspace-theme .turn-actions:empty {
+  display: none;
+}
+.workspace-theme .message-action {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #999;
+  background: transparent;
+}
+.workspace-theme .message-action svg {
+  width: 17px;
+  height: 17px;
+}
+.copy-control {
+  display: inline-flex;
+  align-items: center;
+}
+.copy-failure {
+  font-size: 12px;
+}
+.workspace-theme .turn-state {
+  font-size: 12px;
+  padding-block: 8px;
+}
+.workspace-theme .reply-pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: #aaa;
+  font-size: 13px;
+}
+.reply-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #bbb;
+}
+.workspace-theme .composer-dock {
+  flex-shrink: 0;
+  padding: 12px 28px 12px;
+  background: #080808;
+}
+.workspace-theme .chat-composer {
+  width: 100%;
+  max-width: var(--reading-width);
+  border: 1px solid transparent;
+  border-radius: 30px;
+  padding: 6px;
+  margin: 0 auto;
+  gap: 4px;
+  align-items: flex-end;
+  background: #222;
+}
+.workspace-theme .chat-composer:focus-within {
+  border-color: #646464;
+}
+.workspace-theme .chat-composer textarea {
+  font-size: 16px;
+  line-height: 26px;
+  padding: 9px 6px;
+  min-height: 44px;
+  max-height: 156px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  overflow-y: auto;
+}
+.workspace-theme .chat-composer textarea::placeholder {
+  color: #939393;
+}
+.workspace-theme .composer-add {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #ddd;
+}
+.workspace-theme .send-button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  color: #111;
+  background: #eee;
+  border: 0;
+}
+.workspace-theme .send-button:disabled {
+  color: #999;
+  background: #363636;
+  opacity: 1;
+}
+.workspace-theme .composer-note {
+  color: #888;
+  font-size: 11px;
+  margin: 9px 0 0;
+  padding: 0;
+  line-height: 18px;
+}
+.workspace-theme .latest-button {
+  bottom: 112px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: #292929;
+  border: 1px solid #444;
+  color: #eee;
+}
+.workspace-theme .widget-turn {
+  align-items: flex-start;
+  gap: 10px;
+}
+.workspace-theme .widget-turn-head {
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.workspace-theme .widget-turn .widget-card {
+  max-width: min(100%, 520px);
+  border: 0;
+  background: #222;
+  border-radius: 22px;
+}
+.workspace-theme .widget-turn .assistant-bubble {
+  margin: 0;
+}
+.workspace-theme .workspace-page {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 28px 40px;
+  overscroll-behavior: contain;
+}
+.workspace-page-inner {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+.workspace-theme .workspace-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.workspace-theme .workspace-page-heading h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+.workspace-theme .workspace-page-heading button {
+  gap: 6px;
+  padding-inline: 8px;
+  font-size: 12px;
+}
+.workspace-theme .workspace-page-heading svg {
+  width: 16px;
+}
+.workspace-theme .space-description {
+  margin: -8px 0 30px;
+  color: #999;
+  font-size: 14px;
+}
+.workspace-theme .space-menu {
+  display: flex;
+  flex-direction: column;
+}
+.workspace-theme .space-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 92px;
+  padding: 18px 4px;
+  text-align: left;
+  border-radius: 0;
+  border-bottom: 1px solid #242424;
+  color: #ddd;
+}
+.workspace-theme .space-menu-row > svg {
+  width: 25px;
+  height: 25px;
+}
+.workspace-theme .space-menu-row > svg:last-child {
+  margin-left: auto;
+  width: 18px;
+  color: #777;
+}
+.workspace-theme .space-menu-row span {
+  flex: 1;
+  min-width: 0;
+}
+.workspace-theme .space-menu-row strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+.workspace-theme .space-menu-row small {
+  display: block;
+  margin-top: 5px;
+  color: #999;
+  font-size: 12px;
+  font-weight: 400;
+}
+.workspace-theme .space-footnote {
+  margin-top: 32px;
+  font-size: 12px;
+  color: #888;
+}
+.workspace-theme .memory-card,
+.workspace-theme .notification-row {
+  border-radius: 18px;
+  border-color: #303030;
+  background: transparent;
+}
+.workspace-theme .workspace-page [data-slot='card'] {
+  border-color: #303030;
+}
+.workspace-theme .connector-row {
+  border-radius: 18px;
+  border-color: #363636;
+}
+.workspace-theme.workspace-modal {
+  background: #171717;
+  border-color: #383838;
+}
+.workspace-theme .session-cover .mascot {
+  width: 72px;
+  height: 72px;
+}
+.mobile-bottom-nav {
+  display: none;
+}
+@media (max-width: 768px) {
+  .workspace-theme.app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-theme .personal-sidebar {
+    display: none;
+  }
+  .workspace-theme .personal-header {
+    min-height: 92px;
+    padding: 18px 16px;
+    justify-content: space-between;
+  }
+  .workspace-theme .personal-header .mobile-nav-button {
+    display: inline-grid;
+  }
+  .workspace-theme .assistant-identity {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 8px;
+    font-size: 16px;
+  }
+  .workspace-theme .assistant-identity .mascot {
+    width: 42px;
+    height: 42px;
+  }
+  .workspace-theme .assistant-identity small {
+    font-size: 10px;
+  }
+  .workspace-theme .chat-transcript {
+    padding: 12px 16px 16px;
+  }
+  .workspace-theme .chat-bubble {
+    max-width: 96%;
+    padding: 12px 16px;
+    border-radius: 23px;
+  }
+  .workspace-theme .assistant-bubble {
+    border-bottom-left-radius: 6px;
+  }
+  .workspace-theme .user-bubble {
+    max-width: 87%;
+    margin-bottom: 22px;
+  }
+  .workspace-theme .chat-turn {
+    margin-bottom: 22px;
+  }
+  .workspace-theme .chat-welcome {
+    padding: 24px 12px;
+  }
+  .workspace-theme .chat-welcome .mascot {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 24px;
+  }
+  .workspace-theme .chat-welcome h1 {
+    font-size: 26px;
+  }
+  .workspace-theme .chat-welcome p {
+    font-size: 14px;
+  }
+  .workspace-theme .chat-starters button {
+    font-size: 12px;
+  }
+  .workspace-theme .composer-dock {
+    padding: 8px 16px 6px;
+  }
+  .workspace-theme .chat-composer {
+    width: 100%;
+  }
+  .workspace-theme .composer-note {
+    font-size: 10px;
+    margin-top: 6px;
+  }
+  .workspace-theme .mobile-bottom-nav {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: space-around;
+    padding: 5px 6px max(5px, env(safe-area-inset-bottom));
+    background: #080808;
+  }
+  .workspace-theme .mobile-bottom-nav button {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 58px;
+    padding: 7px 4px;
+    gap: 5px;
+    border-radius: 12px;
+    color: #858585;
+    background: transparent;
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .workspace-theme .mobile-bottom-nav svg {
+    width: 23px;
+    height: 23px;
+  }
+  .workspace-theme .mobile-bottom-nav [aria-current='page'] {
+    color: #f4f4f4;
+  }
+  .workspace-theme .workspace-page {
+    padding: 16px 16px 28px;
+  }
+  .workspace-theme .workspace-page-heading h1 {
+    font-size: 26px;
+  }
+  .workspace-theme .workspace-page-heading {
+    margin-bottom: 24px;
+  }
+  .workspace-theme .space-menu-row {
+    min-height: 92px;
+  }
+}
+@media (max-height: 580px) {
+  .workspace-theme .personal-header {
+    min-height: 64px;
+    padding-block: 10px;
+  }
+  .workspace-theme .chat-welcome .mascot {
+    display: none;
+  }
+  .workspace-theme .chat-welcome {
+    margin: 0 auto;
+    padding: 12px 0;
+  }
+  .workspace-theme .chat-welcome p {
+    margin-bottom: 16px;
+  }
+}
+.workspace-theme .memory-create {
+  margin-top: 12px;
+  border: 1px solid #363636;
+  border-radius: 20px;
+  padding: 0 16px;
+}
+.workspace-theme .memory-create summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.workspace-theme .memory-create summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-theme .memory-create summary:focus-visible {
+  outline: 2px solid #ddd;
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.workspace-theme .memory-create[open] summary {
+  border-bottom: 1px solid #333;
+}
+.workspace-theme .workspace-empty {
+  padding: 50px 16px;
+  text-align: center;
+  color: #999;
+}
+.workspace-theme .workspace-empty > svg {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 18px;
+  color: #777;
+}
+.workspace-theme .workspace-empty h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 12px;
+  color: #bbb;
+}
+.workspace-theme .workspace-empty p {
+  font-size: 13px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.workspace-theme .history-answer {
+  margin-top: 12px;
+}
+.workspace-theme {
+  --aven-color-destructive: #e57373;
+  --aven-color-destructive-foreground: #1a0f0f;
+  --aven-color-destructive-surface: #281a1a;
+  --aven-color-success: #a0c9ae;
+  --aven-color-success-surface: #18231b;
+  --aven-color-info: #a3bdcd;
+  --aven-color-info-surface: #172129;
+  --aven-color-warning: #d5b680;
+}
+.workspace-theme.app-shell.is-suspended {
+  grid-template-columns: minmax(0, 1fr);
+}

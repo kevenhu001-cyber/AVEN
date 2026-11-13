@@ -1,3 +1,4 @@
+import { closePersonalPanel, openPersonalPanel } from './personal-web-navigation.mjs';
 import { chromium, expect } from '@playwright/test';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -42,7 +43,7 @@ try {
   await page.getByLabel('邮箱', { exact: true }).fill(email);
   await page.getByLabel('密码', { exact: true }).fill(fixture.password);
   await page.getByRole('button', { name: '登录', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '从一个想法开始' })).toBeVisible();
   check(true, 'real Web login reaches workspace');
   const mobile = await fetch(`${base}/api/v1/auth/login`, {
     method: 'POST',
@@ -63,7 +64,7 @@ try {
     mobileMe.ok && (await mobileMe.json()).session.client === 'mobile',
     'mobile Bearer authenticates independently',
   );
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await openPersonalPanel(page, '我的账号');
   await expect(page.getByRole('heading', { name: '个人资料', exact: true })).toBeVisible();
   const name = `账号验证-${fixture.stamp.slice(0, 8)}`;
   await page.getByLabel('显示名', { exact: true }).fill(name);
@@ -94,10 +95,12 @@ try {
     expect(result.status).toBe(401);
   }).toPass();
   check(true, 'Web device revocation immediately invalidates mobile Bearer');
-  await page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(page);
   await page.getByLabel('向 AVEN 提问', { exact: true }).fill(`account history ${randomUUID()}`);
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
-  await expect(page.getByText('回复完成', { exact: true }).last()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('button', { name: '复制回复', exact: true }).last()).toBeVisible({
+    timeout: 30000,
+  });
   await page.getByRole('button', { name: '对话记录', exact: true }).click();
   await expect(page.getByRole('button', { name: '重新读取此轮回复' }).first()).toBeVisible();
   const history = await (await context.request.get(`${base}/api/v1/agent/runs?limit=1`)).json();
@@ -108,14 +111,14 @@ try {
     'history metadata excludes prompts and reply body',
   );
   await page.getByRole('button', { name: '重新读取此轮回复' }).first().click();
-  await expect(page.getByRole('dialog').locator('.whitespace-pre-wrap')).toBeVisible();
+  await expect(page.locator('.history-answer .message-content')).toBeVisible();
   check(true, 'history explicitly replays real Worker response');
   const badCursor = await context.request.get(
     `${base}/api/v1/agent/runs?cursorId=${history.data[0].id}`,
   );
   check(badCursor.status() === 422, 'history rejects incomplete pagination cursor');
-  await page.getByRole('button', { name: '关闭面板' }).click();
-  await page.getByRole('button', { name: '记忆与上下文', exact: true }).click();
+  await closePersonalPanel(page);
+  await openPersonalPanel(page, '记忆与上下文');
   await page.getByRole('tab', { name: '行动草稿', exact: true }).click();
   const actionTitle = `行动验证-${randomUUID()}`;
   await page.getByLabel('草稿标题', { exact: true }).fill(actionTitle);
@@ -133,20 +136,20 @@ try {
   await page.getByRole('button', { name: '核对行动状态', exact: true }).click();
   await expect(page.getByText('状态：succeeded', { exact: false })).toBeVisible();
   check(true, 'executed action can be read without a second mutation');
-  await page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(page);
   await page.getByRole('button', { name: '对话记录', exact: true }).click();
   mkdirSync('var/design/web-android', { recursive: true });
   await page.screenshot({ path: 'var/design/web-android/history-desktop.png' });
-  await page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await openPersonalPanel(page, '我的账号');
   check(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     'account panel has no horizontal overflow at 390px',
   );
   await page.screenshot({ path: 'var/design/web-android/account-mobile.png' });
-  await page.getByRole('button', { name: '关闭面板' }).click();
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await closePersonalPanel(page);
+  await openPersonalPanel(page, '我的账号');
   await page.getByRole('button', { name: '退出登录', exact: true }).click();
   await page.getByRole('button', { name: '登录或注册', exact: true }).click();
   await page.getByRole('button', { name: '忘记密码', exact: true }).click();

@@ -107,3 +107,7 @@ OpenAI-compatible 流必须收到 `data: [DONE]` 才能标记完成；连接提�
 `@aven/api-client.agent` 增加 `createTurn/getRun/cancel/events`，复用本节既有端点。`AgentStreamEventSchema` 验证服务端 wire 字段、事件类型、run_id、序号与 delta 文本；拒绝跨 run、缺号、错误类型与非终态 EOF。订阅地址由已验证 runId 构造，不跟随响应中的任意 URL。读取使用 Cookie 或调用时 Bearer，写入逐次 CSRF；客户端不自动创建/重试 run。
 
 Web 只提供 Mock 对话与停止/手动核对/重读，不提供高影响行动执行 UI。未知结果同键核对；HTTP/来源失败或断流清除已显示派生回复。详见 [WEB-01](../development/WEB_PERSONAL.md)。
+
+## 聊天展示与模拟回复修订（2026-11-13）
+
+本轮不改变 HTTP、SSE、来源、幂等与保留契约。默认 Mock 的流式内容增加确定性意图示例（问候、规划、记忆、连接器与能力边界），只依据当前无 name 的 user 消息选择模板，不回显检索的 personal_context 或组织上下文。显式 mockText 继续覆盖默认内容。模板不访问邮箱/日历、不执行行动，不证明真实模型或多轮推理能力。客户端安全渲染正文并保留失败清除、手动同键核对与重读行为。

@@ -1,3 +1,4 @@
+import { closePersonalPanel, openPersonalPanel } from './personal-web-navigation.mjs';
 import { chromium, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -38,7 +39,7 @@ try {
   const page = await a.context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(base);
-  await page.getByRole('button', { name: '记忆与上下文', exact: true }).click();
+  await openPersonalPanel(page, '记忆与上下文');
   await page.getByRole('tab', { name: '行动草稿', exact: true }).click();
   await page.getByLabel('草稿标题').fill(`行动验证-${randomUUID()}`);
   await page.getByLabel('草稿正文').fill('合成测试正文；用途默认关闭。');
@@ -64,8 +65,8 @@ try {
   await page.getByRole('button', { name: '核对行动状态', exact: true }).click();
   await expect(page.getByText('状态：succeeded', { exact: false })).toBeVisible();
   check(true, 'executed action is readable without a second write');
-  await page.getByRole('button', { name: '关闭面板' }).click();
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await closePersonalPanel(page);
+  await openPersonalPanel(page, '我的账号');
   await page.getByLabel('对方连接码', { exact: true }).fill(`aven:${b.me.user.id}`);
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '拉黑用户', exact: true }).click();
@@ -88,7 +89,7 @@ try {
   );
   await page.getByRole('button', { name: '提交举报', exact: true }).click();
   check((await reported).ok(), 'UI submits synthetic report after explicit confirmation');
-  await page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(page);
   const newRuns = [];
   for (const actor of contexts) {
     const csrf = (await actor.context.cookies()).find(

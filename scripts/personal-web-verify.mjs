@@ -1,3 +1,4 @@
+import { closePersonalPanel, openPersonalPanel } from './personal-web-navigation.mjs';
 import { chromium, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import {
@@ -66,7 +67,7 @@ async function account(suffix) {
     await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
   }
-  await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '从一个想法开始' })).toBeVisible();
   await context.storageState({ path: statePath });
   chmodSync(statePath, 0o600);
   const meResponse = await context.request.get(`${base}/api/v1/auth/me`);
@@ -85,25 +86,28 @@ async function account(suffix) {
       token = /验证令牌：(\S+)/.exec(mail.text)?.[1];
   }
   check(Boolean(token), `${suffix}: synthetic development verification mail exists`);
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await openPersonalPanel(page, '我的账号');
   if (!me.user.emailVerified) {
     await page.getByLabel('邮箱验证码', { exact: true }).fill(token);
     await page.getByRole('button', { name: '验证邮箱', exact: true }).click();
   }
   await expect(page.getByText('邮箱已验证', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(page);
   return { context, page, me };
 }
 try {
   const a = await account('A');
   await a.page.getByLabel('向 AVEN 提问', { exact: true }).fill('这是合成验证，请回复。');
   await a.page.getByRole('button', { name: '发送消息', exact: true }).click();
-  await expect(a.page.getByText('回复完成', { exact: true })).toBeVisible({ timeout: 25000 });
+  await expect(a.page.getByRole('button', { name: '复制回复', exact: true }).last()).toBeVisible({
+    timeout: 25000,
+  });
   check(
     (await a.page.locator('.assistant-bubble').innerText()).includes('Mock'),
     'real API/Outbox/Worker/SSE terminal response',
   );
-  await a.page.getByRole('button', { name: '记忆与上下文', exact: true }).click();
+  await openPersonalPanel(a.page, '记忆与上下文');
+  await a.page.locator('.memory-create summary').click();
   await a.page.getByLabel('一条想让 AVEN 了解的信息').fill('合成测试介绍');
   await a.page
     .getByLabel('具体内容', { exact: true })
@@ -118,7 +122,7 @@ try {
   await expect(
     a.page.getByRole('heading', { name: '合成测试介绍', exact: true }).first(),
   ).toBeVisible();
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(a.page);
   const b = await account('B');
   const prior = await (
     await a.context.request.get(`${base}/api/v1/connections/invitations`)
@@ -140,7 +144,7 @@ try {
     if (!cleanup.ok()) throw new Error('Unable to withdraw prior synthetic pending fixture.');
   }
   const linked = await (await a.context.request.get(`${base}/api/v1/connections`)).json();
-  await a.page.getByRole('button', { name: '我的连接', exact: true }).click();
+  await openPersonalPanel(a.page, '我的连接');
   if (!linked.data.length) {
     const invitationCountBefore = (
       await (await b.context.request.get(`${base}/api/v1/connections/invitations`)).json()
@@ -157,14 +161,14 @@ try {
     );
     await a.page.getByRole('button', { name: '确认并发送邀请', exact: true }).click();
     await expect(a.page.getByRole('button', { name: /我发出的邀请.*等待回应/ })).toBeVisible();
-    await b.page.getByRole('button', { name: '我的连接', exact: true }).click();
+    await openPersonalPanel(b.page, '我的连接');
     await b.page.getByRole('button', { name: /收到一份连接邀请.*等待回应/ }).click();
     await expect(
       b.page.getByText('合成验证资料：我喜欢机器人和产品设计。', { exact: false }),
     ).toBeVisible();
     await b.page.getByRole('button', { name: '接受连接', exact: true }).click();
   } else {
-    await b.page.getByRole('button', { name: '我的连接', exact: true }).click();
+    await openPersonalPanel(b.page, '我的连接');
   }
   await b.page.getByRole('button', { name: /已建立的连接/ }).click();
   await b.page.getByLabel('给对方留言', { exact: true }).fill('合成验证：连接后的第一条消息。');
@@ -189,17 +193,17 @@ try {
       ? 'existing synthetic connection send/read (initial preview/accept previously verified)'
       : 'two isolated UI sessions preview/consent/connect/send/read',
   );
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(a.page);
   await a.page.getByRole('button', { name: '通知', exact: true }).click();
   await expect(async () => {
     await a.page.getByRole('button', { name: '刷新通知', exact: true }).click();
     await expect(a.page.getByText('连接邀请已接受', { exact: false }).first()).toBeVisible();
   }).toPass({ timeout: 15000 });
   check(true, 'real inbox notification from Worker');
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
+  await closePersonalPanel(a.page);
   if (await a.page.getByRole('button', { name: '重新读取回复', exact: true }).isVisible())
     await a.page.getByRole('button', { name: '重新读取回复', exact: true }).click();
-  await expect(a.page.getByText('回复完成', { exact: true })).toBeVisible();
+  await expect(a.page.getByRole('button', { name: '复制回复', exact: true }).last()).toBeVisible();
   mkdirSync('var/design/personal-web', { recursive: true });
   await a.page.screenshot({ path: 'var/design/personal-web/desktop.png' });
   for (const width of [320, 390, 768]) {
@@ -218,17 +222,19 @@ try {
     .getByRole('button', { name: '我的连接', exact: true })
     .filter({ visible: true })
     .click();
-  await expect(a.page.getByRole('dialog')).toBeVisible();
+  await expect(a.page.locator('.workspace-page')).toBeVisible();
+  await closePersonalPanel(a.page);
+  await a.page.getByRole('button', { name: '打开导航', exact: true }).click();
   await a.page.keyboard.press('Escape');
   await expect(a.page.getByRole('dialog')).toHaveCount(0);
-  check(true, 'mobile navigation and Escape dialog close');
+  check(true, 'mobile navigation and Escape drawer close');
   await a.page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await expect(a.page.getByLabel('会话校验')).toBeVisible();
   await expect(a.page.locator('.assistant-bubble')).toHaveCount(0);
   await a.page.getByRole('button', { name: '重新验证会话', exact: true }).click();
   await expect(a.page.getByRole('button', { name: '重新读取回复', exact: true })).toBeVisible();
   check(true, 'offline hides derived content; revalidation requires explicit replay');
-  await a.page.getByRole('button', { name: '我的账号', exact: true }).click();
+  await openPersonalPanel(a.page, '我的账号');
   await a.page.getByRole('button', { name: '退出登录', exact: true }).click();
   await expect(a.page.getByRole('heading', { name: '回到你的 AVEN' })).toBeVisible();
   check(

@@ -53,7 +53,7 @@ try {
     await page.getByLabel('邮箱', { exact: true }).fill(email);
     await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '从一个想法开始' })).toBeVisible();
     await context.storageState({ path: statePath });
     chmodSync(statePath, 0o600);
   }

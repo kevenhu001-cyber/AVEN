@@ -19,7 +19,10 @@ export function Modal({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="personal-app" aria-describedby={undefined}>
+      <DialogContent
+        className="personal-app workspace-theme workspace-modal"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

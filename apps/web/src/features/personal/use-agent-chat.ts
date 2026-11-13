@@ -5,6 +5,7 @@ import { api, authExpired, errorText, writeUncertain, webCall } from './api';
 export type ChatTurn = {
   key: string;
   input: string;
+  createdAt: number;
   answer: string;
   runId?: string;
   cursor: number;
@@ -110,7 +111,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
         ...(abort.signal.aborted ? {} : { answer: '', cursor: 0, error: errorText(error) }),
       });
     } finally {
-      pending.current = false;
+      if (controller.current === abort) pending.current = false;
     }
   }
   async function create(turn: ChatTurn) {
@@ -137,7 +138,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
           error: errorText(error),
         });
     } finally {
-      pending.current = false;
+      if (controller.current === abort) pending.current = false;
     }
   }
   function send() {
@@ -156,6 +157,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
       key: crypto.randomUUID(),
       cancelKey: crypto.randomUUID(),
       input: text,
+      createdAt: Date.now(),
       answer: '',
       cursor: 0,
       status: 'sending',
@@ -202,6 +204,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
     controller.current?.abort();
     setTurns([]);
     conversationId.current = undefined;
+    setDraft('');
   }
   return { turns, draft, setDraft, send, resume, retryCreate: create, cancel, busy, reset };
 }

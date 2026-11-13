@@ -1,5 +1,6 @@
 'use client';
 
+import { Icon } from './icon';
 import { ActionPanel } from './action-panel';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ContextUse, MemoryItem } from '@aven/contracts';
@@ -104,53 +105,59 @@ export function MemoriesPanel({ onExpired }: PrivateProps) {
         <p className="muted m-0">
           你确认的信息，才可以按所选用途使用。允许准备共享，不等于已经分享。
         </p>
-        <form className="stack-form" onSubmit={(event) => void create(event)}>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="memory-title">一条想让 AVEN 了解的信息</Label>
-            <Input
-              id="memory-title"
-              required
-              maxLength={160}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="例如：我对机器人项目感兴趣"
-              disabled={busy}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="memory-content">具体内容</Label>
-            <Textarea
-              id="memory-content"
-              required
-              maxLength={20000}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              disabled={busy}
-              rows={3}
-            />
-          </div>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={selfAi}
-              onChange={(e) => setSelfAi(e.target.checked)}
-              disabled={busy}
-            />
-            允许用于本人 AI
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={sharing}
-              onChange={(e) => setSharing(e.target.checked)}
-              disabled={busy}
-            />
-            允许进入共享预览（发送前仍需确认）
-          </label>
-          <Button type="submit" disabled={busy}>
-            {busy ? '正在保存…' : '确认并保存'}
-          </Button>
-        </form>
+        <details className="memory-create">
+          <summary>
+            <Icon name="plus" />
+            <span>添加一条记忆</span>
+          </summary>
+          <form className="stack-form" onSubmit={(event) => void create(event)}>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="memory-title">一条想让 AVEN 了解的信息</Label>
+              <Input
+                id="memory-title"
+                required
+                maxLength={160}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="例如：我对机器人项目感兴趣"
+                disabled={busy}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="memory-content">具体内容</Label>
+              <Textarea
+                id="memory-content"
+                required
+                maxLength={20000}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                disabled={busy}
+                rows={3}
+              />
+            </div>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={selfAi}
+                onChange={(e) => setSelfAi(e.target.checked)}
+                disabled={busy}
+              />
+              允许用于本人 AI
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={sharing}
+                onChange={(e) => setSharing(e.target.checked)}
+                disabled={busy}
+              />
+              允许进入共享预览（发送前仍需确认）
+            </label>
+            <Button type="submit" disabled={busy}>
+              {busy ? '正在保存…' : '确认并保存'}
+            </Button>
+          </form>
+        </details>
         <div className="section-heading">
           <h3>已确认的信息</h3>
           <Button variant="ghost" onClick={reload} disabled={loading || busy}>
@@ -161,7 +168,11 @@ export function MemoriesPanel({ onExpired }: PrivateProps) {
         {loading ? (
           <p role="status">正在读取…</p>
         ) : !items.length ? (
-          <p className="muted">还没有确认的信息。你可以先保存一小段介绍。</p>
+          <div className="workspace-empty">
+            <Icon name="layers" />
+            <h3>让 AVEN 更了解你</h3>
+            <p>从一条兴趣或偏好开始。只有你确认的信息才会被保存。</p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {items.map((item) => (

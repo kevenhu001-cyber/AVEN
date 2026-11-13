@@ -4,6 +4,7 @@ import { AuthForm } from './auth-form';
 import { Workspace } from './workspace';
 import { usePersonalSession } from './use-personal-session';
 import './personal.css';
+import './workspace.css';
 
 export function PersonalApp() {
   const session = usePersonalSession();

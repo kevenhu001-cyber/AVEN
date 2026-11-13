@@ -43,13 +43,18 @@ try {
   await expect(page.getByRole('button', { name: '核对发送结果', exact: true })).toBeVisible();
   check(keys.length === 1, 'unknown result does not automatically resubmit');
   await page.getByRole('button', { name: '核对发送结果', exact: true }).click();
-  await expect(page.getByText('回复完成', { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: '复制回复', exact: true }).last()).toBeVisible({
+    timeout: 15000,
+  });
   check(
     keys.length === 2 && keys[0] === keys[1] && runs[0] === runs[1],
     'manual retry keeps same key and real run',
   );
   await page.unroute('**/api/v1/agent/turns');
-  await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await page
+    .getByRole('button', { name: /^(开始)?新对话$/ })
+    .first()
+    .click();
   let streamRequests = 0;
   await page.route('**/api/v1/agent/runs/*/events', async (route) => {
     streamRequests++;
@@ -74,11 +79,14 @@ try {
     'truncated stream clears derived output and does not auto-reconnect',
   );
   await page.getByRole('button', { name: '重新读取回复', exact: true }).click();
-  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '复制回复', exact: true }).last()).toBeVisible();
   check(streamRequests === 2, 'explicit replay reuses the real run');
   // Failure injection only: the backend response is completed, but this transport holds a running frame.
   await page.unroute('**/api/v1/agent/runs/*/events');
-  await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await page
+    .getByRole('button', { name: /^(开始)?新对话$/ })
+    .first()
+    .click();
   let release;
   const held = new Promise((resolve) => {
     release = resolve;
@@ -99,7 +107,9 @@ try {
   const cancelResult = await (await cancellation).json();
   await held;
   await expect(
-    page.getByText(cancelResult.status === 'cancelled' ? '已停止' : '回复完成', { exact: true }),
+    cancelResult.status === 'cancelled'
+      ? page.getByText('已停止', { exact: true })
+      : page.getByRole('button', { name: '复制回复', exact: true }).last(),
   ).toBeVisible();
   check(
     ['cancelled', 'completed'].includes(cancelResult.status),
