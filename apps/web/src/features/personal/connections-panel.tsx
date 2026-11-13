@@ -39,7 +39,20 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
   const [creating, setCreating] = useState(false);
   const [peer, setPeer] = useState<string | null>(null);
   const [selected, setSelected] = useState<ConnectionInvitation | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const loader = useRef<AbortController | null>(null);
+  const connectionCode = `aven:${userId}`;
+
+  async function copyConnectionCode() {
+    setCopyStatus('idle');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(connectionCode);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('failed');
+    }
+  }
 
   const load = useCallback(() => {
     loader.current?.abort();
@@ -117,12 +130,29 @@ export function ConnectionsPanel({ userId, onExpired }: PrivateProps & { userId:
       <p className="muted m-0">通过对方主动分享的连接码发起邀请。只有双方同意，才会建立连接。</p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="my-connection-code">我的连接码</Label>
-        <Input
-          id="my-connection-code"
-          readOnly
-          value={`aven:${userId}`}
-          onFocus={(event) => event.target.select()}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="my-connection-code"
+            className="sm:flex-1"
+            readOnly
+            value={connectionCode}
+            onFocus={(event) => event.target.select()}
+          />
+          <Button
+            variant="secondary"
+            className="sm:shrink-0"
+            onClick={() => void copyConnectionCode()}
+          >
+            {copyStatus === 'copied' ? '已复制' : '复制连接码'}
+          </Button>
+        </div>
+        {copyStatus !== 'idle' && (
+          <p className="small muted m-0" role="status" aria-live="polite">
+            {copyStatus === 'copied'
+              ? '连接码已复制，可以分享给对方。'
+              : '无法访问剪贴板；点击连接码输入框可选中后手动复制。'}
+          </p>
+        )}
       </div>
       <p className="small muted m-0">
         可以主动分享给想认识的人。连接码不授予读取资料或登录的权限。
