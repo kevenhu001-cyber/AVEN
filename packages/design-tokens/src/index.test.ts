@@ -8,6 +8,8 @@ import {
   letterSpacing,
   breakpoint,
   fontFamily,
+  easing,
+  haloExtras,
 } from './index';
 
 function luminance(hex: string) {
@@ -41,46 +43,73 @@ const surfaces = [
 describe('semantic token contrast, not rendered accessibility certification', () => {
   it('keeps themes structurally aligned', () => {
     expect(Object.keys(colors.light)).toEqual(Object.keys(colors.dark));
+    expect(Object.keys(colors.light)).toEqual(Object.keys(colors.halo));
   });
-  it.each(['light', 'dark'] as const)('%s readable text and essential boundaries', (theme) => {
-    const tokens = colors[theme];
-    for (const background of surfaces) {
-      expect(contrast(tokens.foreground, tokens[background])).toBeGreaterThanOrEqual(4.5);
-      for (const edge of ['focus-ring', 'control-border'] as const)
-        expect(contrast(tokens[edge], tokens[background])).toBeGreaterThanOrEqual(3);
-    }
-    for (const text of [
-      'foreground-secondary',
-      'foreground-tertiary',
-      'accent',
-      'destructive',
-      'success',
-      'warning',
-      'info',
-    ] as const) {
-      for (const background of [
-        'background',
-        'background-secondary',
-        'surface',
-        'surface-secondary',
+  it.each(['light', 'dark', 'halo'] as const)(
+    '%s readable text and essential boundaries',
+    (theme) => {
+      const tokens = colors[theme];
+      for (const background of surfaces) {
+        expect(contrast(tokens.foreground, tokens[background])).toBeGreaterThanOrEqual(4.5);
+        for (const edge of ['focus-ring', 'control-border'] as const)
+          expect(contrast(tokens[edge], tokens[background])).toBeGreaterThanOrEqual(3);
+      }
+      for (const text of [
+        'foreground-secondary',
+        'foreground-tertiary',
+        'accent',
+        'destructive',
+        'success',
+        'warning',
+        'info',
+      ] as const) {
+        for (const background of [
+          'background',
+          'background-secondary',
+          'surface',
+          'surface-secondary',
+        ] as const) {
+          expect(contrast(tokens[text], tokens[background])).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      for (const [text, background] of [
+        ['accent', 'accent-surface'],
+        ['destructive', 'destructive-surface'],
+        ['success', 'success-surface'],
+        ['warning', 'warning-surface'],
+        ['info', 'info-surface'],
       ] as const) {
         expect(contrast(tokens[text], tokens[background])).toBeGreaterThanOrEqual(4.5);
       }
-    }
+      expect(
+        contrast(tokens['disabled-foreground'], tokens['disabled-background']),
+      ).toBeGreaterThanOrEqual(3);
+      for (const button of ['primary', 'accent', 'destructive'] as const)
+        expect(contrast(tokens[`${button}-foreground`], tokens[button])).toBeGreaterThanOrEqual(
+          4.5,
+        );
+    },
+  );
+});
+
+describe('halo extras', () => {
+  it('keeps bubble, authorize, badge and highlight text readable', () => {
     for (const [text, background] of [
-      ['accent', 'accent-surface'],
-      ['destructive', 'destructive-surface'],
-      ['success', 'success-surface'],
-      ['warning', 'warning-surface'],
-      ['info', 'info-surface'],
-    ] as const) {
-      expect(contrast(tokens[text], tokens[background])).toBeGreaterThanOrEqual(4.5);
-    }
+      ['user-bubble-foreground', 'user-bubble'],
+      ['authorize-foreground', 'authorize'],
+      ['highlight-foreground', 'highlight'],
+    ] as const)
+      expect(contrast(haloExtras[text], haloExtras[background])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(haloExtras['switch-thumb-on'], haloExtras['switch-on'])).toBeGreaterThanOrEqual(
+      3,
+    );
     expect(
-      contrast(tokens['disabled-foreground'], tokens['disabled-background']),
+      contrast(haloExtras['switch-thumb-off'], haloExtras['switch-off']),
     ).toBeGreaterThanOrEqual(3);
-    for (const button of ['primary', 'accent', 'destructive'] as const)
-      expect(contrast(tokens[`${button}-foreground`], tokens[button])).toBeGreaterThanOrEqual(4.5);
+  });
+  it('defines easing curves for halo motion', () => {
+    expect(easing.spring).toMatch(/^cubic-bezier\(/);
+    expect(easing.standard).toBe('cubic-bezier(0.2, 0, 0, 1)');
   });
 });
 
@@ -106,10 +135,15 @@ describe('generated CSS', () => {
     expect(css).toContain('--aven-font-family-sans:');
     expect(css).toContain('--aven-breakpoint-md: 768px;');
     expect(css).toContain(':root[data-theme="dark"]');
+    expect(css).toContain('.aven-theme-halo,');
+    expect(css).toContain(':root:has(.aven-theme-halo) {');
+    expect(css).toContain('--aven-halo-user-bubble: #5C5C5C;');
+    expect(css).toContain('--aven-easing-spring:');
   });
   it('disables motion durations when reduced motion is requested', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
     expect(css).toContain('--aven-duration-fast: 0ms;');
+    expect(css).toContain('--aven-duration-screen: 0ms;');
     expect(css).toContain('scroll-behavior: auto;');
   });
 });
