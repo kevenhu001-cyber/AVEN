@@ -1,27 +1,100 @@
-import { ArrowUp, Ellipsis, Menu, Plug, Square, X } from 'lucide-react';
+import {
+  ArrowUp,
+  AudioLines,
+  BadgeCheck,
+  Bell,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  CircleUserRound,
+  Clock,
+  CloudSun,
+  Copy,
+  Ellipsis,
+  FolderSearch,
+  Grid2x2Plus,
+  Hash,
+  Inbox,
+  Link2,
+  LoaderCircle,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  MessageCirclePlus,
+  Mic,
+  Monitor,
+  Plug,
+  Plus,
+  Puzzle,
+  Search,
+  Share,
+  ShoppingBag,
+  Square,
+  Store,
+  Upload,
+  Users,
+  Wrench,
+  X,
+} from 'lucide-react';
+
+const icons = {
+  menu: Menu,
+  ellipsis: Ellipsis,
+  'arrow-up': ArrowUp,
+  square: Square,
+  x: X,
+  plug: Plug,
+  plus: Plus,
+  search: Search,
+  apps: Grid2x2Plus,
+  share: Share,
+  back: ChevronLeft,
+  chevron: ChevronRight,
+  down: ChevronDown,
+  up: ChevronUp,
+  library: FolderSearch,
+  computer: Monitor,
+  slack: Hash,
+  clock: Clock,
+  profile: CircleUserRound,
+  upload: Upload,
+  mic: Mic,
+  wave: AudioLines,
+  check: Check,
+  verified: BadgeCheck,
+  mail: Mail,
+  map: MapPin,
+  shop: ShoppingBag,
+  calendar: CalendarDays,
+  users: Users,
+  weather: CloudSun,
+  store: Store,
+  puzzle: Puzzle,
+  bell: Bell,
+  link: Link2,
+  logout: LogOut,
+  wrench: Wrench,
+  spinner: LoaderCircle,
+  inbox: Inbox,
+  copy: Copy,
+  'new-chat': MessageCirclePlus,
+} as const;
+
+export type IconName = keyof typeof icons;
 
 export function Icon({
   name,
+  size = 20,
+  className,
 }: {
-  name: 'menu' | 'ellipsis' | 'arrow-up' | 'square' | 'x' | 'plug';
+  name: IconName;
+  size?: number;
+  className?: string;
 }) {
-  const props = {
-    size: 20,
-    strokeWidth: 2,
-    'aria-hidden': true as const,
-  };
-  switch (name) {
-    case 'menu':
-      return <Menu {...props} />;
-    case 'ellipsis':
-      return <Ellipsis {...props} />;
-    case 'arrow-up':
-      return <ArrowUp {...props} />;
-    case 'square':
-      return <Square {...props} />;
-    case 'x':
-      return <X {...props} />;
-    case 'plug':
-      return <Plug {...props} />;
-  }
+  const Component = icons[name];
+  return <Component size={size} strokeWidth={2} aria-hidden={true} className={className} />;
 }

@@ -1,6 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { openChat, openPanel } from './lib/personal-web-nav.mjs';
 const base = process.env.PERSONAL_WEB_ORIGIN ?? 'http://127.0.0.1:3000';
 if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname))
   throw new Error('Local synthetic verification only.');
@@ -47,13 +48,14 @@ try {
     await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
   }
+  await openChat(page);
   await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
   check(true, 'synthetic account reaches the personal workspace');
 
   const csrf = (await context.cookies()).find((c) => c.name === 'aven_csrf')?.value;
   const headers = { Origin: base, 'X-CSRF-Token': csrf ?? '' };
 
-  await page.getByRole('button', { name: '记忆与上下文', exact: true }).click();
+  await openPanel(page, '记忆与上下文');
   await page.getByRole('tab', { name: '候选复核' }).click();
   await page.getByLabel('描述几件想被记住的事').fill('兴趣：机器人与产品设计\n技能：连接器体验');
   await page.getByRole('button', { name: '提取候选信息', exact: true }).click();
@@ -99,7 +101,7 @@ try {
   );
 
   await page.getByRole('button', { name: '关闭面板' }).click();
-  await page.getByRole('button', { name: '通知', exact: true }).click();
+  await openPanel(page, '通知');
   const inviteBox = page.getByRole('checkbox', { name: '收到连接邀请时通知我' });
   await expect(inviteBox).toBeVisible();
   const before = await (
@@ -130,18 +132,14 @@ try {
   check(errors.length === 0, 'no uncaught browser errors');
 
   mkdirSync('var/design/personal-web-review', { recursive: true });
-  await page.getByRole('button', { name: '记忆与上下文', exact: true }).click();
+  await openPanel(page, '记忆与上下文');
   await page.getByRole('tab', { name: '候选复核' }).click();
   await page.screenshot({ path: 'var/design/personal-web-review/desktop-review.png' });
   await page.getByRole('tab', { name: '已确认信息' }).click();
   await page.screenshot({ path: 'var/design/personal-web-review/desktop-memories.png' });
   await page.getByRole('button', { name: '关闭面板' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: '打开导航', exact: true }).click();
-  await page
-    .getByRole('button', { name: '记忆与上下文', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openPanel(page, '记忆与上下文');
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.screenshot({ path: 'var/design/personal-web-review/mobile-review.png' });
   console.log(`${checks} checks passed. Synthetic account only; no secrets printed.`);

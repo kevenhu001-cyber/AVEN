@@ -69,7 +69,59 @@ const dark = {
   skeleton: '#1A1A1A',
 } as const satisfies Record<keyof typeof light, string>;
 
-export const colors = { light, dark } as const;
+// Halo: user-requested Grok-style near-black theme for the personal Web app (ADR-018).
+const halo = {
+  background: '#141414',
+  'background-secondary': '#1E1E1E',
+  surface: '#1F1F1F',
+  'surface-secondary': '#2C2C2E',
+  'surface-hover': '#343436',
+  'surface-active': '#3A3A3C',
+  'surface-selected': '#2A3550',
+  foreground: '#FFFFFF',
+  'foreground-secondary': '#A1A1A6',
+  'foreground-tertiary': '#9A9AA0',
+  border: '#2E2E30',
+  'border-strong': '#3A3A3C',
+  'control-border': '#8E8E93',
+  primary: '#FFFFFF',
+  'primary-foreground': '#000000',
+  accent: '#8AB4F8',
+  'accent-foreground': '#0B1A33',
+  'accent-surface': '#16223A',
+  destructive: '#F28B82',
+  'destructive-foreground': '#1A0E0D',
+  'destructive-surface': '#2A1716',
+  success: '#81C995',
+  'success-surface': '#132219',
+  warning: '#F2B866',
+  'warning-surface': '#2A2012',
+  info: '#9CC3E6',
+  'info-surface': '#13202B',
+  'disabled-background': '#262628',
+  'disabled-foreground': '#8A8A8F',
+  'disabled-border': '#3A3A3C',
+  'focus-ring': '#8AB4F8',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  skeleton: '#2C2C2E',
+} as const satisfies Record<keyof typeof light, string>;
+/** Halo-only surfaces that have no light/dark counterpart. */
+export const haloExtras = {
+  'user-bubble': '#5C5C5C',
+  'user-bubble-foreground': '#FFFFFF',
+  authorize: '#3366CC',
+  'authorize-foreground': '#FFFFFF',
+  badge: '#F29A38',
+  'badge-foreground': '#FFFFFF',
+  'switch-on': '#9A9A9C',
+  'switch-off': '#3A3A3C',
+  'switch-thumb-on': '#000000',
+  'switch-thumb-off': '#FFFFFF',
+  highlight: '#F2B866',
+  'highlight-foreground': '#141414',
+} as const;
+
+export const colors = { light, dark, halo } as const;
 export const space = {
   4: 4,
   8: 8,
@@ -90,6 +142,9 @@ export const radius = {
   bubble: 26,
   card: 28,
   composer: 32,
+  menu: 24,
+  sheet: 28,
+  tile: 14,
   full: 999,
 } as const;
 export const fontSize = {
@@ -136,5 +191,12 @@ export const duration = {
   sidebar: 200,
   page: 200,
   panel: 240,
+  screen: 320,
+  sheet: 300,
+} as const;
+export const easing = {
+  standard: 'cubic-bezier(0.2, 0, 0, 1)',
+  emphasized: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
 } as const;
 export type ColorScheme = keyof typeof colors;

@@ -1,6 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import { openChat } from './lib/personal-web-nav.mjs';
 const base = process.env.PERSONAL_WEB_ORIGIN ?? 'http://127.0.0.1:3000';
 if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname))
   throw new Error('Local synthetic verification only.');
@@ -52,21 +53,29 @@ try {
     await page.getByLabel('邮箱', { exact: true }).fill(email);
     await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
+    await openChat(page);
     await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
     await context.storageState({ path: statePath });
     chmodSync(statePath, 0o600);
   }
   check(true, 'synthetic account reaches the personal workspace');
 
+  await openChat(page);
+
   await page.getByRole('button', { name: '连接器', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByText('高德地图', { exact: true })).toBeVisible();
-  await expect(page.getByText('AVEN 日程协调', { exact: true })).toBeVisible();
+  // Halo sheet lists a plugin in 精选插件 and in its category, so take the first match.
+  await expect(page.getByText('高德地图', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('AVEN 日程协调', { exact: true }).first()).toBeVisible();
   check(true, 'connector catalog lists built-in connectors by category');
   await expect(page.getByText('缺少凭据', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('仅 Mock', { exact: true }).first()).toBeVisible();
   check(true, 'credential status distinguishes mock-only and missing-credential connectors');
 
+  await page
+    .getByRole('button', { name: /^高德地图/ })
+    .first()
+    .click();
   await page.getByRole('button', { name: '地点与地址检索', exact: true }).click();
   await page.getByLabel('关键词', { exact: true }).fill('西安交通大学');
   await page.getByLabel('城市', { exact: true }).fill('西安');
@@ -83,7 +92,13 @@ try {
   check(true, 'external navigation link requires an explicit confirmation step');
   await mapCard.getByRole('button', { name: '取消', exact: true }).click();
 
+  await openChat(page);
+
   await page.getByRole('button', { name: '连接器', exact: true }).click();
+  await page
+    .getByRole('button', { name: /^AVEN 日程协调/ })
+    .first()
+    .click();
   await page.getByRole('button', { name: '会话内日程协调卡片', exact: true }).click();
   await page.getByLabel('你的需求', { exact: true }).fill('找下周日下午三点的空闲时间');
   await page.getByRole('button', { name: '调用（Mock 模式）', exact: true }).click();

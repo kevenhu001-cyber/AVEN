@@ -8,6 +8,8 @@ export type ChatTurn = {
   answer: string;
   runId?: string;
   cursor: number;
+  /** Local creation time (ms) for the timeline; not sent to the server. */
+  createdAt: number;
   status:
     | 'sending'
     | 'unknown'
@@ -158,6 +160,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
       input: text,
       answer: '',
       cursor: 0,
+      createdAt: Date.now(),
       status: 'sending',
       request: {
         input: text,

@@ -1,15 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ConversationWidget, PluginActionManifest, PluginManifest } from '@aven/contracts';
+import { useState } from 'react';
+import type { PluginActionManifest, PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { api, authExpired, errorText, webCall } from '../api';
+import { Icon } from '../icon';
+import { connectButton, credentialLabel, groupCatalog } from '../halo/catalog';
+import { PluginLogo } from '../halo/plugin-logo';
+import type { CatalogState, ConnectorResult } from '../halo/types';
 import {
   buildPluginInput,
   initialPluginValues,
@@ -17,24 +20,7 @@ import {
   type PluginInputSchema,
 } from './plugin-input';
 
-export type ConnectorResult = {
-  key: string;
-  pluginId: string;
-  pluginName: string;
-  actionTitle: string;
-  summary: string;
-  providerMode: string;
-  widgets: ConversationWidget[];
-};
-
-const categoryLabels: Record<string, string> = {
-  maps: '地图',
-  commerce: '购物',
-  lifestyle: '生活',
-  mail: '邮箱',
-  social: '社交',
-  calendar: '日程',
-};
+export type { ConnectorResult } from '../halo/types';
 
 const fieldLabels: Record<string, string> = {
   query: '关键词',
@@ -69,138 +55,134 @@ const fieldLabels: Record<string, string> = {
   limitPerPlatform: '每个平台数量',
 };
 
-function credentialBadge(plugin: PluginManifest) {
-  if (plugin.credentialStatus === 'mock_only') return <Badge variant="outline">仅 Mock</Badge>;
-  if (plugin.credentialStatus === 'configured') return <Badge variant="success">已配置</Badge>;
-  return <Badge variant="warning">缺少凭据</Badge>;
-}
-
-export function ConnectorDialog({
-  onClose,
+/**
+ * 连接应用 sheet body (Halo). Catalog from GET /api/v1/plugins, grouped 精选插件 + categories,
+ * searchable. Row buttons start a Mock authorization card in the chat; tapping a row expands
+ * its actions, which invoke the server Mock adapter exactly as before (allowLive: false).
+ */
+export function ConnectAppsList({
+  catalog,
+  connected,
+  query,
+  onConnect,
   onResult,
   onExpired,
 }: {
-  onClose: () => void;
+  catalog: CatalogState;
+  connected: ReadonlySet<string>;
+  query: string;
+  onConnect: (plugin: PluginManifest) => void;
   onResult: (result: ConnectorResult) => void;
   onExpired: () => void;
 }) {
-  const [plugins, setPlugins] = useState<PluginManifest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selected, setSelected] = useState<PluginManifest | null>(null);
-  const [action, setAction] = useState<PluginActionManifest | null>(null);
-  const loader = useRef<AbortController | null>(null);
-
-  const load = useCallback(() => {
-    loader.current?.abort();
-    const controller = new AbortController();
-    loader.current = controller;
-    return api.plugins
-      .listCatalog(webCall(controller.signal))
-      .then((result) => {
-        if (!controller.signal.aborted) setPlugins(result.plugins);
-      })
-      .catch((cause) => {
-        if (controller.signal.aborted) return;
-        if (authExpired(cause)) onExpired();
-        else setError(errorText(cause));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-  }, [onExpired]);
-
-  useEffect(() => {
-    void load();
-    return () => loader.current?.abort();
-  }, [load]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, PluginManifest[]>();
-    for (const plugin of plugins) {
-      const list = map.get(plugin.category) ?? [];
-      list.push(plugin);
-      map.set(plugin.category, list);
-    }
-    return [...map.entries()];
-  }, [plugins]);
+  const [open, setOpen] = useState<string | null>(null);
+  const [action, setAction] = useState<{
+    plugin: PluginManifest;
+    action: PluginActionManifest;
+  } | null>(null);
+  const sections = groupCatalog(catalog.plugins, query);
 
   return (
-    <section className="flex flex-col gap-3">
-      <p className="muted m-0">
+    <section className="halo-apps" aria-busy={catalog.loading}>
+      <p className="halo-apps-note">
         连接器按需调用。当前只运行服务端 Mock
         适配器，不会连接真实邮箱、地图或电商账号，也不会修改任何外部数据。
       </p>
-      {error && <Alert variant="warning">{error}</Alert>}
-      {loading ? (
-        <p role="status">正在读取连接器目录…</p>
-      ) : (
-        <>
-          {grouped.map(([category, items]) => (
-            <div key={category} className="flex flex-col gap-2">
-              <h3 className="m-0">{categoryLabels[category] ?? category}</h3>
-              {items.map((plugin) => (
-                <div key={plugin.id} className="connector-row">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <strong>{plugin.name}</strong>
-                    {credentialBadge(plugin)}
-                    {plugin.readOnly ? (
-                      <Badge variant="outline">只读</Badge>
-                    ) : (
-                      <Badge variant="warning">可写入</Badge>
-                    )}
-                  </div>
-                  <p className="small muted m-0">{plugin.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {plugin.actions.map((item) => (
-                      <Button
-                        key={item.name}
-                        variant="secondary"
-                        onClick={() => {
-                          setSelected(plugin);
-                          setAction(item);
-                        }}
-                      >
-                        {item.title}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </>
+      {catalog.error && (
+        <Alert variant="warning">
+          {catalog.error}{' '}
+          <button type="button" className="halo-text-button" onClick={() => void catalog.load()}>
+            刷新目录
+          </button>
+        </Alert>
       )}
-      <Separator />
-      <div className="flex flex-wrap gap-2">
-        <Button variant="ghost" onClick={load} disabled={loading}>
-          刷新目录
-        </Button>
-        <Button variant="ghost" onClick={onClose}>
-          关闭
-        </Button>
-      </div>
-      {selected && action && (
-        <ActionForm
-          plugin={selected}
-          action={action}
-          onClose={() => {
-            setSelected(null);
-            setAction(null);
-          }}
-          onResult={(result) => {
-            onResult(result);
-            setSelected(null);
-            setAction(null);
-          }}
-          onExpired={onExpired}
-        />
+      {catalog.loading && !catalog.plugins.length && (
+        <div className="halo-apps-loading" role="status">
+          <span className="halo-skeleton" />
+          <span className="halo-skeleton" />
+          <span className="halo-skeleton" />
+          <span className="sr-only">正在读取连接器目录…</span>
+        </div>
       )}
+      {catalog.loaded && !sections.length && (
+        <p className="halo-empty">没有找到匹配的应用或技能。</p>
+      )}
+      {sections.map((section) => (
+        <div key={section.id} className="halo-apps-section">
+          <h3 className="halo-apps-heading">
+            {section.title}
+            {section.browsable && <Icon name="chevron" size={20} />}
+          </h3>
+          <ul className="halo-apps-list">
+            {section.plugins.map((plugin) => {
+              const button = connectButton(plugin, connected);
+              const expanded = open === `${section.id}:${plugin.id}`;
+              return (
+                <li key={plugin.id} className="halo-app-item" data-expanded={expanded}>
+                  <div className="halo-app-row">
+                    <button
+                      type="button"
+                      className="halo-app-main halo-press-soft"
+                      aria-expanded={expanded}
+                      onClick={() => setOpen(expanded ? null : `${section.id}:${plugin.id}`)}
+                    >
+                      <PluginLogo id={plugin.id} category={plugin.category} />
+                      <span className="halo-app-text">
+                        <span className="halo-app-name">{plugin.name}</span>
+                        <span className="halo-app-desc">{plugin.description}</span>
+                        <span className="halo-app-meta">
+                          <span>{credentialLabel(plugin.credentialStatus)}</span>
+                          <span>{plugin.readOnly ? '只读' : '可写入'}</span>
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`halo-pill halo-pill-${button.tone} halo-press`}
+                      disabled={button.disabled}
+                      aria-label={`${button.label} ${plugin.name}`}
+                      onClick={() => onConnect(plugin)}
+                    >
+                      {button.label}
+                    </button>
+                  </div>
+                  {expanded && (
+                    <div className="halo-app-actions">
+                      {plugin.actions.map((item) => (
+                        <Button
+                          key={item.name}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setAction({ plugin, action: item })}
+                        >
+                          {item.title}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {expanded && action && action.plugin.id === plugin.id && (
+                    <ActionForm
+                      plugin={action.plugin}
+                      action={action.action}
+                      onClose={() => setAction(null)}
+                      onResult={(result) => {
+                        setAction(null);
+                        onResult(result);
+                      }}
+                      onExpired={onExpired}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </section>
   );
 }
 
-function ActionForm({
+export function ActionForm({
   plugin,
   action,
   onClose,
@@ -250,8 +232,7 @@ function ActionForm({
   }
 
   return (
-    <div className="stack-form">
-      <Separator />
+    <div className="stack-form halo-action-form">
       <h3 className="m-0">
         {plugin.name} · {action.title}
       </h3>
