@@ -88,6 +88,12 @@ describe('API skeleton over real HTTP', () => {
   });
   it('requires authentication for user provider configuration and plugin routes', async () => {
     const cases = [
+      { method: 'GET', path: '/api/v1/admin/configurations' },
+      { method: 'PUT', path: '/api/v1/admin/configurations/model' },
+      { method: 'GET', path: '/api/v1/open-connector' },
+      { method: 'POST', path: '/api/v1/open-connector/gmail/connect' },
+      { method: 'POST', path: '/api/v1/open-connector/gmail/refresh' },
+      { method: 'DELETE', path: '/api/v1/open-connector/gmail' },
       { method: 'GET', path: '/api/v1/agent/provider' },
       { method: 'PUT', path: '/api/v1/agent/provider' },
       { method: 'DELETE', path: '/api/v1/agent/provider?version=1' },

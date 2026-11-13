@@ -2810,3 +2810,25 @@ export const CalendarRevokeResponseSchema = z
   })
   .strict();
 export type CalendarRevokeResponse = z.infer<typeof CalendarRevokeResponseSchema>;
+
+export const AdminConfigKindSchema = z.enum(['model', 'open_connector']);
+export const AdminConfigInputSchema = z
+  .object({
+    baseUrl: z
+      .url({ protocol: /^https$/ })
+      .max(2048)
+      .refine((value) => /^https:\/\/[^/@?#]+(?:\/[^?#]*)?$/.test(value)),
+    model: z.string().trim().max(120),
+    apiKey: z.string().min(1).max(4096),
+    expectedVersion: z.number().int().min(0).max(2147483647),
+  })
+  .strict();
+export const AdminConfigMetadataSchema = AdminConfigInputSchema.omit({
+  apiKey: true,
+  expectedVersion: true,
+}).extend({
+  kind: AdminConfigKindSchema,
+  version: z.number().int().positive(),
+  updatedAt: z.iso.datetime(),
+});
+export type AdminConfigInput = z.infer<typeof AdminConfigInputSchema>;

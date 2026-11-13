@@ -66,7 +66,9 @@
     "notifications:maintain": "pnpm build:packages && tsx scripts/notifications-maintenance.ts",
     "messages:verify": "pnpm build && tsx scripts/peer-messages-verify.ts",
     "moderation:verify": "pnpm build && tsx scripts/moderation-verify.ts",
-    "supplements:verify": "pnpm build && tsx scripts/referral-supplements-verify.ts"
+    "supplements:verify": "pnpm build && tsx scripts/referral-supplements-verify.ts",
+    "admin:role": "pnpm build:packages && tsx scripts/admin-role.ts",
+    "admin:verify": "pnpm build:packages && tsx scripts/admin-config-verify.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",

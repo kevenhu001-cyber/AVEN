@@ -1,3 +1,5 @@
+import { OpenConnectorModule } from './open-connector/connector.module.js';
+import { AdminModule } from './admin/admin.module.js';
 import { Module } from '@nestjs/common';
 import { ActionModule } from './action/action.module.js';
 import { AgentModule } from './agent/agent.module.js';
@@ -20,6 +22,8 @@ import { RelationshipModule } from './relationship/relationship.module.js';
 @Module({
   imports: [
     AuthModule,
+    AdminModule,
+    OpenConnectorModule,
     ConnectionModule,
     NotificationModule,
     ModerationModule,

@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -1084,4 +1085,74 @@ export const reports = pgTable(
     index('idx_reports_reporter').on(t.reporterUserId),
     index('idx_reports_status_created').on(t.status, t.createdAt),
   ],
+);
+
+export const platformConfigurations = pgTable(
+  'platform_configurations',
+  {
+    kind: text('kind').primaryKey(),
+    baseUrl: text('base_url').notNull(),
+    model: text('model').notNull(),
+    encryptedKey: text('encrypted_key').notNull(),
+    version: integer('version').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid('updated_by')
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [
+    index('idx_platform_configurations_updated_by').on(t.updatedBy),
+    check('platform_configurations_kind_check', sql`${t.kind} IN ('model', 'open_connector')`),
+    check('platform_configurations_base_url_check', sql`length(${t.baseUrl}) BETWEEN 1 AND 2048`),
+    check('platform_configurations_model_check', sql`length(${t.model}) <= 120`),
+    check(
+      'platform_configurations_encrypted_key_check',
+      sql`length(${t.encryptedKey}) BETWEEN 1 AND 8192`,
+    ),
+    check('platform_configurations_version_check', sql`${t.version} > 0`),
+  ],
+);
+
+export const openConnectorConnections = pgTable(
+  'open_connector_connections',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    service: text('service').notNull(),
+    requestId: text('request_id').notNull(),
+    status: text('status').notNull(),
+    connectedAccountId: text('connected_account_id'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.service] }),
+    check(
+      'open_connector_connections_service_check',
+      sql`${t.service} IN ('gmail','googledrive','github','googlecalendar','outlook')`,
+    ),
+    check(
+      'open_connector_connections_request_id_check',
+      sql`length(${t.requestId}) BETWEEN 1 AND 256`,
+    ),
+    check(
+      'open_connector_connections_status_check',
+      sql`${t.status} IN ('pending','connected','failed','expired','cancelled')`,
+    ),
+  ],
+);
+
+export const platformConfigurationEvents = pgTable(
+  'platform_configuration_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind').notNull(),
+    version: integer('version').notNull(),
+    actorUserId: uuid('actor_user_id')
+      .notNull()
+      .references(() => users.id),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('idx_platform_configuration_events_actor').on(t.actorUserId, t.occurredAt)],
 );
