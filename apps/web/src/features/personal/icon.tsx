@@ -28,6 +28,8 @@ import {
   MessageCirclePlus,
   Mic,
   Monitor,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plug,
   Plus,
   Puzzle,
@@ -86,6 +88,8 @@ const icons = {
   copy: Copy,
   'new-chat': MessageCirclePlus,
   chat: MessageCircle,
+  'panel-left-open': PanelLeftOpen,
+  'panel-left-close': PanelLeftClose,
 } as const;
 
 export type IconName = keyof typeof icons;

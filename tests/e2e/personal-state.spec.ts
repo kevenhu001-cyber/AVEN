@@ -353,3 +353,75 @@ test('assistant replies animate in, quick prompts send, and copy confirms', asyn
   await expect(page.getByText('已复制', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('你好，我是 AVEN。');
 });
+
+test.describe('shell navigation', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('sidebar collapses, remembers the choice, and starts a new conversation', async ({
+    page,
+  }) => {
+    await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: me }));
+    await page.goto('/');
+    const sidebar = page.locator('.shell-sidebar');
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+    await expect(page.getByRole('navigation', { name: '对话', exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '我的空间', exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: '收起侧栏', exact: true }).click();
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+    await expect(page.locator('.shell-sidebar .shell-nav-label').first()).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem('aven.shell.sidebar'))).toBe('collapsed');
+
+    await page.reload();
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+    await page.getByRole('button', { name: '展开侧栏', exact: true }).click();
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+
+    await page.getByRole('button', { name: '开启新对话', exact: true }).click();
+    await expect(page).toHaveURL(/\/chat$/);
+    await expect(page.getByLabel('向 AVEN 提问', { exact: true })).toBeVisible();
+  });
+
+  test('mobile drawer opens from the top bar, closes on Escape and after navigating', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: me }));
+    await page.goto('/');
+    await expect(page.locator('.shell-sidebar')).toBeHidden();
+
+    await page.getByRole('button', { name: '更多导航', exact: true }).click();
+    const drawer = page.getByRole('dialog');
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByRole('navigation', { name: '我的空间', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.getByRole('button', { name: '打开导航', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('dialog').getByRole('link', { name: '记忆与上下文', exact: true }).click();
+    await expect(page).toHaveURL(/\/memory$/);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
+
+test('mermaid fences render a diagram and switch back to source', async ({ page, context }) => {
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await markdownStream(page, ['```mermaid\n', 'graph TD;\n  A[开始] --> B[结束];\n', '```']);
+  await page.goto('/chat');
+  await page.getByLabel('向 AVEN 提问', { exact: true }).fill('画个流程图');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  const bubble = page.locator('.assistant-bubble');
+  await expect(bubble.locator('.markdown-mermaid-diagram svg')).toBeVisible();
+  await expect(bubble.getByRole('group', { name: 'Mermaid 显示方式' })).toBeVisible();
+
+  await bubble.getByRole('button', { name: '代码', exact: true }).click();
+  await expect(bubble.locator('.markdown-code-pre')).toContainText('graph TD');
+  await expect(bubble.locator('.markdown-mermaid-diagram')).toHaveCount(0);
+
+  await bubble.getByRole('button', { name: '图表', exact: true }).click();
+  await expect(bubble.locator('.markdown-mermaid-diagram svg')).toBeVisible();
+});

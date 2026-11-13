@@ -16,6 +16,7 @@ describe('Syntax tokenizer and language labels', () => {
     expect(getLanguageLabel('sh')).toBe('Bash');
     expect(getLanguageLabel('sql')).toBe('SQL');
     expect(getLanguageLabel('json')).toBe('JSON');
+    expect(getLanguageLabel('mermaid')).toBe('Mermaid');
     expect(getLanguageLabel('')).toBe('代码');
     expect(getLanguageLabel('unknownlang')).toBe('UNKNOWNLANG');
   });
@@ -76,7 +77,9 @@ describe('Syntax tokenizer and language labels', () => {
     const tokens = tokenize(code, 'diff');
     expect(tokens.some((t) => t.type === 'diff-meta')).toBe(true);
     expect(tokens.some((t) => t.type === 'diff-remove' && t.text === '-const old = 1;')).toBe(true);
-    expect(tokens.some((t) => t.type === 'diff-add' && t.text === '+const updated = 2;')).toBe(true);
+    expect(tokens.some((t) => t.type === 'diff-add' && t.text === '+const updated = 2;')).toBe(
+      true,
+    );
     expect(tokens.map((t) => t.text).join('')).toBe(code);
   });
 
@@ -117,9 +120,7 @@ describe('Search matches inside code block', () => {
   it('slices token text to embed search marks precisely', () => {
     const matches = [{ start: 6, end: 12, matchIndex: 5 }];
     const segments = sliceTokenWithMatches('answer', 6, matches, 5);
-    expect(segments).toEqual([
-      { text: 'answer', match: true, matchIndex: 5, isCurrent: true },
-    ]);
+    expect(segments).toEqual([{ text: 'answer', match: true, matchIndex: 5, isCurrent: true }]);
 
     const nonMatching = sliceTokenWithMatches(' = 42;', 12, matches, 5);
     expect(nonMatching).toEqual([{ text: ' = 42;', match: false }]);

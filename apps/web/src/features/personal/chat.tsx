@@ -155,6 +155,7 @@ export function Chat({
   onUnavailable: (message: string) => void;
 }) {
   const transcript = useRef<HTMLDivElement>(null);
+  const thread = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const findInput = useRef<HTMLInputElement>(null);
   const header = useRef<HTMLElement>(null);
@@ -324,6 +325,20 @@ export function Chat({
     // Scroll-linked header state is recomputed after content changes.
     measure();
   }, [chat.turns, extras, answerCount, measure]);
+
+  // Mermaid diagrams, images and late layout changes grow the thread after the
+  // turn list stops changing. Keep the view pinned only when it was at the
+  // bottom, so a reader who scrolled up is not pulled back.
+  useEffect(() => {
+    const node = transcript.current;
+    const content = thread.current;
+    if (!node || !content || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (nearBottom.current) node.scrollTop = node.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const node = input.current;
@@ -495,7 +510,7 @@ export function Chat({
             </div>
           </div>
         )}
-        <div className="halo-thread">
+        <div className="halo-thread" ref={thread}>
           {timeline.map((entry) => {
             if (entry.kind === 'time')
               return (
@@ -540,6 +555,7 @@ export function Chat({
                         offset={offsets.get(`${entry.key}:out`) ?? 0}
                         current={shown}
                         animate={answerFresh}
+                        streaming={turn.status === 'running'}
                       />
                     </div>
                   ) : (

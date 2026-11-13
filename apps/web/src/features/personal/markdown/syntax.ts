@@ -84,6 +84,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
   diff: 'Diff',
   dockerfile: 'Dockerfile',
   graphql: 'GraphQL',
+  mermaid: 'Mermaid',
 };
 
 export function normalizeLanguage(lang: string): string {
@@ -121,7 +122,7 @@ const JS_TS_RULES: Rule[] = [
     type: 'operator',
     regex: /=>|\.\.\.|===|!==|==|!=|<=|>=|&&|\|\||\?\?|\+\+|--|[+\-*/%&|^~!=<>?:.]/y,
   },
-  { type: 'punctuation', regex: /[{}\[\]();,]/y },
+  { type: 'punctuation', regex: /[{}[\]();,]/y },
   { type: 'plain', regex: /[a-zA-Z_$][a-zA-Z0-9_$]*/y },
 ];
 
@@ -151,7 +152,7 @@ const PYTHON_RULES: Rule[] = [
     type: 'operator',
     regex: /\*\*|\/\/|<=|>=|==|!=|\+=|-=|\*=|\/=|->|[+\-*/%&|^~!=<>@:]/y,
   },
-  { type: 'punctuation', regex: /[{}\[\]();,]/y },
+  { type: 'punctuation', regex: /[{}[\]();,]/y },
   { type: 'plain', regex: /[a-zA-Z_][a-zA-Z0-9_]*/y },
 ];
 
@@ -161,7 +162,7 @@ const JSON_RULES: Rule[] = [
   { type: 'string', regex: /"(?:[^"\n\\]|\\.)*(?:"|$)/y },
   { type: 'number', regex: /-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/y },
   { type: 'boolean', regex: /\b(true|false|null)\b/y },
-  { type: 'punctuation', regex: /[{}\[\],:]/y },
+  { type: 'punctuation', regex: /[{}[\],:]/y },
 ];
 
 // Rules for Bash / Shell
@@ -179,7 +180,7 @@ const BASH_RULES: Rule[] = [
       /\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|exit|echo|cd|ls|mkdir|rm|cp|mv|git|curl|pnpm|npm|yarn|node|docker|export|set|unset|source|local|chmod|chown|sudo)\b/y,
   },
   { type: 'operator', regex: /&&|\|\||>>|>|<|\||;|&/y },
-  { type: 'punctuation', regex: /[{}\[\]();]/y },
+  { type: 'punctuation', regex: /[{}[\]();]/y },
   { type: 'plain', regex: /[a-zA-Z0-9_./-]+/y },
 ];
 

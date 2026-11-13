@@ -4,6 +4,7 @@ import {
   createContext,
   memo,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ComponentProps,
@@ -16,6 +17,8 @@ import rehypeKatex from 'rehype-katex';
 import type { Element } from 'hast';
 import { Icon } from '../icon';
 import { normalizeQuery } from '../halo/text';
+import { MermaidDiagram } from './mermaid-diagram';
+import { isMermaidLanguage } from './mermaid';
 import { appendRevealChunks, normalizeMath, rehypeTextLeaves } from './text';
 import {
   findSearchMatches,
@@ -23,9 +26,15 @@ import {
   sliceTokenWithMatches,
   tokenizeToLines,
 } from './syntax';
+import { useThrottledText } from './use-throttled-text';
 
-type RenderState = { query: string; current: number; animate: boolean };
-const RenderContext = createContext<RenderState>({ query: '', current: 0, animate: false });
+type RenderState = { query: string; current: number; animate: boolean; streaming: boolean };
+const RenderContext = createContext<RenderState>({
+  query: '',
+  current: 0,
+  animate: false,
+  streaming: false,
+});
 const remarkPlugins = [remarkGfm, remarkMath];
 const katexOptions = { trust: false, throwOnError: false, maxExpand: 1000, maxSize: 20 };
 
@@ -115,6 +124,15 @@ function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode 
   }>({ source, status: 'idle' });
   if (source !== copyState.source) setCopyState({ source, status: 'idle' });
   const copy = copyState.status;
+  useEffect(() => {
+    if (copy !== 'copied') return;
+    const timer = window.setTimeout(
+      () =>
+        setCopyState((state) => (state.status === 'copied' ? { ...state, status: 'idle' } : state)),
+      2000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [copy]);
 
   const code = node?.children.find((child) => child.type === 'element' && child.tagName === 'code');
   const classes = code?.type === 'element' ? code.properties.className : undefined;
@@ -122,8 +140,10 @@ function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode 
     ? String(classes.find((name) => String(name).startsWith('language-')) ?? '').slice(9)
     : '';
   const langLabel = getLanguageLabel(language);
+  const isMermaid = isMermaidLanguage(language);
+  const [showDiagramPreference, setShowDiagramPreference] = useState(true);
 
-  const { query, current } = useContext(RenderContext);
+  const { query, current, streaming } = useContext(RenderContext);
   const baseOffset = useMemo(() => findSearchOffset(node), [node]);
   const matches = useMemo(
     () => findSearchMatches(source, query, baseOffset),
@@ -135,20 +155,62 @@ function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode 
   const [userExpanded, setUserExpanded] = useState(false);
   const isCollapsed = isLong && !userExpanded && matches.length === 0;
   const displayedLines = isCollapsed ? lines.slice(0, 18) : lines;
+  // Search text lives in the code source; force the source view while finding.
+  const searching = Boolean(query.trim());
+  const showDiagram = isMermaid && showDiagramPreference && !searching;
 
-  let charPos = 0;
+  // Absolute offset of every token in the code source, so search matches line
+  // up with the highlight count computed from the whole reply.
+  const lineOffsets = useMemo(
+    () =>
+      displayedLines.reduce<{ lines: number[][]; cursor: number }>(
+        (acc, lineTokens) => {
+          const starts: number[] = [];
+          let cursor = acc.cursor;
+          for (const token of lineTokens) {
+            starts.push(cursor);
+            cursor += token.text.length;
+          }
+          return { lines: [...acc.lines, starts], cursor: cursor + 1 };
+        },
+        { lines: [], cursor: 0 },
+      ).lines,
+    [displayedLines],
+  );
 
   return (
     <div
       className="markdown-code-block"
       data-multiline={isMultiLine ? 'true' : 'false'}
       data-collapsed={isCollapsed ? 'true' : 'false'}
+      data-mermaid={isMermaid ? 'true' : undefined}
     >
       <div className="markdown-code-toolbar">
-        <span className="markdown-code-lang">
-          <span className="markdown-code-lang-dot" aria-hidden="true" />
-          {langLabel}
-        </span>
+        {isMermaid ? (
+          <div className="markdown-code-switch" role="group" aria-label="Mermaid 显示方式">
+            <button
+              type="button"
+              aria-pressed={showDiagram}
+              disabled={searching}
+              title={searching ? '查找时显示代码' : undefined}
+              onClick={() => setShowDiagramPreference(true)}
+            >
+              图表
+            </button>
+            <button
+              type="button"
+              aria-pressed={!showDiagram}
+              onClick={() => setShowDiagramPreference(false)}
+            >
+              代码
+            </button>
+          </div>
+        ) : (
+          <span className="markdown-code-lang">
+            <span className="markdown-code-lang-dot" aria-hidden="true" />
+            {langLabel}
+          </span>
+        )}
         <button
           type="button"
           className="markdown-code-copy-btn"
@@ -183,62 +245,61 @@ function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode 
           {copy === 'copied' ? '代码已复制' : ''}
         </span>
       </div>
-      <pre className="markdown-code-pre">
-        <code>
-          {displayedLines.map((lineTokens, lineIdx) => {
-            const renderedTokens = lineTokens.map((token, tokenIdx) => {
-              const tokenStart = charPos;
-              charPos += token.text.length;
-              const segments = sliceTokenWithMatches(token.text, tokenStart, matches, current);
+      {showDiagram ? (
+        <MermaidDiagram code={source} loading={streaming} />
+      ) : (
+        <pre className="markdown-code-pre">
+          <code>
+            {displayedLines.map((lineTokens, lineIdx) => {
+              const renderedTokens = lineTokens.map((token, tokenIdx) => {
+                const tokenStart = lineOffsets[lineIdx]?.[tokenIdx] ?? 0;
+                const segments = sliceTokenWithMatches(token.text, tokenStart, matches, current);
 
-              if (segments.length === 1 && !segments[0]!.match) {
+                if (segments.length === 1 && !segments[0]!.match) {
+                  return (
+                    <span key={tokenIdx} className={`token token-${token.type}`}>
+                      {token.text}
+                    </span>
+                  );
+                }
+
                 return (
                   <span key={tokenIdx} className={`token token-${token.type}`}>
-                    {token.text}
+                    {segments.map((seg, sIdx) =>
+                      seg.match ? (
+                        <mark
+                          key={sIdx}
+                          className="halo-mark"
+                          data-match={seg.matchIndex}
+                          data-current={seg.isCurrent}
+                        >
+                          {seg.text}
+                        </mark>
+                      ) : (
+                        seg.text
+                      ),
+                    )}
                   </span>
                 );
-              }
+              });
 
               return (
-                <span key={tokenIdx} className={`token token-${token.type}`}>
-                  {segments.map((seg, sIdx) =>
-                    seg.match ? (
-                      <mark
-                        key={sIdx}
-                        className="halo-mark"
-                        data-match={seg.matchIndex}
-                        data-current={seg.isCurrent}
-                      >
-                        {seg.text}
-                      </mark>
-                    ) : (
-                      seg.text
-                    ),
+                <div key={lineIdx} className="markdown-code-line">
+                  {isMultiLine && (
+                    <span className="markdown-code-gutter" aria-hidden="true">
+                      {lineIdx + 1}
+                    </span>
                   )}
-                </span>
-              );
-            });
-
-            if (lineIdx < displayedLines.length - 1) {
-              charPos += 1;
-            }
-
-            return (
-              <div key={lineIdx} className="markdown-code-line">
-                {isMultiLine && (
-                  <span className="markdown-code-gutter" aria-hidden="true">
-                    {lineIdx + 1}
+                  <span className="markdown-code-content">
+                    {lineTokens.length > 0 ? renderedTokens : '\n'}
                   </span>
-                )}
-                <span className="markdown-code-content">
-                  {lineTokens.length > 0 ? renderedTokens : '\n'}
-                </span>
-              </div>
-            );
-          })}
-        </code>
-      </pre>
-      {isLong && (
+                </div>
+              );
+            })}
+          </code>
+        </pre>
+      )}
+      {isLong && !showDiagram && (
         <div className={`markdown-code-expand-bar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
           <button
             type="button"
@@ -247,9 +308,7 @@ function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode 
             aria-expanded={!isCollapsed}
           >
             <Icon name={isCollapsed ? 'down' : 'up'} size={14} />
-            <span>
-              {isCollapsed ? `展开剩余 ${lines.length - 18} 行代码` : '收起代码'}
-            </span>
+            <span>{isCollapsed ? `展开剩余 ${lines.length - 18} 行代码` : '收起代码'}</span>
           </button>
         </div>
       )}
@@ -292,15 +351,24 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   offset,
   current,
   animate,
+  streaming = false,
 }: {
   text: string;
   query: string;
   offset: number;
   current: number;
   animate: boolean;
+  streaming?: boolean;
 }) {
-  const source = useMemo(() => normalizeMath(text), [text]);
-  const renderState = useMemo(() => ({ query, current, animate }), [query, current, animate]);
+  // Parsing every SSE frame is wasteful; batch parses while the reply grows.
+  // Keep the full text while finding so match offsets stay aligned with the
+  // highlight count computed from the whole answer.
+  const throttled = useThrottledText(text, streaming && !query.trim());
+  const source = useMemo(() => normalizeMath(throttled), [throttled]);
+  const renderState = useMemo(
+    () => ({ query, current, animate, streaming }),
+    [query, current, animate, streaming],
+  );
   return (
     <RenderContext.Provider value={renderState}>
       <div className="markdown-message">
