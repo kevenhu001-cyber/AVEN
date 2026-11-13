@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('forty-two migrations are recorded', migrations.rows[0]?.count === '42');
+    check('forty-three migrations are recorded', migrations.rows[0]?.count === '43');
     const availabilityContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
     await app.query('BEGIN');
     try {

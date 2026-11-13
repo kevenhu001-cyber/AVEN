@@ -1,7 +1,7 @@
 /**
- * Connect-apps sheet helpers. Catalog data always comes from GET /api/v1/plugins; these
- * functions only group, filter and label it. "已连接" here means a Mock authorization made in
- * this page session (ADR-017/018), never a real third-party account.
+ * Connect-apps helpers. Catalog data always comes from GET /api/v1/plugins; these
+ * functions only group, filter and label it. Connection state comes from the real
+ * Open Connector gateway, never from a page-local simulation.
  */
 export type CatalogPlugin = {
   id: string;
@@ -56,6 +56,7 @@ export function matchesQuery(plugin: CatalogPlugin, query: string) {
 export function groupCatalog<T extends CatalogPlugin>(
   plugins: T[],
   query = '',
+  includeFeatured = true,
 ): CatalogSection<T>[] {
   const filtered = plugins.filter((plugin) => matchesQuery(plugin, query));
   if (query.trim())
@@ -75,7 +76,7 @@ export function groupCatalog<T extends CatalogPlugin>(
     (a, b) => rank(a) - rank(b) || a.localeCompare(b),
   );
   const sections: CatalogSection<T>[] = [];
-  if (featured.length)
+  if (includeFeatured && featured.length)
     sections.push({ id: 'featured', title: '精选插件', browsable: true, plugins: featured });
   for (const category of categories)
     sections.push({
@@ -103,14 +104,14 @@ export function connectButton(
 }
 
 export function credentialLabel(status: string) {
-  if (status === 'mock_only') return '仅 Mock';
+  if (status === 'mock_only') return '尚未接入';
   if (status === 'configured') return '已配置';
   return '缺少凭据';
 }
 
 /**
  * Detect a "帮我连接 Gmail" style request in the user's own message so the page can place a
- * Mock authorization card under it. This is a local UI rule, not model output.
+ * connector card under it. This is a local UI rule, not model output.
  */
 export function detectConnectorIntent<T extends CatalogPlugin>(
   text: string,
@@ -137,34 +138,6 @@ export function detectConnectorIntent<T extends CatalogPlugin>(
       if (lower.includes(alias) && (!best || alias.length > best.length))
         best = { plugin, length: alias.length };
   return best?.plugin ?? null;
-}
-
-/** Mock authorization card state machine: 授权 → 确认范围 → 授权中 → 已连接 (Mock) → 断开. */
-export type AuthState = 'idle' | 'confirming' | 'authorizing' | 'connected';
-export type AuthEvent = 'request' | 'cancel' | 'confirm' | 'settled' | 'disconnect';
-
-export function authTransition(state: AuthState, event: AuthEvent): AuthState {
-  switch (state) {
-    case 'idle':
-      return event === 'request' ? 'confirming' : state;
-    case 'confirming':
-      if (event === 'cancel') return 'idle';
-      if (event === 'confirm') return 'authorizing';
-      return state;
-    case 'authorizing':
-      return event === 'settled' ? 'connected' : state;
-    case 'connected':
-      return event === 'disconnect' ? 'idle' : state;
-  }
-}
-
-export function authStatusText(state: AuthState) {
-  return {
-    idle: '尚未添加',
-    confirming: '等待你确认授权范围',
-    authorizing: '正在模拟授权…',
-    connected: 'Mock 授权 · 本页有效',
-  }[state];
 }
 
 /** Master notification switch over the four server-side preferences. */

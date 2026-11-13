@@ -252,3 +252,52 @@
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* ---------- account & provider settings ---------- */
+.account-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.account-stack .panel {
+  margin: 0;
+}
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.account-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.account-links a {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--aven-color-border);
+  border-radius: 14px;
+  color: var(--aven-color-foreground);
+  text-decoration: none;
+  font-size: 14px;
+}
+.account-links a:hover {
+  background: var(--aven-color-surface-secondary);
+}
+.provider-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--aven-color-surface-secondary);
+  font-size: 13px;
+  color: var(--aven-color-foreground-secondary);
+}
+.provider-status[data-configured='true'] .shell-provider-dot {
+  background: var(--aven-color-success);
+}

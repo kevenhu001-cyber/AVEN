@@ -40,6 +40,7 @@ export {
   type AIProviderConfig,
   type CreateAIProviderOptions,
 } from './provider-config.js';
+export { decryptProviderKey, providerKeyAssociatedData } from './provider-secrets.js';
 export {
   InMemoryToolAuditSink,
   ToolAuditStatusSchema,

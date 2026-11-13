@@ -92,7 +92,6 @@ async function account(suffix) {
     await page.getByRole('button', { name: '验证邮箱', exact: true }).click();
   }
   await expect(page.getByText('邮箱已验证', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '关闭面板' }).click();
   return { context, page, me };
 }
 try {
@@ -102,7 +101,7 @@ try {
   await a.page.getByRole('button', { name: '发送消息', exact: true }).click();
   await expect(a.page.getByText('回复完成', { exact: true })).toBeVisible({ timeout: 25000 });
   check(
-    (await a.page.locator('.assistant-bubble').innerText()).includes('Mock'),
+    (await a.page.locator('.assistant-bubble').innerText()).trim().length > 0,
     'real API/Outbox/Worker/SSE terminal response',
   );
   await openPanel(a.page, '记忆与上下文');
@@ -120,7 +119,6 @@ try {
   await expect(
     a.page.getByRole('heading', { name: '合成测试介绍', exact: true }).first(),
   ).toBeVisible();
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
   const b = await account('B');
   const prior = await (
     await a.context.request.get(`${base}/api/v1/connections/invitations`)
@@ -191,14 +189,12 @@ try {
       ? 'existing synthetic connection send/read (initial preview/accept previously verified)'
       : 'two isolated UI sessions preview/consent/connect/send/read',
   );
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
   await openPanel(a.page, '通知');
   await expect(async () => {
     await a.page.getByRole('button', { name: '刷新通知', exact: true }).click();
     await expect(a.page.getByText('连接邀请已接受', { exact: false }).first()).toBeVisible();
   }).toPass({ timeout: 15000 });
   check(true, 'real inbox notification from Worker');
-  await a.page.getByRole('button', { name: '关闭面板' }).click();
   await openChat(a.page);
   if (await a.page.getByRole('button', { name: '重新读取回复', exact: true }).isVisible())
     await a.page.getByRole('button', { name: '重新读取回复', exact: true }).click();
@@ -217,10 +213,10 @@ try {
   await a.page.setViewportSize({ width: 390, height: 844 });
   await a.page.screenshot({ path: 'var/design/personal-web/mobile.png' });
   await openPanel(a.page, '我的连接');
-  await expect(a.page.getByRole('dialog')).toBeVisible();
+  await expect(a.page.locator('.page-head h1')).toBeVisible();
   await a.page.keyboard.press('Escape');
   await expect(a.page.getByRole('dialog')).toHaveCount(0);
-  check(true, 'mobile navigation and Escape dialog close');
+  check(true, 'mobile route navigation and no leftover dialog');
   await a.page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await expect(a.page.getByLabel('会话校验')).toBeVisible();
   await expect(a.page.locator('.assistant-bubble')).toHaveCount(0);

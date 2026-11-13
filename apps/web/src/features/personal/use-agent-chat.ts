@@ -31,16 +31,64 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
   const pending = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const mounted = useRef(true);
+  const pendingText = useRef('');
+  const pendingCursor = useRef(0);
+  const frame = useRef<number | null>(null);
   const patch = useCallback(
     (key: string, change: Partial<ChatTurn>) =>
       setTurns((items) => items.map((item) => (item.key === key ? { ...item, ...change } : item))),
     [],
   );
+  const flushText = useCallback((key: string) => {
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
+    const text = pendingText.current;
+    if (!text) return;
+    pendingText.current = '';
+    setTurns((items) =>
+      items.map((item) =>
+        item.key === key
+          ? {
+              ...item,
+              answer: item.answer + text,
+              cursor: pendingCursor.current,
+              status: 'running' as const,
+            }
+          : item,
+      ),
+    );
+  }, []);
+  const queueText = useCallback((key: string, text: string, cursor: number) => {
+    pendingText.current += text;
+    pendingCursor.current = cursor;
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      const chunk = pendingText.current;
+      if (!chunk) return;
+      pendingText.current = '';
+      setTurns((items) =>
+        items.map((item) =>
+          item.key === key
+            ? {
+                ...item,
+                answer: item.answer + chunk,
+                cursor: pendingCursor.current,
+                status: 'running' as const,
+              }
+            : item,
+        ),
+      );
+    });
+  }, []);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
       controller.current?.abort();
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
     };
   }, []);
   const [previousSuspended, setPreviousSuspended] = useState(suspended);
@@ -62,27 +110,27 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
       );
   }
   useEffect(() => {
-    if (suspended) controller.current?.abort();
+    if (!suspended) return;
+    controller.current?.abort();
+    pendingText.current = '';
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
   }, [suspended]);
 
   async function stream(turn: ChatTurn, abort: AbortController) {
+    pendingText.current = '';
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
     try {
       for await (const event of api.agent.events(turn.runId!, turn.cursor, webCall(abort.signal))) {
         if (abort.signal.aborted || !mounted.current) return;
         const next: Partial<ChatTurn> = { cursor: event.sequence };
         if (event.type === 'message.delta') {
-          setTurns((items) =>
-            items.map((item) =>
-              item.key === turn.key
-                ? {
-                    ...item,
-                    answer: item.answer + event.text,
-                    cursor: event.sequence,
-                    status: 'running',
-                  }
-                : item,
-            ),
-          );
+          if (event.text) queueText(turn.key, event.text, event.sequence);
           continue;
         }
         if (event.type === 'turn.started' || event.type.startsWith('tool.'))
@@ -98,14 +146,30 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
           next.answer = '';
           next.error = '本次回复未完成，或来源授权已变化。请重新确认后发起新对话。';
         }
+        if (
+          event.type === 'turn.completed' ||
+          event.type === 'turn.cancelled' ||
+          event.type === 'turn.failed'
+        )
+          flushText(turn.key);
         patch(turn.key, next);
       }
     } catch (error) {
       if (authExpired(error)) {
+        pendingText.current = '';
+        if (frame.current !== null) {
+          cancelAnimationFrame(frame.current);
+          frame.current = null;
+        }
         onExpired();
         return;
       }
       if (!mounted.current || abort.signal.aborted) return;
+      pendingText.current = '';
+      if (frame.current !== null) {
+        cancelAnimationFrame(frame.current);
+        frame.current = null;
+      }
       // HTTP/source failures must not leave already-rendered derived text in a replay cache.
       patch(turn.key, {
         status: 'disconnected',
@@ -142,8 +206,8 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
       pending.current = false;
     }
   }
-  function send() {
-    const text = draft.trim();
+  function send(override?: string) {
+    const text = (override ?? draft).trim();
     if (
       !text ||
       text.length > 8000 ||
@@ -203,6 +267,11 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
   function reset() {
     if (busy) return;
     controller.current?.abort();
+    pendingText.current = '';
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
     setTurns([]);
     conversationId.current = undefined;
   }

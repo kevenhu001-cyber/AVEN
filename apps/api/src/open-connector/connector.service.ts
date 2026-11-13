@@ -93,13 +93,19 @@ export class OpenConnectorService implements OnModuleDestroy {
     if (!hosts.length) throw new ServiceNotReadyException();
     const gateway = await this.gateway(auth);
     const origin = new URL(process.env.WEB_ORIGIN ?? 'http://localhost:3000');
-    const request = GatewayRequestSchema.parse(
-      await gateway.connect.oauth(auth.userId, {
-        service,
-        connectionName: 'aven',
-        returnUri: new URL('/connectors', origin).href,
-      }),
-    );
+    let request: z.infer<typeof GatewayRequestSchema>;
+    try {
+      request = GatewayRequestSchema.parse(
+        await gateway.connect.oauth(auth.userId, {
+          service,
+          connectionName: 'aven',
+          returnUri: new URL('/connectors', origin).href,
+        }),
+      );
+    } catch {
+      // Gateway unreachable, rejected, or returned an unexpected shape: never fake success.
+      throw new ServiceNotReadyException();
+    }
     if (request.externalUserId !== auth.userId || request.service !== service)
       throw new ServiceNotReadyException();
     const url = new URL(request.authorizationUrl);
@@ -127,7 +133,12 @@ export class OpenConnectorService implements OnModuleDestroy {
     );
     if (!row) return { status: 'disconnected' };
     const gateway = await this.gateway(auth);
-    const request = GatewayRequestSchema.parse(await gateway.getConnectionRequest(row.request_id));
+    let request: z.infer<typeof GatewayRequestSchema>;
+    try {
+      request = GatewayRequestSchema.parse(await gateway.getConnectionRequest(row.request_id));
+    } catch {
+      throw new ServiceNotReadyException();
+    }
     if (
       request.id !== row.request_id ||
       request.externalUserId !== auth.userId ||

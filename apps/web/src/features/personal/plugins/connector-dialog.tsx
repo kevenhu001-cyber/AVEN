@@ -9,10 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { api, authExpired, errorText, webCall } from '../api';
-import { Icon } from '../icon';
-import { connectButton, credentialLabel, groupCatalog } from '../halo/catalog';
-import { PluginLogo } from '../halo/plugin-logo';
-import type { CatalogState, ConnectorResult } from '../halo/types';
+import type { ConnectorResult } from '../halo/types';
 import {
   buildPluginInput,
   initialPluginValues,
@@ -57,133 +54,10 @@ const fieldLabels: Record<string, string> = {
 };
 
 /**
- * 连接应用 sheet body (Halo). Catalog from GET /api/v1/plugins, grouped 精选插件 + categories,
- * searchable. Row buttons start a Mock authorization card in the chat; tapping a row expands
- * its actions, which invoke the server Mock adapter exactly as before (allowLive: false).
+ * Runs one plugin action against the server. Live execution is requested only
+ * when the connector reports real credentials; otherwise the form is disabled
+ * instead of returning simulated data.
  */
-export function ConnectAppsList({
-  catalog,
-  connected,
-  query,
-  onConnect,
-  onResult,
-  onExpired,
-}: {
-  catalog: CatalogState;
-  connected: ReadonlySet<string>;
-  query: string;
-  onConnect: (plugin: PluginManifest) => void;
-  onResult: (result: ConnectorResult) => void;
-  onExpired: () => void;
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-  const [action, setAction] = useState<{
-    plugin: PluginManifest;
-    action: PluginActionManifest;
-  } | null>(null);
-  const sections = groupCatalog(catalog.plugins, query);
-
-  return (
-    <section className="halo-apps" aria-busy={catalog.loading}>
-      <p className="halo-apps-note">
-        连接器按需调用。当前只运行服务端 Mock
-        适配器，不会连接真实邮箱、地图或电商账号，也不会修改任何外部数据。
-      </p>
-      {catalog.error && (
-        <Alert variant="warning">
-          {catalog.error}{' '}
-          <button type="button" className="halo-text-button" onClick={() => void catalog.load()}>
-            刷新目录
-          </button>
-        </Alert>
-      )}
-      {catalog.loading && !catalog.plugins.length && (
-        <div className="halo-apps-loading" role="status">
-          <span className="halo-skeleton" />
-          <span className="halo-skeleton" />
-          <span className="halo-skeleton" />
-          <span className="sr-only">正在读取连接器目录…</span>
-        </div>
-      )}
-      {catalog.loaded && !sections.length && (
-        <p className="halo-empty">没有找到匹配的应用或技能。</p>
-      )}
-      {sections.map((section) => (
-        <div key={section.id} className="halo-apps-section">
-          <h3 className="halo-apps-heading">
-            {section.title}
-            {section.browsable && <Icon name="chevron" size={20} />}
-          </h3>
-          <ul className="halo-apps-list">
-            {section.plugins.map((plugin) => {
-              const button = connectButton(plugin, connected);
-              const expanded = open === `${section.id}:${plugin.id}`;
-              return (
-                <li key={plugin.id} className="halo-app-item" data-expanded={expanded}>
-                  <div className="halo-app-row">
-                    <button
-                      type="button"
-                      className="halo-app-main halo-press-soft"
-                      aria-expanded={expanded}
-                      onClick={() => setOpen(expanded ? null : `${section.id}:${plugin.id}`)}
-                    >
-                      <PluginLogo id={plugin.id} category={plugin.category} />
-                      <span className="halo-app-text">
-                        <span className="halo-app-name">{plugin.name}</span>
-                        <span className="halo-app-desc">{plugin.description}</span>
-                        <span className="halo-app-meta">
-                          <span>{credentialLabel(plugin.credentialStatus)}</span>
-                          <span>{plugin.readOnly ? '只读' : '可写入'}</span>
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`halo-pill halo-pill-${button.tone} halo-press`}
-                      disabled={button.disabled}
-                      aria-label={`${button.label} ${plugin.name}`}
-                      onClick={() => onConnect(plugin)}
-                    >
-                      {button.label}
-                    </button>
-                  </div>
-                  {expanded && (
-                    <div className="halo-app-actions">
-                      {plugin.actions.map((item) => (
-                        <Button
-                          key={item.name}
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setAction({ plugin, action: item })}
-                        >
-                          {item.title}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                  {expanded && action && action.plugin.id === plugin.id && (
-                    <ActionForm
-                      key={`${action.plugin.id}:${action.action.name}`}
-                      plugin={action.plugin}
-                      action={action.action}
-                      onClose={() => setAction(null)}
-                      onResult={(result) => {
-                        setAction(null);
-                        onResult(result);
-                      }}
-                      onExpired={onExpired}
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-    </section>
-  );
-}
-
 export function ActionForm({
   plugin,
   action,
@@ -203,6 +77,7 @@ export function ActionForm({
   const [values, setValues] = useState<Record<string, string>>(() => initialPluginValues(schema));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const canRun = plugin.credentialStatus === 'configured';
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -216,13 +91,13 @@ export function ActionForm({
   const fieldName = (key: string) => fieldLabels[key] ?? properties[key]?.description ?? key;
 
   async function invoke() {
-    if (busy || missing.length || invalid.length) return;
+    if (busy || !canRun || missing.length || invalid.length) return;
     setBusy(true);
     setError('');
     try {
       const result = await api.plugins.invoke(
         plugin.id,
-        { action: action.name, input: buildPluginInput(schema, values), allowLive: false },
+        { action: action.name, input: buildPluginInput(schema, values), allowLive: true },
         webCall(),
       );
       if (!mounted.current) return;
@@ -250,6 +125,11 @@ export function ActionForm({
         {plugin.name} · {action.title}
       </h3>
       <p className="small muted m-0">{action.description}</p>
+      {!canRun && (
+        <Alert variant="warning">
+          该服务尚未配置真实凭据，暂不能调用。请先在账号授权页完成授权，或由管理员配置服务凭据。
+        </Alert>
+      )}
       {Object.entries(properties).map(([key, property]) => {
         const id = `connector-${plugin.id}-${action.name}-${key}`;
         const label = property.description ?? fieldLabels[key] ?? key;
@@ -263,7 +143,7 @@ export function ActionForm({
                 onChange={(event) =>
                   setValues((current) => ({ ...current, [key]: String(event.target.checked) }))
                 }
-                disabled={busy}
+                disabled={busy || !canRun}
               />
               {label}
             </label>
@@ -283,7 +163,7 @@ export function ActionForm({
                 onChange={(event) =>
                   setValues((current) => ({ ...current, [key]: event.target.value }))
                 }
-                disabled={busy}
+                disabled={busy || !canRun}
               >
                 <option value="">请选择</option>
                 {property.enum.map((option) => (
@@ -301,7 +181,7 @@ export function ActionForm({
                 onChange={(event) =>
                   setValues((current) => ({ ...current, [key]: event.target.value }))
                 }
-                disabled={busy}
+                disabled={busy || !canRun}
               />
             ) : (
               <Input
@@ -317,7 +197,7 @@ export function ActionForm({
                 onChange={(event) =>
                   setValues((current) => ({ ...current, [key]: event.target.value }))
                 }
-                disabled={busy}
+                disabled={busy || !canRun}
               />
             )}
           </div>
@@ -333,16 +213,16 @@ export function ActionForm({
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={() => void invoke()}
-          disabled={busy || missing.length > 0 || invalid.length > 0}
+          disabled={busy || !canRun || missing.length > 0 || invalid.length > 0}
         >
-          {busy ? '正在调用…' : '调用（Mock 模式）'}
+          {busy ? '正在调用…' : '调用'}
         </Button>
         <Button variant="secondary" onClick={onClose} disabled={busy}>
           取消
         </Button>
       </div>
       <p className="small muted m-0">
-        调用会以 Mock 模式执行；真实外部账号未接入，任何外部跳转都需要你再次确认。
+        调用使用服务端已配置的真实凭据；需要外部跳转时会再次征求你的确认。
       </p>
     </div>
   );

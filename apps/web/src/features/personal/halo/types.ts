@@ -1,5 +1,4 @@
 import type { ConversationWidget, PluginManifest } from '@aven/contracts';
-import type { AuthState } from './catalog';
 
 export type ConnectorResult = {
   key: string;
@@ -22,10 +21,4 @@ export type CatalogState = {
   loaded: boolean;
   error: string;
   load: () => Promise<PluginManifest[]>;
-};
-
-export type AuthBook = {
-  states: Record<string, AuthState>;
-  connected: ReadonlySet<string>;
-  dispatch: (pluginId: string, event: 'request' | 'cancel' | 'confirm' | 'disconnect') => void;
 };

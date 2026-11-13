@@ -1,6 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
   AIError,
+  decryptProviderKey,
+  OpenAICompatibleProvider,
+  providerKeyAssociatedData,
   ToolExecutor,
   ToolRegistry,
   buildPersonalContextMessages,
@@ -98,6 +101,48 @@ async function getRunContext(
     runId,
   ]);
   return result.rows[0];
+}
+
+type ProviderRuntimeRow = {
+  source: 'user' | 'platform';
+  base_url: string;
+  model: string;
+  encrypted_key: string;
+};
+
+/**
+ * Loads the provider that was recorded on the run. User configuration wins over
+ * the platform configuration; the environment provider is only used when the
+ * run was explicitly created without a stored provider (development mock).
+ */
+async function resolveRunProvider(
+  pool: DatabasePool,
+  userId: string,
+  recordedProvider: string,
+  fallback: AIProvider,
+): Promise<AIProvider> {
+  if (recordedProvider === 'mock') return fallback;
+  const result = await pool.query<ProviderRuntimeRow>(
+    'SELECT * FROM app.get_agent_provider_runtime($1)',
+    [userId],
+  );
+  const row = result.rows[0];
+  if (!row) {
+    if (!fallback.metadata.mock) return fallback;
+    throw new AIError('PROVIDER_NOT_CONFIGURED', 'No AI provider is configured for this run.');
+  }
+  const owner = row.source === 'user' ? userId : 'platform:model';
+  const apiKey = decryptProviderKey(
+    row.encrypted_key,
+    providerKeyAssociatedData(owner),
+    process.env.AI_USER_CONFIG_KEY,
+  );
+  return new OpenAICompatibleProvider({
+    baseUrl: row.base_url,
+    apiKey,
+    model: row.model,
+    timeoutMs: 60_000,
+  });
 }
 
 async function appendEvent(
@@ -282,6 +327,12 @@ export async function processAgentRun(
   try {
     const run = await getRunContext(pool, runId);
     if (!run) throw new AIError('RUNTIME_FAILED', 'Agent run context is unavailable.');
+    const runProvider = await resolveRunProvider(
+      pool,
+      run.initiated_by_user_id,
+      run.provider,
+      provider,
+    );
 
     await appendEvent(pool, runId, 'turn.started', {});
 
@@ -442,7 +493,7 @@ export async function processAgentRun(
 
     let output = '';
     let usage: { inputTokens: number; outputTokens: number; totalTokens: number } | undefined;
-    for await (const event of provider.streamText({
+    for await (const event of runProvider.streamText({
       messages,
       model: run.model,
       signal: controller.signal,
@@ -483,7 +534,7 @@ export async function processAgentRun(
       'completed',
       'turn.completed',
       { messageId, ...(usage === undefined ? {} : { usage }) },
-      provider.metadata.mock ? 'mock_response' : 'assistant_response',
+      runProvider.metadata.mock ? 'mock_response' : 'assistant_response',
       null,
     );
     log({ level: 'info', event: 'agent.run.completed', run_id: runId });

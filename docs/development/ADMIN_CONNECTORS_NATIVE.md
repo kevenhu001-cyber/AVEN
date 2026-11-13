@@ -12,7 +12,7 @@
 
 ## 使用
 
-1. 在已有环境应用 `pnpm db:migrate`，新服务要求 `0042_platform_configuration_audit`。本开发库已应用；没有更改已应用迁移。
+1. 在已有环境应用 `pnpm db:migrate`，新服务要求 `0042_platform_configuration_audit`；真实模型运行要求 `0043_agent_provider_runtime`。本开发库已应用；没有更改已应用迁移。
 2. 运维在可信终端执行 `pnpm admin:role grant <已注册用户 UUID>`，赋予 7 天平台管理员资格；`revoke` 可立即撤销。命令使用 migrator 凭据，绝不能暴露为用户接口；本轮没有为任意真实用户自动提权。历史分配保留在角色表。
 3. 设置已有的 `AI_USER_CONFIG_KEY`（随机 32 字节的 Base64 编码）、`AI_USER_ALLOWED_BASE_URLS`；模型地址按明确允许列表填写。密钥轮换前需备份旧密钥并安排重新加密，本轮无自动轮换功能。
 4. 设置 `OPEN_CONNECTOR_ALLOWED_BASE_URLS=https://connector.oomol.com/v1` 和经管理员确认的 `OPEN_CONNECTOR_AUTH_HOSTS` 精确域名列表。在 `/admin` 保存 Project API Key，然后在 `/connectors` 发起授权。默认由管理员提供密钥；用户同日后续明确授权复用 Socrates 的现有网关密钥，按文末后续记录执行。
@@ -26,7 +26,7 @@
 - `pnpm lint`：通过，218 个模块、696 条依赖无违规。
 - `pnpm typecheck`：20 个任务通过。
 - `pnpm exec vitest run`：50 个文件、344 项通过，包含原生 Bearer 与网关身份/跳转边界测试。
-- `pnpm db:verify`：空库、旧数据升级、seed 与全部数据库检查通过；检查基线更新到 42 个迁移、64 张受保护的 FORCE RLS 表（含新增平台全局表，不把它们都描述为租户表）。
+- `pnpm db:verify`：空库、旧数据升级、seed 与全部数据库检查通过；检查基线更新到 43 个迁移、64 张受保护的 FORCE RLS 表（含新增平台全局表，不把它们都描述为租户表）。
 - `pnpm exec turbo run build --concurrency=1`：包含移动端 JS 导出的 12 个构建任务全部通过。
 - `pnpm check:expo`：通过。按 Expo 内置检查升级到 58.0.25 及其匹配的 Router/字体/链接等补丁，修复旧兼容检查失败；共享契约沿用单入口以兼容 Metro。
 - `PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e:personal`：桌面/手机尺寸共 16 项通过。增加页面标题、无横向溢出与页面错误检查后，管理员专项再跑 8 项通过，保存合成配置的桌面/手机截图；仅夹具，不是 Live 业务证明。
@@ -35,7 +35,7 @@
 
 ## 未完成
 
-尚未进行真实 OAuth 联调；网关密钥已按用户后续授权配置到本地环境（见下节），有效性不以本地配置存在代替验证；没有模型 API 地址/密钥，真实推理未启用。真实插件读取/写入、网关授权撤销、持久安全原生会话、原生对话与小组件、真机/签名发布构建、生产邮件/推送/调度/监控/备份恢复仍未完成。界面夹具 E2E 不替代真实账号或原生验证。
+尚未进行真实 OAuth 联调；网关密钥已按用户后续授权配置到本地环境（见下节），有效性不以本地配置存在代替验证；模型 API 地址/密钥已按本地环境配置，真实推理已通过 API/Worker/SSE 验证；网关 OAuth 仍因网络不可达未联调。真实插件读取/写入、网关授权撤销、持久安全原生会话、原生对话与小组件、真机/签名发布构建、生产邮件/推送/调度/监控/备份恢复仍未完成。界面夹具 E2E 不替代真实账号或原生验证。
 
 ## 复用 Socrates 图标与现有网关配置（同日后续）
 

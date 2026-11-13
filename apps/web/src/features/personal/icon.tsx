@@ -24,12 +24,14 @@ import {
   Mail,
   MapPin,
   Menu,
+  MessageCircle,
   MessageCirclePlus,
   Mic,
   Monitor,
   Plug,
   Plus,
   Puzzle,
+  RotateCcw,
   Search,
   Share,
   ShoppingBag,
@@ -79,9 +81,11 @@ const icons = {
   logout: LogOut,
   wrench: Wrench,
   spinner: LoaderCircle,
+  refresh: RotateCcw,
   inbox: Inbox,
   copy: Copy,
   'new-chat': MessageCirclePlus,
+  chat: MessageCircle,
 } as const;
 
 export type IconName = keyof typeof icons;

@@ -570,7 +570,8 @@
   transform-origin: left center;
   transition:
     transform var(--aven-duration-page) var(--aven-easing-emphasized),
-    padding var(--aven-duration-page) var(--aven-easing-emphasized);
+    padding var(--aven-duration-page) var(--aven-easing-emphasized),
+    background-color var(--aven-duration-fast) var(--aven-easing-standard);
 }
 .halo-chat-head[data-scrolled='true'] .halo-bot-pill {
   padding-right: 16px;
@@ -779,9 +780,7 @@
   font-size: 11.5px;
   color: var(--aven-color-foreground-tertiary);
 }
-.halo-enter {
-  animation: halo-rise var(--aven-duration-screen) var(--aven-easing-emphasized) both;
-}
+/* `.halo-enter` only animates when its data-fresh marker is present (see interaction polish). */
 .personal-app .halo-latest {
   position: absolute;
   left: 50%;
@@ -809,7 +808,33 @@
   transform: none;
   pointer-events: auto;
 }
+.personal-app .halo-latest[data-unread='true'] {
+  color: var(--aven-color-foreground);
+  border-color: color-mix(in srgb, var(--aven-color-accent) 45%, var(--aven-color-border-strong));
+}
+.personal-app .halo-latest[data-unread='true'] svg {
+  animation: halo-nudge 420ms var(--aven-easing-spring) both;
+}
+.halo-latest-count {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--aven-radius-full);
+  background: var(--aven-color-accent);
+  color: var(--aven-color-accent-foreground);
+  box-shadow: 0 0 0 2px var(--aven-color-background);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  animation: halo-pop 300ms var(--aven-easing-spring) both;
+}
 .halo-composer {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 6px;
@@ -819,6 +844,19 @@
   border: 1px solid var(--aven-color-border-strong);
   background: var(--aven-color-surface);
   transition: border-color var(--aven-duration-fast) var(--aven-easing-standard);
+}
+.halo-composer-count {
+  position: absolute;
+  top: -20px;
+  right: 18px;
+  color: var(--aven-color-foreground-tertiary);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: halo-fade-in 180ms var(--aven-easing-standard) both;
+}
+.halo-composer-count[data-limit='true'] {
+  color: var(--aven-color-warning);
 }
 .halo-composer:focus-within {
   border-color: var(--aven-color-control-border);
@@ -834,6 +872,7 @@
   resize: none;
   font-size: 17px;
   line-height: 24px;
+  transition: height 120ms var(--aven-easing-standard);
 }
 .personal-app .halo-composer textarea:focus-visible {
   outline: none;
@@ -1648,13 +1687,18 @@
 
 /* ---------- reduced motion: keep state, drop movement ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .halo-app *,
-  .halo-app *::before,
-  .halo-app *::after,
+  .personal-app *,
+  .personal-app *::before,
+  .personal-app *::after,
+  .shell *,
+  .shell *::before,
+  .shell *::after,
   .halo-sheet,
   .halo-sheet *,
   .halo-overlay,
-  .auth-screen * {
+  .auth-screen *,
+  .diagnostics-page *,
+  .route-enter {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
@@ -1667,7 +1711,352 @@
   .assistant-bubble[data-streaming='true']::after {
     animation: none !important;
   }
-  .halo-press:active:not(:disabled) {
+  .halo-press:active:not(:disabled),
+  .halo-pill:active:not(:disabled),
+  .halo-chip:active:not(:disabled),
+  .shell-link-button:active:not(:disabled),
+  .halo-msg-action:active {
     transform: none;
+  }
+}
+
+/* Desktop home greeting */
+.halo-home-greeting {
+  margin: 0 0 18px;
+  color: var(--aven-color-foreground-secondary);
+  font-size: 14px;
+}
+@media (min-width: 900px) {
+  .halo-home-hero {
+    padding-top: 96px;
+  }
+  .halo-home-greeting {
+    font-size: 16px;
+  }
+}
+
+.halo-home-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+/* ---------- interaction polish: message motion & controls ---------- */
+/* Motion is opt-in through data-fresh so returning to a conversation does not replay it. */
+.chat-turn[data-fresh='true'] {
+  animation: halo-turn-in 260ms var(--aven-easing-standard) both;
+}
+.personal-app .user-bubble {
+  transform-origin: bottom right;
+}
+.personal-app .user-bubble[data-fresh='true'] {
+  animation: halo-bubble-out 480ms var(--aven-easing-emphasized) both;
+}
+.personal-app .assistant-bubble {
+  transform-origin: bottom left;
+}
+.personal-app .assistant-bubble[data-fresh='true'] {
+  animation: halo-bubble-in 440ms var(--aven-easing-emphasized) both;
+}
+.halo-typing {
+  transform-origin: bottom left;
+}
+.halo-typing[data-fresh='true'] {
+  animation: halo-bubble-in 380ms var(--aven-easing-emphasized) both;
+}
+.halo-turn-meta[data-fresh='true'] .turn-state {
+  animation: halo-meta-in 300ms 60ms var(--aven-easing-emphasized) both;
+}
+.halo-turn-meta[data-fresh='true'] .halo-msg-action {
+  animation: halo-meta-in 280ms 110ms var(--aven-easing-emphasized) both;
+}
+.halo-enter[data-fresh='true'] {
+  animation: halo-rise 380ms var(--aven-easing-emphasized) both;
+}
+.assistant-bubble[data-streaming='true'] {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--aven-color-accent) 22%, transparent),
+    0 10px 32px -22px color-mix(in srgb, var(--aven-color-accent) 70%, transparent);
+  transition: box-shadow 320ms var(--aven-easing-standard);
+}
+.halo-typing {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--aven-color-border) 60%, transparent);
+}
+.halo-turn-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.halo-turn-meta .turn-state {
+  margin: -4px 4px 0;
+}
+.halo-msg-tools {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 160ms var(--aven-easing-standard),
+    transform 160ms var(--aven-easing-standard);
+}
+.chat-turn:hover .halo-msg-tools,
+.chat-turn:focus-within .halo-msg-tools {
+  opacity: 1;
+  transform: none;
+}
+.halo-msg-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: var(--aven-radius-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--aven-color-foreground-tertiary);
+  font-size: 11.5px;
+  animation: halo-fade-in 180ms var(--aven-easing-standard) both;
+  transition:
+    background-color 160ms var(--aven-easing-standard),
+    color 160ms var(--aven-easing-standard),
+    transform 160ms var(--aven-easing-standard);
+}
+.halo-msg-action:hover {
+  background: var(--aven-color-surface-secondary);
+  color: var(--aven-color-foreground);
+}
+.halo-msg-action:active {
+  transform: scale(0.94);
+}
+@media (hover: none) {
+  .halo-msg-tools {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* quick prompts in the empty chat */
+.halo-quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+.halo-quick-prompts .halo-chip {
+  animation: halo-rise 420ms var(--aven-easing-emphasized) both;
+}
+.halo-quick-prompts .halo-chip:nth-child(2) {
+  animation-delay: 55ms;
+}
+.halo-quick-prompts .halo-chip:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+/* composer focus and send feedback */
+.halo-composer {
+  transition:
+    border-color 180ms var(--aven-easing-standard),
+    box-shadow 220ms var(--aven-easing-standard);
+}
+.halo-composer:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aven-color-focus-ring) 16%, transparent);
+}
+.personal-app .halo-composer-go:not(:disabled):active {
+  transform: scale(0.9);
+}
+.personal-app .halo-composer-go {
+  transition:
+    transform 160ms var(--aven-easing-spring),
+    background-color 160ms var(--aven-easing-standard);
+}
+
+/* shared button feedback */
+.halo-pill,
+.halo-chip,
+.shell-link-button,
+.halo-text-button {
+  transition:
+    transform 160ms var(--aven-easing-standard),
+    background-color 160ms var(--aven-easing-standard),
+    border-color 160ms var(--aven-easing-standard),
+    color 160ms var(--aven-easing-standard),
+    filter 160ms var(--aven-easing-standard);
+}
+.halo-pill:active:not(:disabled),
+.halo-chip:active:not(:disabled),
+.shell-link-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.halo-pill:hover:not(:disabled),
+.halo-chip:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.halo-text-button:hover {
+  color: var(--aven-color-foreground);
+}
+
+/* rows, app entries and home controls */
+.personal-app .halo-row,
+.personal-app .halo-app-main,
+.personal-app .halo-home-bot,
+.personal-app .halo-home-mode,
+.personal-app .halo-menu-item {
+  transition:
+    background-color 180ms var(--aven-easing-standard),
+    color 180ms var(--aven-easing-standard),
+    transform 180ms var(--aven-easing-standard);
+}
+.personal-app .halo-home-bot:active,
+.personal-app .halo-home-mode:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) {
+  .personal-app .halo-row:hover,
+  .personal-app .halo-app-main:hover,
+  .personal-app .halo-menu-item:hover {
+    background: var(--aven-color-surface-hover);
+  }
+  .personal-app .halo-home-bot:hover {
+    background: color-mix(in srgb, var(--aven-color-surface-secondary) 65%, transparent);
+  }
+  .personal-app .halo-home-mode:hover {
+    color: var(--aven-color-foreground);
+  }
+  .personal-app .halo-bot-pill:hover {
+    background: var(--aven-color-surface-hover);
+  }
+}
+
+/* sidebar active indicator */
+.shell-nav-link {
+  position: relative;
+}
+.shell-nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 999px;
+  background: var(--aven-color-foreground);
+  transform: translateY(-50%);
+  transition: height 220ms var(--aven-easing-emphasized);
+}
+.shell-nav-link[aria-current='page']::before {
+  height: 18px;
+}
+@media (max-width: 860px) {
+  .shell-nav-link::before {
+    display: none;
+  }
+}
+
+/* list/card hover only where a pointer can hover */
+@media (hover: hover) {
+  .apps-item:hover {
+    border-color: var(--aven-color-border-strong);
+  }
+  .apps-item {
+    transition: border-color 180ms var(--aven-easing-standard);
+  }
+  .panel {
+    transition: border-color 180ms var(--aven-easing-standard);
+  }
+}
+
+/* skeleton shimmer */
+.halo-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--aven-color-skeleton) 20%,
+    var(--aven-color-surface-hover) 38%,
+    var(--aven-color-skeleton) 56%
+  );
+  background-size: 350% 100%;
+  animation: halo-skeleton 1.5s linear infinite;
+}
+
+@keyframes halo-turn-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes halo-bubble-out {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, 12px, 0) scale(0.86);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(-2px, -1px, 0) scale(1.015);
+  }
+  78% {
+    opacity: 1;
+    transform: translate3d(0, 1px, 0) scale(0.998);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes halo-bubble-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(-18px, 10px, 0) scale(0.94);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(1px, -1px, 0) scale(1.008);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes halo-meta-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes halo-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(3px);
+  }
+  70% {
+    transform: translateY(-1px);
+  }
+}
+@keyframes halo-skeleton {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Mobile chat owns its own header; avoid stacking two top bars. */
+@media (max-width: 860px) {
+  .shell-body:has(.halo-chat) .shell-topbar {
+    display: none;
   }
 }

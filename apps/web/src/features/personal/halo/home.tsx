@@ -11,12 +11,13 @@ export function HomeScreen({
   botName,
   mascotState,
   busy,
-  onAccount,
+  onAccount: _onAccount,
   onNewChat,
   onOpenChat,
   onOpenProfile,
   onOpenApps,
   onSearch,
+  providerLabel,
 }: {
   displayName: string;
   botName: string;
@@ -28,23 +29,13 @@ export function HomeScreen({
   onOpenProfile: () => void;
   onOpenApps: () => void;
   onSearch: (query: string) => void;
+  providerLabel: string;
 }) {
   const [query, setQuery] = useState('');
   return (
     <section className="halo-home" aria-label="AVEN 首页">
-      <header className="halo-topbar">
-        <button
-          type="button"
-          className="halo-avatar halo-press"
-          aria-label="我的账号"
-          title="我的账号"
-          onClick={onAccount}
-        >
-          {Array.from(displayName)[0] ?? '我'}
-        </button>
-        <RoundButton icon="plus" label="新对话" onClick={onNewChat} disabled={busy} />
-      </header>
       <div className="halo-home-hero">
+        <p className="halo-home-greeting">你好，{displayName}</p>
         <button
           type="button"
           className="halo-home-bot halo-press-soft"
@@ -55,7 +46,16 @@ export function HomeScreen({
           <span className="halo-home-name">{botName}</span>
         </button>
         <button type="button" className="halo-home-mode" onClick={onOpenProfile}>
-          AI · Mock 模式
+          {providerLabel}
+        </button>
+        <button
+          type="button"
+          className="halo-pill halo-pill-light halo-press halo-home-new"
+          onClick={onNewChat}
+          disabled={busy}
+        >
+          <Icon name="plus" size={18} />
+          新对话
         </button>
       </div>
       <form

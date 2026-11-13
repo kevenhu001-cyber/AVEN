@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import type { Viewport } from 'next';
 import { colors } from '@aven/design-tokens';
-import { PersonalApp } from '../features/personal/personal-app';
+import { PlatformShell } from '@/features/personal/platform-shell';
+
 export const dynamic = 'force-dynamic';
-// The personal app always renders the Halo near-black theme (ADR-018).
 export const viewport: Viewport = {
   colorScheme: 'dark',
   themeColor: colors.halo.background,
@@ -10,6 +11,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
 };
-export default function PersonalPage() {
-  return <PersonalApp />;
+
+export default function PlatformLayout({ children }: { children: ReactNode }) {
+  return <PlatformShell>{children}</PlatformShell>;
 }

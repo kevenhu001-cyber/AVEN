@@ -63,8 +63,8 @@ try {
   await openChat(page);
 
   await page.getByRole('button', { name: '连接器', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  // Halo sheet lists a plugin in 精选插件 and in its category, so take the first match.
+  await expect(page).toHaveURL(/\/apps$/);
+  await expect(page.getByRole('heading', { name: '连接应用', exact: true })).toBeVisible();
   await expect(page.getByText('高德地图', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('AVEN 日程协调', { exact: true }).first()).toBeVisible();
   check(true, 'connector catalog lists built-in connectors by category');
@@ -76,36 +76,13 @@ try {
     .getByRole('button', { name: /^高德地图/ })
     .first()
     .click();
-  await page.getByRole('button', { name: '地点与地址检索', exact: true }).click();
-  await page.getByLabel('关键词', { exact: true }).fill('西安交通大学');
-  await page.getByLabel('城市', { exact: true }).fill('西安');
-  await page.getByRole('button', { name: '调用（Mock 模式）', exact: true }).click();
-  const mapCard = page.locator('[data-widget-kind="map_location_card"]');
-  await expect(mapCard).toBeVisible();
-  await expect(mapCard.getByText('Mock 数据', { exact: true })).toBeVisible();
-  await expect(mapCard.getByText('西安交通大学', { exact: false }).first()).toBeVisible();
-  check(true, 'map widget renders in the conversation with an explicit mock label');
+  await expect(page.getByRole('button', { name: '地点与地址检索', exact: true })).toBeDisabled();
+  await expect(page.getByText('未配置真实凭据，动作暂不可用。', { exact: false })).toBeVisible();
+  check(true, 'connector without real credentials cannot run a simulated action');
 
-  await mapCard.getByRole('button', { name: '打开导航链接（需你确认）' }).click();
-  await expect(mapCard.getByRole('link')).toBeVisible();
-  await expect(mapCard.getByText('西安交通大学', { exact: false }).first()).toBeVisible();
-  check(true, 'external navigation link requires an explicit confirmation step');
-  await mapCard.getByRole('button', { name: '取消', exact: true }).click();
-
-  await openChat(page);
-
-  await page.getByRole('button', { name: '连接器', exact: true }).click();
-  await page
-    .getByRole('button', { name: /^AVEN 日程协调/ })
-    .first()
-    .click();
-  await page.getByRole('button', { name: '会话内日程协调卡片', exact: true }).click();
-  await page.getByLabel('你的需求', { exact: true }).fill('找下周日下午三点的空闲时间');
-  await page.getByRole('button', { name: '调用（Mock 模式）', exact: true }).click();
-  const scheduleCard = page.locator('[data-widget-kind="schedule_candidates_card"]');
-  await expect(scheduleCard).toBeVisible();
-  await expect(scheduleCard.getByText('未修改任何外部日历', { exact: false })).toBeVisible();
-  check(true, 'schedule widget renders and states that no external calendar changed');
+  await page.goto('/apps/gmail.mail');
+  await expect(page.getByRole('link', { name: /账号授权/ })).toBeVisible();
+  check(true, 'gateway-backed connector links to real account authorization');
 
   const widgets = await (
     await context.request.get(`${base}/api/v1/plugins`, { headers: { Origin: base } })

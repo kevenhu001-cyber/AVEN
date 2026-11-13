@@ -125,9 +125,7 @@ export function ProfileScreen({
         <button
           type="button"
           className="halo-pill halo-pill-neutral halo-press"
-          onClick={() =>
-            onPlaceholder('编辑 Bot', 'Bot 名称、头像与指令编辑尚未开放；当前角色与回复均为 Mock。')
-          }
+          onClick={() => onPlaceholder('编辑 Bot', 'Bot 名称、头像与指令编辑尚未开放。')}
         >
           编辑
         </button>

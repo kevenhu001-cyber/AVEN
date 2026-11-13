@@ -1,10 +1,10 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import Link from 'next/link';
 import { AdminConfigInputSchema, AdminConfigMetadataSchema } from '@aven/contracts';
-import './admin.css';
-import { webCall } from '../../features/personal/api';
+import { PageHead, Panel } from '@/components/shell/page';
+import { webCall } from '@/features/personal/api';
 
 type Metadata = z.infer<typeof AdminConfigMetadataSchema>;
 const ListSchema = z.object({
@@ -47,7 +47,7 @@ export default function AdminPage() {
       setRows(parsed.data);
       setEnvironmentConfigured(parsed.connectorEnvironmentConfigured ?? false);
       setReady(true);
-      setMessage('管理员权限已确认。配置密钥不会回显；保存后仍不会自动启用真实模型或外部调用。');
+      setMessage('管理员权限已确认。配置密钥不会回显；保存后新的对话与授权会使用该配置。');
     } catch {
       if (!signal?.aborted && request === generation.current) {
         setRows([]);
@@ -84,13 +84,23 @@ export default function AdminPage() {
     };
   }, [load, invalidate]);
   return (
-    <main className="platform-page" style={{ maxWidth: 760, margin: 'auto', padding: 24 }}>
-      <Link href="/">返回 AVEN</Link>
-      <h1>平台配置</h1>
-      <p role="status">{message}</p>
-      <button onClick={() => void load()}>刷新配置与权限</button>
+    <div className="page">
+      <PageHead
+        title="平台配置"
+        description="管理员手动配置模型与 Open Connector 网关。密钥加密保存且不会回显。"
+        actions={
+          <button type="button" className="shell-link-button" onClick={() => void load()}>
+            刷新配置与权限
+          </button>
+        }
+      />
+      <p role="status" className="muted">
+        {message}
+      </p>
       {ready && environmentConfigured && (
-        <p>已配置服务器 Open Connector 网关密钥；此处保存的网关配置优先生效，密钥不会回显。</p>
+        <p className="muted">
+          已配置服务器 Open Connector 网关密钥；此处保存的网关配置优先生效，密钥不会回显。
+        </p>
       )}
       {ready && (
         <>
@@ -108,7 +118,7 @@ export default function AdminPage() {
           />
         </>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -126,14 +136,19 @@ function ConfigForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   return (
-    <section style={{ marginTop: 32 }}>
-      <h2>{title}</h2>
-      <p>
-        {current ? `已保存 · 版本 ${current.version}` : '尚未配置'} ·{' '}
-        {kind === 'model' ? '运行时尚未启用' : '仅用于显式账号授权，真实动作尚未开放'}
-      </p>
+    <Panel>
+      <div className="panel-head">
+        <div>
+          <h2>{title}</h2>
+          <p>
+            {current ? `已保存 · 版本 ${current.version}` : '尚未配置'} ·{' '}
+            {kind === 'model' ? '新的对话会使用该模型' : '仅用于显式账号授权'}
+          </p>
+        </div>
+      </div>
       <form
         key={current?.version ?? 0}
+        className="stack-form"
         onSubmit={async (event) => {
           event.preventDefault();
           if (busy) return;
@@ -180,9 +195,8 @@ function ConfigForm({
             setBusy(false);
           }
         }}
-        style={{ display: 'grid', gap: 12 }}
       >
-        <label>
+        <label className="stack-label">
           API 地址
           <input
             name="baseUrl"
@@ -190,11 +204,10 @@ function ConfigForm({
             defaultValue={current?.baseUrl ?? ''}
             required
             disabled={busy}
-            style={{ display: 'block', width: '100%' }}
           />
         </label>
         {kind === 'model' && (
-          <label>
+          <label className="stack-label">
             模型名称
             <input
               name="model"
@@ -202,11 +215,10 @@ function ConfigForm({
               required
               maxLength={120}
               disabled={busy}
-              style={{ display: 'block', width: '100%' }}
             />
           </label>
         )}
-        <label>
+        <label className="stack-label">
           {kind === 'model' ? 'API Key' : 'Project API Key'}
           <input
             name="apiKey"
@@ -215,13 +227,20 @@ function ConfigForm({
             required
             maxLength={4096}
             disabled={busy}
-            style={{ display: 'block', width: '100%' }}
           />
         </label>
-        <p>地址须由服务端允许列表批准。每次保存需重新输入密钥，不在浏览器持久化。</p>
-        <button disabled={busy}>{busy ? '正在保存…' : '保存配置'}</button>
-        <p role="status">{message}</p>
+        <p className="small muted m-0">
+          地址须由服务端允许列表批准。每次保存需重新输入密钥，不在浏览器持久化。
+        </p>
+        <div className="account-actions">
+          <button type="submit" className="shell-link-button" data-tone="primary" disabled={busy}>
+            {busy ? '正在保存…' : '保存配置'}
+          </button>
+        </div>
+        <p role="status" className="small muted m-0">
+          {message}
+        </p>
       </form>
-    </section>
+    </Panel>
   );
 }

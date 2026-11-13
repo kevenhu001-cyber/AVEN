@@ -99,8 +99,6 @@ try {
     !afterRemoval.data.some((item) => item.title === '机器人与连接器设计'),
     'withdrawn memory is removed on the server',
   );
-
-  await page.getByRole('button', { name: '关闭面板' }).click();
   await openPanel(page, '通知');
   const inviteBox = page.getByRole('checkbox', { name: '收到连接邀请时通知我' });
   await expect(inviteBox).toBeVisible();
@@ -127,8 +125,6 @@ try {
     data: { connectionInvitations: before.connectionInvitations, expectedVersion: before.version },
   });
   check(stale.status() === 409, 'stale preference version is rejected by the server');
-
-  await page.getByRole('button', { name: '关闭面板' }).click();
   check(errors.length === 0, 'no uncaught browser errors');
 
   mkdirSync('var/design/personal-web-review', { recursive: true });
@@ -137,10 +133,9 @@ try {
   await page.screenshot({ path: 'var/design/personal-web-review/desktop-review.png' });
   await page.getByRole('tab', { name: '已确认信息' }).click();
   await page.screenshot({ path: 'var/design/personal-web-review/desktop-memories.png' });
-  await page.getByRole('button', { name: '关闭面板' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await openPanel(page, '记忆与上下文');
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('.page-head h1')).toBeVisible();
   await page.screenshot({ path: 'var/design/personal-web-review/mobile-review.png' });
   console.log(`${checks} checks passed. Synthetic account only; no secrets printed.`);
 } finally {

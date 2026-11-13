@@ -18,6 +18,7 @@ import {
   AgentRunSchema,
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
+  AIProviderStatusSchema,
   RequestIdSchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
@@ -45,6 +46,11 @@ function requireIdempotencyKey(value: string | undefined): string {
 @UseGuards(AuthGuard)
 export class AgentController {
   constructor(@Inject(AgentService) private readonly agent: AgentService) {}
+
+  @Get('provider/status')
+  async providerStatus(@CurrentAuth() auth: AuthContext) {
+    return AIProviderStatusSchema.parse(await this.agent.getProviderStatus(auth));
+  }
 
   @Post('turns')
   @HttpCode(201)

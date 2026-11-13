@@ -1,5 +1,11 @@
 # AVEN
 
+2026-11-13 **WEB-08 交互细化与消息动效门控**：消息弹出改为 `data-fresh` 门控，只对本次进入页面后新增的气泡播放，重新打开已有对话不重播；助手气泡按「该 turn 是否已出现回复」判断，流式首字仍会弹入，`RichText` 用 `memo` 减少流式重渲染；新增未读回复徽标、失败/取消后「再试一次」、已取消部分回复可复制、7000 字起的 `n/8000` 输入计数、全局 Escape 关闭查找，并修复 `/chat?q=` 组件复用时的参数同步；连接应用行、应用项、首页 Bot 与底部导航补充过渡反馈。实际验证：单测 50 文件/346 项、E2E 30 项、构建 12 任务、format/lint/Web typecheck 通过。详见 [WEB-08](docs/development/WEB_08.md)。
+
+2026-11-13 **WEB-07 交互打磨与消息动画**：用户/助手消息分别从右下/左下弹出，思考指示器同步入场；SSE 增量改为 `requestAnimationFrame` 缓冲，避免逐 token 渲染；完成后可复制回复，空对话提供快捷提问，`Ctrl/Cmd + K` 打开聊天内查找；页面切换增加 300ms 过渡，按钮/卡片/导航补充 hover 与按压反馈，骨架屏改为移动渐变；移动端对话页去掉重复顶栏，`prefers-reduced-motion` 覆盖新外壳。实际验证：单测 346、E2E 30、构建 12 任务通过；真实推理与复制交互通过。详见 [WEB-07](docs/development/WEB_07.md)。
+
+2026-11-13 **WEB-06 独立页面、统一界面与真实接入**：个人 Web 从屏幕栈/Sheet 改为独立路由（`/`、`/chat`、`/profile`、`/memory`、`/connections`、`/notifications`、`/account`、`/apps`、`/apps/[id]`），所有页面共用 Halo 深色侧栏/底部导航；新增 `0043_agent_provider_runtime` 迁移，API 解析本人→平台→环境 Provider，Worker 解密并执行真实模型，新增模型状态接口与本人模型配置；对话与连接器改为真实 Provider/Open Connector，未配置凭据时禁用而不是返回 Mock。实际验证：单测 346 项、E2E 28 项、构建 12 任务、`db:verify` 43 个迁移通过；本机真实推理通过，网关网络不可达返回 503。详见 [WEB-06](docs/development/WEB_06.md)。
+
 2026-11-13 **插件目录与 SVG 扩充**：新增 `/plugins`、`/plugins/[id]`，提供搜索、分类、可用状态、动作表单与 Mock 结果；新增 17 个 SVG，本地图标共 23 个。9 个扩展服务仅作“即将开放”介绍，不代表真实集成。见 [交付与验证](docs/development/PLUGIN_DIRECTORY.md)。
 
 2026-11-13 **插件图标与网关配置复用**：按用户授权复用 Socrates 的 6 个 SVG（保留来源），本地配置现有 OOMOL Project API Key；管理员数据库配置优先、密钥不回显。尚未自动创建真实授权或修改管理员角色，见 [ADR-020](docs/architecture/decisions/0020-connector-brand-assets-environment.md)。
@@ -130,6 +136,8 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | [WEB-02 记忆复核与通知偏好](docs/development/WEB_02.md) | 候选复核、记忆编辑撤回、通知偏好与共享客户端扩展 |
 | [WEB-03 连接器与会话小组件](docs/development/WEB_03.md) | 连接器目录、动态表单、12 种会话小组件渲染与外部跳转确认 |
 | [WEB-04 Halo 界面与动效](docs/development/WEB_04.md) | Grok Bot 风格深色主题、屏幕栈与 Sheet、Mock 授权卡片、CSS 动效与 UI 夹具截图 |
+| [WEB-06 独立页面与真实接入](docs/development/WEB_06.md) | 独立路由、统一 Halo 外壳、真实模型解析/Worker 解密、真实连接器状态与禁用 Mock 路径 |
+| [WEB-07 交互打磨与消息动画](docs/development/WEB_07.md) | 消息弹出、流式 rAF 缓冲、复制/快捷提问、页面过渡与减少动态 |
 | [安全与试点准入交付记录](docs/development/BLOCKS_AND_REPORTS.md) | 个人拉黑、举报、24h 邀请频控与双向阻断验证 |
 | [日程与活动 API](docs/api/AVAILABILITY_EVENTS.md) | 忙闲块、忙闲投影、共享授权、多方求交与活动状态机 |
 | [Agent 运行时 API](docs/api/AGENT.md) | turn 创建、run 状态、SSE 事件流、取消与保留契约 |

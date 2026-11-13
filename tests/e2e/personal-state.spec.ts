@@ -89,12 +89,12 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
   await expect(page.getByRole('button', { name: '核对发送结果', exact: true })).toBeVisible();
   expect(sends).toBe(1);
   await page.getByRole('button', { name: '返回', exact: true }).click();
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.goto('/account');
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: '账号与设置' })).toBeVisible();
   expired = true;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByRole('heading', { name: '回到你的 AVEN' })).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('还没写完', { exact: true })).toHaveCount(0);
 });
 
@@ -112,4 +112,72 @@ test('chat menu remains open when reopened during its exit transition', async ({
   await expect(page.getByRole('menu')).toHaveAttribute('data-state', 'open');
   await page.waitForTimeout(250);
   await expect(page.getByRole('menu')).toHaveAttribute('data-state', 'open');
+});
+
+test('assistant replies animate in, quick prompts send, and copy confirms', async ({
+  page,
+  context,
+}) => {
+  const runId = '11111111-1111-4111-8111-111111111111';
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await page.route('**/api/v1/auth/me', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify(me) }),
+  );
+  await page.route('**/api/v1/agent/turns', (route) =>
+    route.fulfill({
+      status: 201,
+      json: {
+        runId,
+        conversationId: '22222222-2222-4222-8222-222222222222',
+        status: 'queued',
+        streamUrl: `/api/v1/agent/runs/${runId}/events`,
+      },
+    }),
+  );
+  await page.route('**/api/v1/agent/runs/*/events', async (route) => {
+    const timestamp = new Date().toISOString();
+    const frames = [
+      { id: 1, type: 'turn.started' },
+      { id: 2, type: 'message.delta', text: '你好，' },
+      { id: 3, type: 'message.delta', text: '我是 AVEN。' },
+      { id: 4, type: 'turn.completed' },
+    ];
+    const body = frames
+      .map(
+        (frame) =>
+          `id: ${frame.id}\nevent: ${frame.type}\ndata: ${JSON.stringify({
+            schema_version: 1,
+            run_id: runId,
+            sequence: frame.id,
+            timestamp,
+            ...(frame.text ? { text: frame.text } : {}),
+          })}\n\n`,
+      )
+      .join('');
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream; charset=utf-8' },
+      body,
+    });
+  });
+  await page.goto('/chat');
+  await page.getByRole('button', { name: '帮我整理今天的想法', exact: true }).click();
+  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  const userBubble = page.locator('.user-bubble').last();
+  await expect(userBubble).toHaveText('帮我整理今天的想法');
+  expect(await userBubble.evaluate((node) => getComputedStyle(node).animationName)).toContain(
+    'halo-bubble-out',
+  );
+  const bubble = page.locator('.assistant-bubble').last();
+  await expect(bubble).toHaveText('你好，我是 AVEN。');
+  expect(await bubble.evaluate((node) => getComputedStyle(node).animationName)).toContain(
+    'halo-bubble-in',
+  );
+  await page.locator('.chat-turn').last().hover();
+  await page.getByRole('button', { name: '复制回复', exact: true }).click();
+  await expect(page.getByText('已复制', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('你好，我是 AVEN。');
 });

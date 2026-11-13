@@ -1640,8 +1640,17 @@ export const UserAIProviderMetadataSchema = z
     updatedAt: z.iso.datetime(),
   })
   .strict();
+export const AIProviderStatusSchema = z
+  .object({
+    configured: z.boolean(),
+    source: z.enum(['user', 'platform', 'environment']),
+    model: z.string(),
+    baseUrl: z.string().nullable(),
+  })
+  .strict();
 export type UserAIProviderInput = z.infer<typeof UserAIProviderInputSchema>;
 export type UserAIProviderMetadata = z.infer<typeof UserAIProviderMetadataSchema>;
+export type AIProviderStatus = z.infer<typeof AIProviderStatusSchema>;
 
 const UniqueMemoryIds = z
   .array(z.uuid())

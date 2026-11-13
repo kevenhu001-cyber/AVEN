@@ -166,11 +166,63 @@ export class AgentService implements OnModuleDestroy {
     return { principalId: auth.principalId, userId: auth.userId };
   }
 
+  /**
+   * Effective provider for this user: their own encrypted configuration first,
+   * then the platform configuration, then the environment default. The run row
+   * records the result so the Worker can load the matching key material.
+   */
+  private async resolveProvider(auth: AuthContext): Promise<{ provider: string; model: string }> {
+    const effective = await withRequestContext(
+      this.getPool(),
+      this.context(auth),
+      async (client) => {
+        const result = await client.query<{ source: string; base_url: string; model: string }>(
+          'SELECT * FROM app.get_effective_ai_provider()',
+        );
+        return result.rows[0];
+      },
+    );
+    if (effective) return { provider: 'openai_compatible', model: effective.model };
+    return { provider: this.provider, model: this.model };
+  }
+
+  async getProviderStatus(auth: AuthContext): Promise<{
+    configured: boolean;
+    source: 'user' | 'platform' | 'environment';
+    model: string;
+    baseUrl: string | null;
+  }> {
+    const effective = await withRequestContext(
+      this.getPool(),
+      this.context(auth),
+      async (client) => {
+        const result = await client.query<{ source: string; base_url: string; model: string }>(
+          'SELECT * FROM app.get_effective_ai_provider()',
+        );
+        return result.rows[0];
+      },
+    );
+    if (effective)
+      return {
+        configured: true,
+        source: effective.source === 'user' ? 'user' : 'platform',
+        model: effective.model,
+        baseUrl: effective.base_url,
+      };
+    return {
+      configured: this.provider !== 'mock',
+      source: 'environment',
+      model: this.model,
+      baseUrl: null,
+    };
+  }
+
   async createTurn(
     auth: AuthContext,
     input: AgentTurnRequest,
     idempotencyKey: string,
   ): Promise<AgentTurnResponse> {
+    const resolved = await this.resolveProvider(auth);
     const requestHash = createHash('sha256')
       .update(
         JSON.stringify({
@@ -204,8 +256,8 @@ export class AgentService implements OnModuleDestroy {
           'POST',
           '/api/v1/agent/turns',
           requestHash,
-          this.provider,
-          this.model,
+          resolved.provider,
+          resolved.model,
         ]);
         turn = result.rows[0];
       } else {
@@ -221,8 +273,8 @@ export class AgentService implements OnModuleDestroy {
           requestHash,
           input.conversationId ?? null,
           input.input,
-          this.provider,
-          this.model,
+          resolved.provider,
+          resolved.model,
         ]);
         turn = result.rows[0];
       }

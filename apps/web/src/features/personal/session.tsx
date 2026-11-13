@@ -1,16 +1,30 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { MeResponse } from '@aven/contracts';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { api, authExpired, errorText, webCall } from './api';
-import { AuthForm } from './auth-form';
-import { Workspace } from './workspace';
-import { Mascot } from './mascot';
-import './personal.css';
 
-export function PersonalApp() {
+type SessionState = {
+  me: MeResponse | null;
+  status: 'checking' | 'ready' | 'error';
+  problem: string;
+  suspended: boolean;
+  recheck: () => Promise<void>;
+  invalidate: () => void;
+  logout: () => Promise<void>;
+};
+
+const SessionContext = createContext<SessionState | null>(null);
+
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [status, setStatus] = useState<'checking' | 'ready' | 'error'>('checking');
   const [problem, setProblem] = useState('');
@@ -89,12 +103,7 @@ export function PersonalApp() {
     };
   }, [check, recheck]);
 
-  async function signedIn() {
-    channel.current?.postMessage('changed');
-    await recheck();
-  }
-
-  async function logout() {
+  const logout = useCallback(async () => {
     setStatus('checking');
     try {
       await api.auth.logout(webCall());
@@ -107,32 +116,27 @@ export function PersonalApp() {
         setProblem(errorText(error));
       }
     }
-  }
+  }, [invalidate]);
 
-  if (me)
-    return (
-      <Workspace
-        key={me.user.id}
-        me={me}
-        suspended={status !== 'ready'}
-        problem={problem}
-        onRetry={() => void recheck()}
-        onExpired={invalidate}
-        onLogout={() => void logout()}
-      />
-    );
+  return (
+    <SessionContext.Provider
+      value={{
+        me,
+        status,
+        problem,
+        suspended: status !== 'ready',
+        recheck,
+        invalidate,
+        logout,
+      }}
+    >
+      {children}
+    </SessionContext.Provider>
+  );
+}
 
-  if (status !== 'ready')
-    return (
-      <main className="personal-app aven-theme-halo auth-screen">
-        <section className="auth-card flex flex-col items-center gap-4">
-          <Mascot large state="thinking" />
-          <h1>{status === 'checking' ? '正在验证会话' : '暂时无法连接'}</h1>
-          {problem && <Alert variant="warning">{problem}</Alert>}
-          {status === 'error' && <Button onClick={() => void recheck()}>重新连接</Button>}
-        </section>
-      </main>
-    );
-
-  return <AuthForm onLogin={signedIn} />;
+export function useSession(): SessionState {
+  const value = useContext(SessionContext);
+  if (!value) throw new Error('useSession must be used inside SessionProvider');
+  return value;
 }

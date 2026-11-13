@@ -119,7 +119,9 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
         >
           {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
         </Button>
-        <p className="small muted">开发验证版 · AI 使用 Mock 服务 · 尚未开放真实模型与邮箱连接</p>
+        <p className="small muted">
+          开发验证版 · 真实模型按配置启用 · 第三方授权由 Open Connector 网关处理
+        </p>
         <a className="small muted" href="/diagnostics">
           工程诊断
         </a>

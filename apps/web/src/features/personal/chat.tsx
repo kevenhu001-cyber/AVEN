@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { ConnectorAuthCard } from './halo/connector-auth-card';
 import { Menu, RoundButton } from './halo/primitives';
 import { countHighlights, highlightSegments, stepMatch } from './halo/text';
 import { buildTimeline, isNearBottom, recallVisible } from './halo/timeline';
-import type { AuthBook, ChatExtra } from './halo/types';
+import type { ChatExtra } from './halo/types';
 import { WidgetCard } from './plugins/widget-card';
 import type { ChatTurn, useAgentChat } from './use-agent-chat';
 
@@ -35,7 +35,7 @@ type Item = { key: string; createdAt: number } & (
 );
 
 /** Text with inline code and in-chat search highlights. `offset` is the global index of its first match. */
-function RichText({
+const RichText = memo(function RichText({
   text,
   query,
   offset,
@@ -71,7 +71,7 @@ function RichText({
       })}
     </>
   );
-}
+});
 
 /** Vertical-only scroll inside the transcript; scrollIntoView would also shift overflow-hidden ancestors. */
 function centerWithin(container: HTMLElement, target: HTMLElement) {
@@ -81,6 +81,38 @@ function centerWithin(container: HTMLElement, target: HTMLElement) {
   container.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
+function CopyButton({
+  text,
+  onUnavailable,
+}: {
+  text: string;
+  onUnavailable: (message: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="halo-msg-action"
+      aria-label={copied ? '已复制回复' : '复制回复'}
+      onClick={() => {
+        void navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+          })
+          .catch(() => {
+            setCopied(false);
+            onUnavailable('无法访问剪贴板，请手动选择文本。');
+          });
+      }}
+    >
+      <Icon name={copied ? 'check' : 'copy'} size={14} />
+      {copied ? '已复制' : '复制'}
+    </button>
+  );
+}
+
 export function Chat({
   chat,
   suspended,
@@ -88,12 +120,13 @@ export function Chat({
   botName,
   extras,
   plugins,
-  auth,
+  connectorStatus,
   celebrate,
   searchRequest,
   onBack,
   onOpenProfile,
   onOpenApps,
+  onOpenConnector,
   onNewChat,
   onShareTemplate,
   onRunAction,
@@ -105,12 +138,13 @@ export function Chat({
   botName: string;
   extras: ChatExtra[];
   plugins: PluginManifest[];
-  auth: AuthBook;
+  connectorStatus: (pluginId: string) => string | undefined;
   celebrate: boolean;
   searchRequest: { query: string; seq: number } | null;
   onBack: () => void;
   onOpenProfile: () => void;
   onOpenApps: () => void;
+  onOpenConnector: (plugin: PluginManifest) => void;
   onNewChat: () => void;
   onShareTemplate: () => void;
   onRunAction: (plugin: PluginManifest, actionName: string) => void;
@@ -127,16 +161,63 @@ export function Chat({
   const [finding, setFinding] = useState(false);
   const [query, setQuery] = useState('');
   const [current, setCurrent] = useState(0);
-  const [lastSearchSeq, setLastSearchSeq] = useState(0);
+  const [seenSearch, setSeenSearch] = useState<{ query: string; seq: number } | null>(null);
+  const [unread, setUnread] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const seenAnswers = useRef(0);
+  // An entrance animation belongs to content added after this screen mounted. Re-opening an
+  // existing conversation must not replay every bubble, and a running reply must still pop in
+  // when its first token arrives (so freshness is tracked per turn, not read from status).
+  // The container is initialised once from the first render and only used to decide motion.
+  const [animationState] = useState(() => ({
+    known: {
+      turns: new Set(chat.turns.map((turn) => turn.key)),
+      answers: new Set(chat.turns.filter((turn) => turn.answer).map((turn) => turn.key)),
+      extras: new Set(extras.map((extra) => extra.key)),
+    },
+    fresh: {
+      turns: new Set<string>(),
+      answers: new Set<string>(),
+      extras: new Set<string>(),
+    },
+  }));
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  if (searchRequest && searchRequest.seq !== lastSearchSeq) {
-    setLastSearchSeq(searchRequest.seq);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setFinding(true);
+        setCurrent(0);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!finding) return;
+    const onKey = (event: KeyboardEvent) => {
+      // Menus and sheets handle Escape first and mark the event as prevented.
+      if (event.key === 'Escape' && !event.defaultPrevented) setFinding(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [finding]);
+
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    input.current?.focus({ preventScroll: true });
+  }, []);
+
+  // A render-phase update (not an effect) so a search query from the URL opens the find bar
+  // in the same commit, including when the chat page stays mounted across query changes.
+  if (searchRequest && searchRequest !== seenSearch) {
+    setSeenSearch(searchRequest);
     setFinding(true);
     setQuery(searchRequest.query);
     setCurrent(0);
@@ -156,6 +237,29 @@ export function Chat({
       extra,
     })),
   ];
+  function freshTurn(key: string) {
+    if (!animationState.known.turns.has(key)) {
+      animationState.known.turns.add(key);
+      animationState.fresh.turns.add(key);
+    }
+    return animationState.fresh.turns.has(key);
+  }
+  function freshAnswer(turn: ChatTurn) {
+    if (!turn.answer) return false;
+    if (!animationState.known.answers.has(turn.key)) {
+      animationState.known.answers.add(turn.key);
+      animationState.fresh.answers.add(turn.key);
+    }
+    return animationState.fresh.answers.has(turn.key);
+  }
+  function freshExtra(key: string) {
+    if (!animationState.known.extras.has(key)) {
+      animationState.known.extras.add(key);
+      animationState.fresh.extras.add(key);
+    }
+    return animationState.fresh.extras.has(key);
+  }
+  const answerCount = chat.turns.reduce((count, turn) => count + (turn.answer ? 1 : 0), 0);
   const timeline = buildTimeline(items, Math.max(now, ...items.map((item) => item.createdAt)));
   const lastUser = [...chat.turns].reverse()[0];
   const highlight = finding ? query : '';
@@ -180,12 +284,18 @@ export function Chat({
         ? 'sleepy'
         : 'idle';
 
-  function measure() {
+  const measure = useCallback(() => {
     const node = transcript.current;
     if (!node) return;
     nearBottom.current = isNearBottom(node.scrollHeight, node.scrollTop, node.clientHeight);
-    if (nearBottom.current) setLatest(false);
-    else if (node.scrollHeight > node.clientHeight + 120) setLatest(true);
+    if (nearBottom.current) {
+      setLatest(false);
+      seenAnswers.current = answerCount;
+      setUnread(0);
+    } else {
+      if (node.scrollHeight > node.clientHeight + 120) setLatest(true);
+      setUnread(Math.max(0, answerCount - seenAnswers.current));
+    }
     setScrolled(node.scrollTop > 4);
     const bubbles = node.querySelectorAll<HTMLElement>('.user-bubble');
     const last = bubbles[bubbles.length - 1];
@@ -197,16 +307,19 @@ export function Chat({
         header.current?.offsetHeight ?? 72,
       ),
     );
-  }
+  }, [answerCount]);
 
   useLayoutEffect(() => {
     const node = transcript.current;
     if (!node) return;
-    if (nearBottom.current) node.scrollTop = node.scrollHeight;
-    else setLatest(true);
+    if (nearBottom.current) {
+      node.scrollTop = node.scrollHeight;
+      seenAnswers.current = answerCount;
+      setUnread(0);
+    }
     // Scroll-linked header state is recomputed after content changes.
     measure();
-  }, [chat.turns, extras]);
+  }, [chat.turns, extras, answerCount, measure]);
 
   useEffect(() => {
     const node = input.current;
@@ -236,11 +349,13 @@ export function Chat({
     const node = transcript.current;
     if (node) node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' });
     nearBottom.current = true;
+    seenAnswers.current = answerCount;
     setLatest(false);
+    setUnread(0);
   }
 
   return (
-    <section className="halo-chat" aria-label="与 AVEN 对话">
+    <section className="halo-chat" aria-label="与 AVEN 对话" aria-busy={chat.busy}>
       <header ref={header} className="halo-chat-head" data-scrolled={scrolled}>
         <RoundButton icon="back" label="返回" onClick={onBack} />
         <button
@@ -362,7 +477,18 @@ export function Chat({
             <Mascot size={88} state="hello" />
             <h1>今天，想聊点什么？</h1>
             <p className="muted">从一个还没成形的想法开始也可以。</p>
-            <p className="small muted">当前是确定性 Mock 回复，不代表真实模型能力。</p>
+            <div className="halo-quick-prompts">
+              {['帮我整理今天的想法', '我最近在忙什么？', '连接 Gmail'].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="halo-chip"
+                  onClick={() => chat.send(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         <div className="halo-thread">
@@ -376,12 +502,21 @@ export function Chat({
             const item = entry.item;
             if (item.type === 'turn') {
               const turn = item.turn;
+              const userFresh = freshTurn(turn.key);
+              const answerFresh = freshAnswer(turn);
               const waiting =
                 ['sending', 'queued'].includes(turn.status) ||
                 (turn.status === 'running' && !turn.answer);
               return (
-                <article key={entry.key} className="chat-turn halo-turn">
-                  <p className="chat-bubble user-bubble halo-enter">
+                <article
+                  key={entry.key}
+                  className="chat-turn halo-turn"
+                  data-fresh={userFresh ? 'true' : undefined}
+                >
+                  <p
+                    className="chat-bubble user-bubble"
+                    data-fresh={userFresh ? 'true' : undefined}
+                  >
                     <RichText
                       text={turn.input}
                       query={highlight}
@@ -391,8 +526,9 @@ export function Chat({
                   </p>
                   {turn.answer ? (
                     <p
-                      className="chat-bubble assistant-bubble halo-enter"
+                      className="chat-bubble assistant-bubble"
                       data-streaming={turn.status === 'running'}
+                      data-fresh={answerFresh ? 'true' : undefined}
                     >
                       <RichText
                         text={turn.answer}
@@ -403,16 +539,35 @@ export function Chat({
                     </p>
                   ) : (
                     waiting && (
-                      <p className="halo-typing halo-enter" aria-label={labels[turn.status]}>
+                      <p
+                        className="halo-typing"
+                        aria-label={labels[turn.status]}
+                        data-fresh={userFresh ? 'true' : undefined}
+                      >
                         <span />
                         <span />
                         <span />
                       </p>
                     )
                   )}
-                  <div className="turn-state" data-status={turn.status}>
-                    <span>{labels[turn.status]}</span>
-                    {turn.status === 'completed' && <span className="halo-turn-mode">· Mock</span>}
+                  <div className="halo-turn-meta" data-fresh={userFresh ? 'true' : undefined}>
+                    <div className="turn-state" data-status={turn.status} aria-live="polite">
+                      <span>{labels[turn.status]}</span>
+                    </div>
+                    {turn.answer && !activeStatuses.includes(turn.status) && (
+                      <CopyButton text={turn.answer} onUnavailable={onUnavailable} />
+                    )}
+                    {(turn.status === 'failed' || turn.status === 'cancelled') && (
+                      <button
+                        type="button"
+                        className="halo-msg-action"
+                        aria-label="重新发送这条提问"
+                        onClick={() => chat.send(turn.input)}
+                      >
+                        <Icon name="refresh" size={14} />
+                        再试一次
+                      </button>
+                    )}
                   </div>
                   {turn.error && (
                     <Alert variant="warning" className="my-2">
@@ -433,41 +588,55 @@ export function Chat({
               );
             }
             const extra = item.extra;
+            const extraFresh = freshExtra(item.key);
             if (extra.kind === 'auth') {
               const plugin = plugins.find((candidate) => candidate.id === extra.pluginId);
               if (!plugin) return null;
               return (
-                <article key={entry.key} className="chat-turn halo-turn halo-enter">
+                <article
+                  key={entry.key}
+                  className="chat-turn halo-turn halo-enter"
+                  data-fresh={extraFresh ? 'true' : undefined}
+                >
                   <ConnectorAuthCard
                     plugin={plugin}
-                    state={auth.states[plugin.id] ?? 'idle'}
+                    status={connectorStatus(plugin.id)}
                     botName={botName}
-                    onRequest={() => auth.dispatch(plugin.id, 'request')}
-                    onCancel={() => auth.dispatch(plugin.id, 'cancel')}
-                    onConfirm={() => auth.dispatch(plugin.id, 'confirm')}
-                    onDisconnect={() => auth.dispatch(plugin.id, 'disconnect')}
+                    onAuthorize={() => onOpenConnector(plugin)}
                     onRunAction={(name) => onRunAction(plugin, name)}
                   />
-                  <p className="chat-bubble assistant-bubble halo-local-note">
-                    {auth.states[plugin.id] === 'connected'
-                      ? `${plugin.name} 已在本页模拟连接。点上方的动作即可用 Mock 数据试用。`
-                      : `请在卡片上完成 ${plugin.name} 授权，连上后就能在对话里调用它。`}
+                  <p
+                    className="chat-bubble assistant-bubble halo-local-note"
+                    data-fresh={extraFresh ? 'true' : undefined}
+                  >
+                    {connectorStatus(plugin.id) === 'connected'
+                      ? `${plugin.name} 已通过网关连接。`
+                      : `前往账号连接页完成 ${plugin.name} 的真实授权。`}
                     <span className="halo-local-tag">本页提示 · 非模型回复</span>
                   </p>
                 </article>
               );
             }
             return (
-              <article key={entry.key} className="chat-turn widget-turn halo-turn halo-enter">
+              <article
+                key={entry.key}
+                className="chat-turn widget-turn halo-turn halo-enter"
+                data-fresh={extraFresh ? 'true' : undefined}
+              >
                 <div className="widget-turn-head">
                   <span>
                     {extra.pluginName} · {extra.actionTitle}
                   </span>
                   <Badge variant={extra.providerMode === 'live' ? 'success' : 'warning'}>
-                    {extra.providerMode === 'live' ? '实时数据' : 'Mock 数据'}
+                    {extra.providerMode === 'live' ? '实时数据' : '样例数据'}
                   </Badge>
                 </div>
-                <p className="chat-bubble assistant-bubble">{extra.summary}</p>
+                <p
+                  className="chat-bubble assistant-bubble"
+                  data-fresh={extraFresh ? 'true' : undefined}
+                >
+                  {extra.summary}
+                </p>
                 {extra.widgets.map((widget) => (
                   <WidgetCard key={widget.widgetId} widget={widget} />
                 ))}
@@ -479,13 +648,19 @@ export function Chat({
       <button
         type="button"
         className="halo-latest halo-press"
-        data-visible={latest}
-        tabIndex={latest ? 0 : -1}
-        aria-hidden={!latest}
-        aria-label="回到最新消息"
+        data-visible={latest || unread > 0}
+        data-unread={unread > 0}
+        tabIndex={latest || unread > 0 ? 0 : -1}
+        aria-hidden={!(latest || unread > 0)}
+        aria-label={unread > 0 ? `回到最新消息，${unread} 条新回复` : '回到最新消息'}
         onClick={scrollToLatest}
       >
         <Icon name="down" size={22} />
+        {unread > 0 && (
+          <span className="halo-latest-count" aria-hidden="true">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
       </button>
       <form
         className="halo-composer"
@@ -495,6 +670,15 @@ export function Chat({
           chat.send();
         }}
       >
+        {chat.draft.length > 7000 && (
+          <span
+            className="halo-composer-count"
+            data-limit={chat.draft.length >= 8000 ? 'true' : undefined}
+            aria-live="polite"
+          >
+            {chat.draft.length}/8000
+          </span>
+        )}
         <button
           type="button"
           className="halo-composer-plus halo-press"

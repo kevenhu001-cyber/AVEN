@@ -4,10 +4,13 @@ import {
   AgentRunSchema,
   AgentCancelResponseSchema,
   AgentStreamEventSchema,
+  AIProviderStatusSchema,
+  UserAIProviderInputSchema,
+  UserAIProviderMetadataSchema,
   ApiErrorResponseSchema,
   RequestIdSchema,
 } from '@aven/contracts';
-import type { AgentTurnRequest, AgentStreamEvent } from '@aven/contracts';
+import type { AgentTurnRequest, AgentStreamEvent, UserAIProviderInput } from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
 import { ApiClientError } from './errors';
 import { readSse } from './sse';
@@ -29,6 +32,47 @@ export function createAgentClient(
   }
   const path = (runId: string) => `/api/v1/agent/runs/${id(runId)}`;
   return {
+    providerStatus(call: ConnectionCallOptions) {
+      return request(
+        '/api/v1/agent/provider/status',
+        AIProviderStatusSchema.parse,
+        authenticatedOptions(call, false, invalid),
+      );
+    },
+    getProvider(call: ConnectionCallOptions) {
+      return request(
+        '/api/v1/agent/provider',
+        (value) => {
+          if (!value || typeof value !== 'object' || !('data' in value)) throw invalid();
+          const data = (value as { data: unknown }).data;
+          return data === null ? null : UserAIProviderMetadataSchema.parse(data);
+        },
+        authenticatedOptions(call, false, invalid),
+      );
+    },
+    saveProvider(input: UserAIProviderInput, call: ConnectionCallOptions) {
+      const parsed = UserAIProviderInputSchema.safeParse(input);
+      if (!parsed.success) throw invalid();
+      return request(
+        '/api/v1/agent/provider',
+        (value) => {
+          if (!value || typeof value !== 'object' || !('data' in value)) throw invalid();
+          return UserAIProviderMetadataSchema.parse((value as { data: unknown }).data);
+        },
+        { ...authenticatedOptions(call, 'PUT', invalid), body: parsed.data },
+      );
+    },
+    deleteProvider(version: number, call: ConnectionCallOptions) {
+      if (!Number.isSafeInteger(version) || version <= 0) throw invalid();
+      return request(
+        `/api/v1/agent/provider?version=${version}`,
+        (value) => {
+          if (!value || typeof value !== 'object' || !('deleted' in value)) throw invalid();
+          return Boolean((value as { deleted: unknown }).deleted);
+        },
+        authenticatedOptions(call, 'DELETE', invalid),
+      );
+    },
     createTurn(input: AgentTurnRequest, idempotencyKey: string, call: ConnectionCallOptions) {
       const parsed = AgentTurnRequestSchema.safeParse(input);
       if (!parsed.success) throw invalid();

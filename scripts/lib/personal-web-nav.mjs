@@ -1,49 +1,50 @@
-// Navigation helpers for the Halo personal Web (ADR-018): Home → Profile / Chat screen stack,
-// account sheet as the entry to 记忆与上下文 / 我的连接 / 通知. Shared by personal-web-*-verify.mjs.
+// Navigation helpers for the route-based personal Web.
+// Every destination is an independent page, so helpers navigate by URL and wait
+// for the page heading instead of opening an in-page screen or sheet.
 const settle = (page) => page.waitForTimeout(400);
 
+const panelRoutes = {
+  记忆与上下文: { path: '/memory', heading: '记忆与上下文' },
+  我的连接: { path: '/connections', heading: '我的连接' },
+  通知: { path: '/notifications', heading: '通知' },
+};
+
 export async function openHome(page) {
-  for (let i = 0; i < 3; i++) {
-    const back = page
-      .locator('.halo-screen[data-position="active"]')
-      .getByRole('button', { name: '返回', exact: true });
-    if (!(await back.count())) return;
-    await back.first().click();
-    await settle(page);
-  }
+  await page.goto('/');
+  await settle(page);
 }
 
 export async function openChat(page) {
-  const composer = page.getByLabel('向 AVEN 提问', { exact: true });
-  if (await composer.isVisible()) return;
-  await openHome(page);
-  await page.getByRole('button', { name: '与 AVEN 对话', exact: true }).click();
-  await composer.waitFor({ state: 'visible' });
+  await page.goto('/chat');
+  await page.getByLabel('向 AVEN 提问', { exact: true }).waitFor({ state: 'visible' });
   await settle(page);
 }
 
 export async function newChat(page) {
   await openHome(page);
   await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await page.getByLabel('向 AVEN 提问', { exact: true }).waitFor({ state: 'visible' });
   await settle(page);
 }
 
 export async function openAccount(page) {
-  await openHome(page);
-  await page.getByRole('button', { name: '我的账号', exact: true }).click();
-  await page.getByRole('dialog').waitFor();
+  await page.goto('/account');
+  await page.getByRole('heading', { name: '账号与设置', exact: true }).waitFor();
+  await settle(page);
 }
 
-/** name: 记忆与上下文 | 我的连接 | 通知 (rows of the account sheet). */
+/** name: 记忆与上下文 | 我的连接 | 通知. */
 export async function openPanel(page, name) {
-  await openAccount(page);
-  await page.getByRole('dialog').getByRole('button', { name, exact: true }).click();
-  await page.getByRole('dialog').waitFor();
+  const target = panelRoutes[name];
+  if (!target) throw new Error(`Unknown panel: ${name}`);
+  await page.goto(target.path);
+  await page.getByRole('heading', { name: target.heading, exact: true }).waitFor();
+  await settle(page);
 }
 
-/** Independent plugin directory; the existing connect-apps sheet remains available in chat. */
+/** Independent connector catalog. */
 export async function openPluginDirectory(page) {
-  await openAccount(page);
-  await page.getByRole('dialog').getByRole('link', { name: '插件目录', exact: true }).click();
-  await page.getByRole('heading', { name: '给对话更多能力' }).waitFor();
+  await page.goto('/apps');
+  await page.getByRole('heading', { name: '连接应用', exact: true }).waitFor();
+  await settle(page);
 }

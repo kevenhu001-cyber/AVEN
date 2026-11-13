@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyMasterNotification,
-  authStatusText,
-  authTransition,
   connectButton,
   credentialLabel,
   detectConnectorIntent,
@@ -178,7 +176,7 @@ describe('halo connect-apps catalog', () => {
       tone: 'done',
       disabled: true,
     });
-    expect(credentialLabel('mock_only')).toBe('仅 Mock');
+    expect(credentialLabel('mock_only')).toBe('尚未接入');
     expect(credentialLabel('missing_credentials')).toBe('缺少凭据');
     expect(credentialLabel('configured')).toBe('已配置');
   });
@@ -188,20 +186,6 @@ describe('halo connect-apps catalog', () => {
     expect(detectConnectorIntent('连上高德', catalog)?.id).toBe('amap.maps');
     expect(detectConnectorIntent('Gmail 是什么', catalog)).toBeNull();
     expect(detectConnectorIntent('帮我连接一下', catalog)).toBeNull();
-  });
-  it('moves the mock authorization card through its states', () => {
-    let state = authTransition('idle', 'confirm');
-    expect(state).toBe('idle');
-    state = authTransition(state, 'request');
-    expect(state).toBe('confirming');
-    expect(authTransition(state, 'cancel')).toBe('idle');
-    state = authTransition(state, 'confirm');
-    expect(state).toBe('authorizing');
-    expect(authTransition(state, 'disconnect')).toBe('authorizing');
-    state = authTransition(state, 'settled');
-    expect(state).toBe('connected');
-    expect(authStatusText(state)).toContain('Mock');
-    expect(authTransition(state, 'disconnect')).toBe('idle');
   });
   it('maps the master notification switch onto four preferences', () => {
     expect(masterNotificationState(applyMasterNotification(true))).toBe('on');
