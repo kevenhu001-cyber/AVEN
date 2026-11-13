@@ -55,7 +55,7 @@ export function AuthForm({ onLogin }: { onLogin: () => Promise<void> }) {
   }
 
   return (
-    <main className="auth-screen personal-app">
+    <main className="auth-screen personal-app aven-theme-halo">
       <section className="auth-card" aria-labelledby="auth-title">
         <Mascot large />
         <h1 id="auth-title">{mode === 'login' ? '回到你的 AVEN' : '从一次对话开始'}</h1>

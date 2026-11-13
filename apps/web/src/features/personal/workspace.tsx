@@ -1,23 +1,95 @@
 'use client';
 
-import { useCallback, useState, type FormEvent } from 'react';
-import type { MeResponse } from '@aven/contracts';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import type { MeResponse, PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { api, errorText, type PrivateProps } from './api';
+import { api, authExpired, errorText, webCall, type PrivateProps } from './api';
 import { Chat } from './chat';
 import { ConnectionsPanel } from './connections-panel';
 import { Icon } from './icon';
-import { Mascot } from './mascot';
+import { Mascot, type MascotState } from './mascot';
 import { MemoriesPanel } from './memories-panel';
-import { Modal } from './modal';
 import { NotificationsPanel } from './notifications-panel';
+import { ActionForm, ConnectAppsList } from './plugins/connector-dialog';
+import { authTransition, detectConnectorIntent, type AuthState } from './halo/catalog';
+import { HomeScreen } from './halo/home';
+import {
+  currentScreen,
+  initialStack,
+  popScreen,
+  pushScreen,
+  screenPosition,
+  type HaloScreen,
+} from './halo/navigation';
+import { Sheet, useToast } from './halo/primitives';
+import { ProfileScreen } from './halo/profile';
+import { templateFromConversation } from './halo/text';
+import type { AuthBook, CatalogState, ChatExtra, ConnectorResult } from './halo/types';
+import { useAgentChat } from './use-agent-chat';
 
-type Panel = 'memory' | 'connections' | 'notifications' | 'account' | null;
+const BOT_NAME = 'AVEN';
+const INTENT_HINT = /(连接|连上|接入|授权|绑定|添加|connect|authorize)/i;
+
+type Panel =
+  | { kind: 'memory' | 'connections' | 'notifications' | 'account' }
+  | { kind: 'placeholder'; title: string; body: string }
+  | { kind: 'action'; plugin: PluginManifest; actionName: string };
+
+const panelTitles = {
+  memory: '资料库 · 记忆与上下文',
+  connections: '我的连接',
+  notifications: '通知',
+  account: '我的账号',
+};
+
+function useCatalog(onExpired: () => void): CatalogState {
+  const [plugins, setPlugins] = useState<PluginManifest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
+  const pending = useRef<Promise<PluginManifest[]> | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  const load = useCallback(() => {
+    if (pending.current) return pending.current;
+    const abort = new AbortController();
+    controller.current = abort;
+    setLoading(true);
+    setError('');
+    const request = api.plugins
+      .listCatalog(webCall(abort.signal))
+      .then((result) => {
+        setPlugins(result.plugins);
+        setLoaded(true);
+        return result.plugins;
+      })
+      .catch((cause) => {
+        if (abort.signal.aborted) return [];
+        if (authExpired(cause)) onExpired();
+        else setError(errorText(cause));
+        return [];
+      })
+      .finally(() => {
+        pending.current = null;
+        if (!abort.signal.aborted) setLoading(false);
+      });
+    pending.current = request;
+    return request;
+  }, [onExpired]);
+  return { plugins, loading, loaded, error, load };
+}
 
 export function Workspace({
   me,
@@ -33,164 +105,326 @@ export function Workspace({
   onRetry: () => void;
   onLogout: () => void;
 }) {
-  const [panel, setPanel] = useState<Panel>(null);
-  const [menu, setMenu] = useState(false);
-  const close = useCallback(() => setPanel(null), []);
+  const chat = useAgentChat(suspended, onExpired);
+  const catalog = useCatalog(onExpired);
+  const [stack, setStack] = useState(initialStack);
+  const [panel, setPanel] = useState<Panel | null>(null);
+  const [lastPanel, setLastPanel] = useState<Panel | null>(null);
+  const [appsOpen, setAppsOpen] = useState(false);
+  const [appsQuery, setAppsQuery] = useState('');
+  const [onlyConnected, setOnlyConnected] = useState(false);
+  const [extras, setExtras] = useState<ChatExtra[]>([]);
+  const [authStates, setAuthStates] = useState<Record<string, AuthState>>({});
+  const [celebrate, setCelebrate] = useState(false);
+  const [searchRequest, setSearchRequest] = useState<{ query: string; seq: number } | null>(null);
+  const timers = useRef<number[]>([]);
+  const [toast, showToast] = useToast();
+  const screen = currentScreen(stack);
 
-  const nav = (
-    <nav className="personal-nav" aria-label="个人导航">
-      <Button
-        variant={panel === null ? 'secondary' : 'ghost'}
-        className="w-full justify-start rounded-[18px] text-foreground"
-        onClick={() => {
-          setPanel(null);
-          setMenu(false);
-        }}
-      >
-        对话
-      </Button>
-      <Button
-        variant={panel === 'memory' ? 'secondary' : 'ghost'}
-        className="w-full justify-start rounded-[18px] text-foreground"
-        onClick={() => {
-          setPanel('memory');
-          setMenu(false);
-        }}
-      >
-        记忆与上下文
-      </Button>
-      <Button
-        variant={panel === 'connections' ? 'secondary' : 'ghost'}
-        className="w-full justify-start rounded-[18px] text-foreground"
-        onClick={() => {
-          setPanel('connections');
-          setMenu(false);
-        }}
-      >
-        我的连接
-      </Button>
-      <Button
-        variant={panel === 'notifications' ? 'secondary' : 'ghost'}
-        className="w-full justify-start rounded-[18px] text-foreground"
-        onClick={() => {
-          setPanel('notifications');
-          setMenu(false);
-        }}
-      >
-        通知
-      </Button>
-    </nav>
+  useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
+
+  const later = useCallback((fn: () => void, ms: number) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  }, []);
+
+  const go = useCallback((next: HaloScreen) => setStack((state) => pushScreen(state, next)), []);
+  const back = useCallback(() => setStack((state) => popScreen(state)), []);
+  const open = useCallback((next: Panel) => {
+    setPanel(next);
+    setLastPanel(next);
+  }, []);
+
+  const connected = useMemo(
+    () =>
+      new Set(
+        Object.entries(authStates)
+          .filter(([, state]) => state === 'connected')
+          .map(([id]) => id),
+      ),
+    [authStates],
   );
 
+  const auth: AuthBook = {
+    states: authStates,
+    connected,
+    dispatch: (pluginId, event) => {
+      setAuthStates((states) => ({
+        ...states,
+        [pluginId]: authTransition(states[pluginId] ?? 'idle', event),
+      }));
+      if (event === 'confirm')
+        later(() => {
+          setAuthStates((states) => ({
+            ...states,
+            [pluginId]: authTransition(states[pluginId] ?? 'idle', 'settled'),
+          }));
+          setCelebrate(true);
+          later(() => setCelebrate(false), 2200);
+        }, 950);
+    },
+  };
+
+  function addAuthCard(plugin: PluginManifest, source: 'sheet' | 'intent') {
+    setExtras((items) =>
+      items.some(
+        (item) =>
+          item.kind === 'auth' &&
+          item.pluginId === plugin.id &&
+          (authStates[plugin.id] ?? 'idle') !== 'connected',
+      )
+        ? items
+        : [
+            ...items,
+            {
+              kind: 'auth',
+              key: `auth-${plugin.id}-${Date.now()}`,
+              pluginId: plugin.id,
+              createdAt: Date.now(),
+              source,
+            },
+          ],
+    );
+  }
+
+  const send = () => {
+    const text = chat.draft.trim();
+    const accepted = Boolean(text) && text.length <= 8000 && !chat.busy && !suspended;
+    chat.send();
+    if (!accepted || !INTENT_HINT.test(text)) return;
+    void (catalog.loaded ? Promise.resolve(catalog.plugins) : catalog.load()).then((plugins) => {
+      const plugin = detectConnectorIntent(text, plugins);
+      if (plugin) addAuthCard(plugin, 'intent');
+    });
+  };
+
+  function newChat() {
+    if (chat.busy) {
+      showToast('当前回复还在进行，请先停止或等待完成。');
+      return;
+    }
+    chat.reset();
+    setExtras([]);
+    go('chat');
+  }
+
+  function openApps() {
+    setAppsOpen(true);
+    if (!catalog.loaded) void catalog.load();
+  }
+
+  function addResult(result: ConnectorResult) {
+    setExtras((items) => [...items, { kind: 'result', createdAt: Date.now(), ...result }]);
+    setAppsOpen(false);
+    setPanel(null);
+    go('chat');
+  }
+
+  async function shareTemplate() {
+    const text = templateFromConversation(
+      BOT_NAME,
+      chat.turns.map((turn) => turn.input),
+    );
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('已复制对话模板（仅你的提问，未公开分享）。');
+    } catch {
+      open({ kind: 'placeholder', title: '分享为模板', body: text });
+    }
+  }
+
+  const mascotState: MascotState = celebrate
+    ? 'happy'
+    : chat.turns.some((turn) =>
+          ['sending', 'queued', 'running', 'cancelling'].includes(turn.status),
+        )
+      ? 'thinking'
+      : 'idle';
+
+  const shown = panel ?? lastPanel;
+  const screenProps = (name: HaloScreen) => {
+    const position = screenPosition(stack, name);
+    return {
+      className: 'halo-screen',
+      'data-screen': name,
+      'data-position': position,
+      'data-direction': stack.direction,
+      inert: position !== 'active',
+      'aria-hidden': position !== 'active',
+    } as const;
+  };
+
+  let panelBody: ReactNode = null;
+  let panelTitle = '';
+  if (shown?.kind === 'memory') panelBody = <MemoriesPanel onExpired={onExpired} />;
+  if (shown?.kind === 'connections')
+    panelBody = <ConnectionsPanel userId={me.user.id} onExpired={onExpired} />;
+  if (shown?.kind === 'notifications')
+    panelBody = (
+      <NotificationsPanel
+        onExpired={onExpired}
+        onConnections={() => open({ kind: 'connections' })}
+      />
+    );
+  if (shown?.kind === 'account')
+    panelBody = (
+      <Account me={me} onRetry={onRetry} onLogout={onLogout} onOpen={(kind) => open({ kind })} />
+    );
+  if (shown && shown.kind !== 'placeholder' && shown.kind !== 'action')
+    panelTitle = panelTitles[shown.kind];
+  if (shown?.kind === 'placeholder') {
+    panelTitle = shown.title;
+    panelBody = (
+      <div className="halo-placeholder">
+        <Mascot size={64} state="curious" />
+        <p className="halo-placeholder-body">{shown.body}</p>
+        <Badge variant="outline">尚未开放</Badge>
+      </div>
+    );
+  }
+  if (shown?.kind === 'action') {
+    const action = shown.plugin.actions.find((item) => item.name === shown.actionName);
+    panelTitle = `${shown.plugin.name} · 动作`;
+    panelBody = action ? (
+      <ActionForm
+        plugin={shown.plugin}
+        action={action}
+        onClose={() => setPanel(null)}
+        onResult={addResult}
+        onExpired={onExpired}
+      />
+    ) : null;
+  }
+
+  const appsPlugins = onlyConnected
+    ? catalog.plugins.filter((plugin) => connected.has(plugin.id))
+    : catalog.plugins;
+
   return (
-    <main className="personal-app app-shell">
-      {!suspended && (
-        <aside className="personal-sidebar">
-          <div className="sidebar-brand">
-            <Mascot />
-            <strong>AVEN</strong>
-          </div>
-          {nav}
-          <div className="sidebar-bottom">
-            <Button
-              variant="ghost"
-              className="profile-button h-auto w-full justify-start px-2.5 py-2 text-foreground"
-              onClick={() => setPanel('account')}
-            >
-              <span className="name-avatar">{Array.from(me.user.displayName)[0]}</span>
-              <span>
-                {me.user.displayName}
-                <small>个人空间</small>
-              </span>
-            </Button>
-            <a className="small muted px-2.5" href="/diagnostics">
-              工程诊断
-            </a>
-          </div>
-        </aside>
-      )}
-      <div className="personal-main">
-        {!suspended && (
-          <header className="personal-header">
-            <Button
-              variant="outline"
-              size="icon"
-              className="mobile-nav-button border-border bg-card text-foreground"
-              aria-label="打开导航"
-              onClick={() => setMenu(true)}
-            >
-              <Icon name="menu" />
-            </Button>
-            <div className="assistant-identity">
-              <Mascot />
-              <span>AVEN</span>
-            </div>
-            <Badge variant="outline" className="release-label rounded-full font-normal">
-              Web 开发验证版
-            </Badge>
-            <Button
-              variant="outline"
-              size="icon"
-              className="border-border bg-card text-foreground"
-              aria-label="我的账号"
-              onClick={() => setPanel('account')}
-            >
-              <Icon name="ellipsis" />
-            </Button>
-          </header>
-        )}
+    <main className="personal-app aven-theme-halo halo-app">
+      <div className="halo-shell">
         {suspended && (
-          <section className="session-cover flex flex-col items-center gap-4" aria-label="会话校验">
-            <Mascot large state="thinking" />
+          <section className="session-cover halo-cover" aria-label="会话校验">
+            <Mascot size={96} state="thinking" />
             <h1>先确认一下当前会话</h1>
             <p role="status">{problem || '正在重新验证，私人内容暂时隐藏。'}</p>
             <Button onClick={onRetry}>重新验证会话</Button>
           </section>
         )}
-        <Chat suspended={suspended} onExpired={onExpired} />
-      </div>
-      {!suspended && menu && (
-        <Modal title="AVEN" onClose={() => setMenu(false)}>
-          <div className="flex flex-col gap-3">
-            {nav}
-            <Separator />
-            <Button
-              variant="ghost"
-              className="profile-button h-auto w-full justify-start text-foreground"
-              onClick={() => {
-                setPanel('account');
-                setMenu(false);
-              }}
-            >
-              {me.user.displayName}
-            </Button>
+        <div className="halo-stage" hidden={suspended}>
+          <div {...screenProps('home')}>
+            {!suspended && (
+              <HomeScreen
+                displayName={me.user.displayName}
+                botName={BOT_NAME}
+                mascotState={mascotState}
+                busy={chat.busy}
+                onAccount={() => open({ kind: 'account' })}
+                onNewChat={newChat}
+                onOpenChat={() => go('chat')}
+                onOpenProfile={() => go('profile')}
+                onOpenApps={openApps}
+                onSearch={(query) => {
+                  setSearchRequest((current) => ({ query, seq: (current?.seq ?? 0) + 1 }));
+                  go('chat');
+                }}
+              />
+            )}
           </div>
-        </Modal>
-      )}
-      {!suspended && panel && (
-        <Modal
-          title={
-            {
-              memory: '记忆与上下文',
-              connections: '我的连接',
-              notifications: '通知',
-              account: '我的账号',
-            }[panel]
-          }
-          onClose={close}
-        >
-          {panel === 'memory' && <MemoriesPanel onExpired={onExpired} />}
-          {panel === 'connections' && (
-            <ConnectionsPanel userId={me.user.id} onExpired={onExpired} />
-          )}
-          {panel === 'notifications' && (
-            <NotificationsPanel
-              onExpired={onExpired}
-              onConnections={() => setPanel('connections')}
+          <div {...screenProps('profile')}>
+            {!suspended && (
+              <ProfileScreen
+                botName={BOT_NAME}
+                active={screen === 'profile'}
+                mascotState={mascotState}
+                connectedCount={connected.size}
+                onBack={back}
+                onLibrary={() => open({ kind: 'memory' })}
+                onConnections={() => open({ kind: 'connections' })}
+                onNotifications={() => open({ kind: 'notifications' })}
+                onApps={openApps}
+                onAccount={() => open({ kind: 'account' })}
+                onNewChat={newChat}
+                onPlaceholder={(title, body) => open({ kind: 'placeholder', title, body })}
+                onExpired={onExpired}
+              />
+            )}
+          </div>
+          <div {...screenProps('chat')}>
+            <Chat
+              chat={{ ...chat, send }}
+              suspended={suspended}
+              active={screen === 'chat'}
+              botName={BOT_NAME}
+              extras={extras}
+              plugins={catalog.plugins}
+              auth={auth}
+              celebrate={celebrate}
+              searchRequest={searchRequest}
+              onBack={back}
+              onOpenProfile={() => go('profile')}
+              onOpenApps={openApps}
+              onNewChat={newChat}
+              onShareTemplate={() => void shareTemplate()}
+              onRunAction={(plugin, actionName) => open({ kind: 'action', plugin, actionName })}
+              onUnavailable={showToast}
             />
-          )}
-          {panel === 'account' && <Account me={me} onRetry={onRetry} onLogout={onLogout} />}
-        </Modal>
+          </div>
+        </div>
+        {toast}
+      </div>
+      {!suspended && (
+        <>
+          <Sheet open={panel !== null} onClose={() => setPanel(null)} title={panelTitle}>
+            {panelBody}
+          </Sheet>
+          <Sheet
+            open={appsOpen}
+            onClose={() => setAppsOpen(false)}
+            title="连接应用"
+            variant="full"
+            headerExtra={
+              <button
+                type="button"
+                className="halo-pill halo-pill-neutral halo-pill-lg halo-press"
+                aria-pressed={onlyConnected}
+                onClick={() => setOnlyConnected((value) => !value)}
+              >
+                已连接 {connected.size} 个
+                <Icon name="chevron" size={18} />
+              </button>
+            }
+            footer={
+              <label className="halo-search">
+                <Icon name="search" size={22} />
+                <span className="sr-only">搜索应用和技能</span>
+                <input
+                  value={appsQuery}
+                  onChange={(event) => setAppsQuery(event.target.value)}
+                  placeholder="搜索应用和技能"
+                />
+              </label>
+            }
+          >
+            {onlyConnected && !connected.size ? (
+              <p className="halo-empty">
+                本页还没有模拟连接的应用。点「已连接 0 个」返回全部应用。
+              </p>
+            ) : (
+              <ConnectAppsList
+                catalog={{ ...catalog, plugins: appsPlugins }}
+                connected={connected}
+                query={appsQuery}
+                onExpired={onExpired}
+                onResult={addResult}
+                onConnect={(plugin) => {
+                  setAppsOpen(false);
+                  addAuthCard(plugin, 'sheet');
+                  go('chat');
+                }}
+              />
+            )}
+          </Sheet>
+        </>
       )}
     </main>
   );
@@ -200,10 +434,12 @@ function Account({
   me,
   onRetry,
   onLogout,
+  onOpen,
 }: {
   me: MeResponse;
   onRetry: () => void;
   onLogout: () => void;
+  onOpen: (kind: 'memory' | 'connections' | 'notifications') => void;
 }) {
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -227,8 +463,11 @@ function Account({
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+      <div className="halo-account-head">
+        <span className="halo-avatar halo-avatar-lg" aria-hidden="true">
+          {Array.from(me.user.displayName)[0]}
+        </span>
+        <div className="min-w-0">
           <h3 className="m-0">{me.user.displayName}</h3>
           <p className="wrap m-0 text-sm text-muted-foreground">{me.user.email}</p>
         </div>
@@ -258,13 +497,43 @@ function Account({
         </form>
       )}
       {error && <Alert variant="warning">{error}</Alert>}
-      <Separator />
+      <nav className="halo-group" aria-label="个人导航">
+        <button type="button" className="halo-row halo-press-soft" onClick={() => onOpen('memory')}>
+          <Icon name="library" size={22} className="halo-row-icon" />
+          <span className="halo-row-label">记忆与上下文</span>
+          <Icon name="chevron" size={20} className="halo-row-chevron" />
+        </button>
+        <button
+          type="button"
+          className="halo-row halo-press-soft"
+          onClick={() => onOpen('connections')}
+        >
+          <Icon name="link" size={22} className="halo-row-icon" />
+          <span className="halo-row-label">我的连接</span>
+          <Icon name="chevron" size={20} className="halo-row-chevron" />
+        </button>
+        <button
+          type="button"
+          className="halo-row halo-press-soft"
+          onClick={() => onOpen('notifications')}
+        >
+          <Icon name="bell" size={22} className="halo-row-icon" />
+          <span className="halo-row-label">通知</span>
+          <Icon name="chevron" size={20} className="halo-row-chevron" />
+        </button>
+        <a className="halo-row halo-press-soft" href="/diagnostics">
+          <Icon name="wrench" size={22} className="halo-row-icon" />
+          <span className="halo-row-label">工程诊断</span>
+          <Icon name="chevron" size={20} className="halo-row-chevron" />
+        </a>
+      </nav>
       <p className="small muted m-0">
         AI 当前为
         Mock；真实邮箱、外部插件与模型尚未接通。历史对话列表、自动通知刷新和原生端将在后续接入。
       </p>
       <div>
         <Button variant="secondary" onClick={onLogout}>
+          <Icon name="logout" size={18} />
           退出登录
         </Button>
       </div>

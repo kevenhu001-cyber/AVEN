@@ -124,7 +124,7 @@ export function PersonalApp() {
 
   if (status !== 'ready')
     return (
-      <main className="personal-app auth-screen">
+      <main className="personal-app aven-theme-halo auth-screen">
         <section className="auth-card flex flex-col items-center gap-4">
           <Mascot large state="thinking" />
           <h1>{status === 'checking' ? '正在验证会话' : '暂时无法连接'}</h1>
