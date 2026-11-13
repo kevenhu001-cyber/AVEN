@@ -49,6 +49,11 @@ function requireIdempotencyKey(value: string | undefined): string {
 export class AgentController {
   constructor(@Inject(AgentService) private readonly agent: AgentService) {}
 
+  @Get('runtime')
+  runtime() {
+    return this.agent.runtime();
+  }
+
   @Post('turns')
   @HttpCode(201)
   async createTurn(

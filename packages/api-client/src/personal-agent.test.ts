@@ -165,3 +165,28 @@ describe('browser fetch invocation', () => {
     ).resolves.toHaveLength(1);
   });
 });
+
+describe('runtime metadata', () => {
+  it('reads authenticated model mode without returning credentials', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ providerMode: 'live', externalActions: false }));
+    const runtime = await createApiClient({ fetcher }).agent.runtime(call);
+    expect(runtime).toEqual({ providerMode: 'live', externalActions: false });
+    expect(fetcher.mock.calls[0]?.[0]).toBe('/api/v1/agent/runtime');
+  });
+  it('rejects metadata containing a credential', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json({
+          providerMode: 'live',
+          externalActions: false,
+          apiKey: 'never-return-keys',
+        }),
+      );
+    await expect(createApiClient({ fetcher }).agent.runtime(call)).rejects.toMatchObject({
+      code: 'INVALID_RESPONSE',
+    });
+  });
+});

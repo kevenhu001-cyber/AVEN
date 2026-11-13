@@ -792,6 +792,11 @@ export const AgentRunEventTypeSchema = z.enum([
   'turn.cancelled',
 ]);
 
+export const AgentRuntimeSchema = z
+  .object({ providerMode: z.enum(['mock', 'live']), externalActions: z.literal(false) })
+  .strict();
+export type AgentRuntime = z.infer<typeof AgentRuntimeSchema>;
+
 export const AgentTurnRequestSchema = z
   .object({
     conversationId: z.uuid().optional(),

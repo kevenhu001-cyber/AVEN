@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, type FormEvent } from 'react';
-import type { MeResponse } from '@aven/contracts';
+import { useAgentRuntime } from './use-agent-runtime';
+import type { AgentRuntime, MeResponse } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export function Workspace({
   onRetry: () => void;
   onLogout: () => void;
 }) {
+  const model = useAgentRuntime(suspended, onExpired);
   const [page, setPage] = useState<WorkspacePage>('chat');
   const [menu, setMenu] = useState(false);
   const chatControls = useRef<ChatHandle>(null);
@@ -142,7 +144,14 @@ export function Workspace({
             <div className="assistant-identity">
               <Mascot state="static" />
               <span>
-                AVEN<small>模拟模式</small>
+                AVEN
+                <small>
+                  {model.runtime?.providerMode === 'live'
+                    ? '真实模型'
+                    : model.runtime
+                      ? '模拟模式'
+                      : '正在确认模型'}
+                </small>
               </span>
             </div>
             <Button
@@ -166,9 +175,18 @@ export function Workspace({
             <Button onClick={onRetry}>重新验证会话</Button>
           </section>
         )}
+        {model.error && !suspended && (
+          <Alert variant="warning">
+            暂时无法确认模型状态。
+            <Button variant="ghost" onClick={model.retry}>
+              重新读取模型状态
+            </Button>
+          </Alert>
+        )}
         <div className="workspace-chat-host" hidden={page !== 'chat' || suspended}>
           <Chat
             suspended={suspended}
+            runtime={model.runtime}
             visible={page === 'chat'}
             ref={chatControls}
             onBusyChange={setChatBusy}
@@ -200,7 +218,7 @@ export function Workspace({
               {page === 'history' && <HistoryPanel onExpired={onExpired} />}
               {page === 'account' && (
                 <>
-                  <Account me={me} onRetry={onRetry} onLogout={onLogout} />
+                  <Account me={me} runtime={model.runtime} onRetry={onRetry} onLogout={onLogout} />
                   <SettingsPanel me={me} onChanged={onRetry} onExpired={onExpired} />
                   <SafetyPanel onExpired={onExpired} />
                 </>
@@ -234,7 +252,11 @@ export function Workspace({
                       onClick={() => navigate('account')}
                     />
                   </div>
-                  <p className="space-footnote">当前为 Mock 演示，外部服务尚未接通。</p>
+                  <p className="space-footnote">
+                    {model.runtime?.providerMode === 'live'
+                      ? 'AI 使用真实模型；连接器仍为模拟体验。'
+                      : '当前为 Mock 演示，外部服务尚未接通。'}
+                  </p>
                 </>
               )}
             </div>
@@ -309,10 +331,12 @@ function SpaceRow({
 
 function Account({
   me,
+  runtime,
   onRetry,
   onLogout,
 }: {
   me: MeResponse;
+  runtime: AgentRuntime | null;
   onRetry: () => void;
   onLogout: () => void;
 }) {
@@ -371,8 +395,12 @@ function Account({
       {error && <Alert variant="warning">{error}</Alert>}
       <Separator />
       <p className="small muted m-0">
-        AI 当前为
-        Mock；外部插件与模型尚未接通；账号验证与密码恢复使用邮件。对话记录按服务端保留期读取；通知需手动刷新。
+        {runtime?.providerMode === 'live'
+          ? 'AI 使用真实模型，发送当前提问及本次获准上下文。'
+          : runtime
+            ? 'AI 当前为 Mock。'
+            : '正在确认模型状态。'}
+        外部连接器仍为模拟；账号验证与密码恢复使用邮件。对话记录按服务端保留期读取；通知需手动刷新。
       </p>
       <div>
         <Button variant="secondary" onClick={onLogout}>

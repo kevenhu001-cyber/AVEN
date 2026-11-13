@@ -1,4 +1,5 @@
 import {
+  AgentRuntimeSchema,
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
   AgentRunSchema,
@@ -31,6 +32,13 @@ export function createAgentClient(
   }
   const path = (runId: string) => `/api/v1/agent/runs/${id(runId)}`;
   return {
+    runtime(call: ConnectionCallOptions) {
+      return request(
+        '/api/v1/agent/runtime',
+        AgentRuntimeSchema.parse,
+        authenticatedOptions(call, false, invalid),
+      );
+    },
     history(
       query: { limit?: number; cursorCreatedAt?: string; cursorId?: string },
       call: ConnectionCallOptions,

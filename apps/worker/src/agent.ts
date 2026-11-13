@@ -1,3 +1,5 @@
+import { providerForRun } from './run-provider.js';
+import type { ExternalRunIdentity } from './external-preflight.js';
 import { createHash, randomBytes } from 'node:crypto';
 import {
   AIError,
@@ -71,6 +73,7 @@ type OrgOpportunityRow = {
 export type AgentRunProcessorOptions = {
   deltaDelayMs?: number;
   cancelPollMs?: number;
+  authorizeExternal?: (identity: ExternalRunIdentity) => Promise<boolean>;
 };
 
 export type AgentRunProcessResult = 'completed' | 'failed' | 'cancelled' | 'skipped';
@@ -253,7 +256,7 @@ async function createOrgActionDraft(
 export async function processAgentRun(
   pool: DatabasePool,
   runId: string,
-  provider: AIProvider,
+  configuredProvider: AIProvider,
   log: LogWriter,
   options: AgentRunProcessorOptions = {},
 ): Promise<AgentRunProcessResult> {
@@ -286,6 +289,11 @@ export async function processAgentRun(
     await appendEvent(pool, runId, 'turn.started', {});
 
     const isOrgRun = run.principal_id !== run.initiated_by_user_id;
+    const provider = providerForRun(configuredProvider, {
+      provider: run.provider,
+      model: run.model,
+      personal: !isOrgRun,
+    });
 
     const actor: ToolActor = isOrgRun
       ? {
@@ -430,6 +438,17 @@ export async function processAgentRun(
       });
     }
 
+    if (!provider.metadata.mock) {
+      const allowed = await options.authorizeExternal?.({
+        runId,
+        userId: run.initiated_by_user_id,
+        principalId: run.principal_id,
+      });
+      if (!allowed)
+        throw new AIError('TOOL_SCOPE_DENIED', 'External input authorization is no longer valid.');
+      if (await isCancelRequested(pool, runId))
+        throw new AIError('PROVIDER_CANCELLED', 'The request was cancelled.');
+    }
     controller = new AbortController();
     poller = setInterval(() => {
       void isCancelRequested(pool, runId)
@@ -445,6 +464,7 @@ export async function processAgentRun(
     for await (const event of provider.streamText({
       messages,
       model: run.model,
+      maxTokens: 2048,
       signal: controller.signal,
     })) {
       if (event.type === 'text_delta') {
@@ -504,9 +524,15 @@ export async function processAgentRun(
       return 'cancelled';
     }
     const errorCode = error instanceof AIError ? error.code : 'RUNTIME_FAILED';
-    await finishRun(pool, runId, 'failed', 'turn.failed', { errorCode }, null, errorCode).catch(
-      () => undefined,
-    );
+    await finishRun(
+      pool,
+      runId,
+      'failed',
+      'turn.failed',
+      { error_code: errorCode },
+      null,
+      errorCode,
+    ).catch(() => undefined);
     log({ level: 'error', event: 'agent.run.failed', run_id: runId, error_code: errorCode });
     return 'failed';
   } finally {

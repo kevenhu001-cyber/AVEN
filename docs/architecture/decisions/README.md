@@ -20,6 +20,8 @@
 
 | [ADR-017](0017-personal-web-increment.md) | 用户授权的个人 Web 限定接入 | 本轮实施；整体设计门与其他范围保持待验收 |
 
+| [ADR-019](0019-personal-live-provider.md) | 用户授权的个人聊天真实模型接入与外发边界 | 已接受，真实上游验收单独记录 |
+
 新增 ADR 时：
 
 1. 使用下一个编号和 `kebab-case` 文件名。

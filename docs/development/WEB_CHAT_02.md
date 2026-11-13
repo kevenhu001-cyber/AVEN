@@ -48,3 +48,5 @@
 ## 部署记录
 
 已构建并重启本机 aven-web 与 aven-worker；aven-api 保持运行，三项服务均 active。公网 https://aven.topodrive.top 返回 200，页面包含深色主题色与 resizes-content 视口声明。没有发送外部邮件、调用真实模型或运行 Android 构建。
+
+后续用户已明确授权真实模型，当前接入与上游限制以 [WEB_LIVE_AI_01](WEB_LIVE_AI_01.md) 和 ADR-019 为准；本文件保留本轮 UI 交付时的 Mock 范围。

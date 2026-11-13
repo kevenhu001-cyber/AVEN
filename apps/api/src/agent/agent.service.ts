@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { OnModuleDestroy } from '@nestjs/common';
 import {
+  AgentRuntimeSchema,
   AgentCancelResponseSchema,
   AgentRunEventSchema,
   AgentRunSchema,
@@ -163,6 +164,13 @@ export class AgentService implements OnModuleDestroy {
     this.model = config.model;
   }
 
+  runtime() {
+    return AgentRuntimeSchema.parse({
+      providerMode: this.provider === 'mock' ? 'mock' : 'live',
+      externalActions: false,
+    });
+  }
+
   private getPool(): DatabasePool {
     this.pool ??= createApplicationPool({ max: 5 });
     return this.pool;
@@ -210,8 +218,8 @@ export class AgentService implements OnModuleDestroy {
           'POST',
           '/api/v1/agent/turns',
           requestHash,
-          this.provider,
-          this.model,
+          'mock',
+          'mock-deterministic-v1',
         ]);
         turn = result.rows[0];
       } else {

@@ -18,6 +18,8 @@ P2P-02 接入层使用 `packages/api-client` 承载类型化连接请求与逐�
 
 本文覆盖 M0–M5 的工程基础与首条业务闭环，并为 M6–M7 预留边界。它不替代具体模块的 API 文档和数据库迁移；表结构以 [SCHEMA](../database/SCHEMA.md) 为准，决策以 [ADR](decisions/) 为准。1.1 在无已发布代码/客户端的阶段调整候选、引荐和流式路径，不需要兼容未实施的旧接口；不能将本轮文档修订算作实现验收。
 
+2026-11-13 个人真实模型按 [ADR-019](decisions/0019-personal-live-provider.md) 接入：只外发当前提问及本次获准上下文，组织与旧 Mock run 不升级。Worker 在上游调用前通过受限应用池重核来源与期限；运行信息端点只返回模式和能力，失败不回退 Mock。真实成功取决于上游验收。
+
 ## 2. 架构原则
 
 1. **模块化单体**：先保证模块边界和事务一致性，不拆微服务。
@@ -804,6 +806,8 @@ SENTRY_DSN=
 | [ADR-011](decisions/0011-personal-connections.md) | 个人邀请、用途授权与唯一建联 | P2P-01 后端已验证，UI 未实现 |
 | [ADR-012](decisions/0012-connection-retention.md) | 个人邀请正文保留与受控清除 | P2P-03，自动调度另行交付 |
 | [ADR-013](decisions/0013-in-app-connection-notifications.md) | 个人连接站内通知、事务回执与按代数重排 | M6-06A1 后端；活动/推送/UI 待交付 |
+
+| [ADR-019](decisions/0019-personal-live-provider.md) | 个人真实模型、外发边界与配置绑定 | 用户已授权；上游成功另验 |
 
 ## 19. 开放问题与验证门
 

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { agentFailureText } from './agent-error';
 import type { AgentTurnRequest } from '@aven/contracts';
 import { api, authExpired, errorText, writeUncertain, webCall } from './api';
 export type ChatTurn = {
@@ -23,7 +24,7 @@ export type ChatTurn = {
   request: AgentTurnRequest;
   cancelKey: string;
 };
-export function useAgentChat(suspended: boolean, onExpired: () => void) {
+export function useAgentChat(suspended: boolean, onExpired: () => void, enabled = true) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState('');
   const conversationId = useRef<string | undefined>(undefined);
@@ -95,7 +96,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
         if (event.type === 'turn.failed') {
           next.status = 'failed';
           next.answer = '';
-          next.error = '本次回复未完成，或来源授权已变化。请重新确认后发起新对话。';
+          next.error = agentFailureText(event.error_code ?? event.errorCode);
         }
         patch(turn.key, next);
       }
@@ -115,7 +116,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
     }
   }
   async function create(turn: ChatTurn) {
-    if (pending.current || suspended) return;
+    if (pending.current || suspended || !enabled) return;
     pending.current = true;
     const abort = new AbortController();
     controller.current = abort;
@@ -144,6 +145,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
   function send() {
     const text = draft.trim();
     if (
+      !enabled ||
       !text ||
       text.length > 8000 ||
       pending.current ||

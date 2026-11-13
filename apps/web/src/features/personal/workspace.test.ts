@@ -6,6 +6,7 @@ import type { MeResponse } from '@aven/contracts';
 import { Workspace } from './workspace';
 import { MessageContent } from './message-content';
 const mocks = vi.hoisted(() => ({
+  runtime: vi.fn(),
   createTurn: vi.fn(),
   events: vi.fn(),
   copy: vi.fn(),
@@ -75,6 +76,7 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('navigator', { clipboard: { writeText: mocks.copy } });
   vi.clearAllMocks();
+  mocks.runtime.mockResolvedValue({ providerMode: 'mock', externalActions: false });
   mocks.createTurn.mockResolvedValue({ runId: 'run-1', conversationId: 'conversation-1' });
   mocks.events.mockImplementation(async function* () {
     yield { type: 'message.delta', sequence: 1, text: '**示例**\n\n1. 开始' };
@@ -159,6 +161,20 @@ describe('chat workspace interactions', () => {
     await act(async () => renderer.update(createElement(Workspace, { ...props, suspended: true })));
     await act(async () => renderer.update(createElement(Workspace, props)));
     expect(renderer.root.findAllByType(MessageContent)).toHaveLength(0);
+  });
+  it('labels a configured live model instead of claiming Mock', async () => {
+    mocks.runtime.mockResolvedValueOnce({ providerMode: 'live', externalActions: false });
+    await mount();
+    const serialized = JSON.stringify(renderer.toJSON());
+    expect(serialized).toContain('真实模型');
+    expect(serialized).not.toContain('Mock 模拟回复');
+  });
+  it('disables sending when runtime state cannot be verified', async () => {
+    mocks.runtime.mockRejectedValueOnce(new Error('offline'));
+    await mount();
+    expect(renderer.root.findByProps({ id: 'chat-input' }).props.disabled).toBe(true);
+    expect(JSON.stringify(renderer.toJSON())).toContain('暂时无法确认模型状态');
+    expect(mocks.createTurn).not.toHaveBeenCalled();
   });
   it('escapes raw HTML while rendering readable lists and code', () => {
     const html = renderToStaticMarkup(

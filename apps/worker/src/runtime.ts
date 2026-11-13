@@ -3,7 +3,8 @@ import { Redis } from 'ioredis';
 import { redisUrl } from '@aven/config/env';
 import type { LogWriter } from '@aven/config/logger';
 import { createAIProvider, parseAIProviderConfig } from '@aven/ai-core';
-import { createPool } from '@aven/database';
+import { authorizeExternalRun } from './external-preflight.js';
+import { createApplicationPool, createPool } from '@aven/database';
 import {
   markReceiptDead,
   processSampleTask,
@@ -43,6 +44,7 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
   const workerConnection = createConnection(log, null);
   const agentWorkerConnection = createConnection(log, null);
   const pool = createPool('aven_worker', { max: 5 });
+  const externalReadPool = createApplicationPool({ max: 2 });
   const provider = createAIProvider(parseAIProviderConfig(process.env));
 
   const queue = new Queue<SampleTaskEvent, SampleTaskResult>('aven-sample', {
@@ -83,7 +85,10 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
   });
   const agentWorker = new Worker<AgentRunJob, AgentRunProcessResult>(
     'aven-agent',
-    async (job) => processAgentRun(pool, job.data.runId, provider, log),
+    async (job) =>
+      processAgentRun(pool, job.data.runId, provider, log, {
+        authorizeExternal: (identity) => authorizeExternalRun(externalReadPool, identity),
+      }),
     { connection: agentWorkerConnection, concurrency: 1 },
   );
   agentWorker.on('completed', (job) => {
@@ -155,6 +160,7 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
       queueConnection.disconnect();
       workerConnection.disconnect();
       agentWorkerConnection.disconnect();
+      await externalReadPool.end().catch(() => undefined);
       await pool.end().catch(() => undefined);
       await readiness.close();
     },

@@ -34,3 +34,8 @@
 
 
 2026-11-13 后续增量：欢迎页、匿名复核无闪烁与 SMTP 已部署。运行环境使用 `AUTH_MAIL_TRANSPORT=smtp`，SMTP 值仅在 root 0600 环境中；原配置有受限备份。实际运行配置的 TLS/认证已验证，未发送测试邮件。重置链接使用 fragment，客户端取出立即移除；验证记录与限制见 [WEB_LOGIN_02](WEB_LOGIN_02.md)。
+
+
+## 2026-11-13 个人真实模型配置
+
+按用户明确授权与 ADR-019，将 Socrates 当前服务的内置模型配置复制到 root 0600 的 AVEN 服务环境，原配置留有同权限备份；未改 Socrates。API/Worker/Web 已重新构建并重启。公网 runtime 返回 live，但真实上游调用返回 429，未成功生成回复；没有回退 Mock。个人外发前复核当前来源，旧 Mock 与组织 run 保持 Mock。恢复/替换模型通道后需补成功与取消验收。详见 [WEB_LIVE_AI_01](WEB_LIVE_AI_01.md)。

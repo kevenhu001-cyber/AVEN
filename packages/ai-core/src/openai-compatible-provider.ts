@@ -123,6 +123,7 @@ export class OpenAICompatibleProvider implements AIProvider {
       const response = await withTimeout(
         this.fetchImpl(`${this.baseUrl}${path}`, {
           method: 'POST',
+          redirect: 'error',
           headers: {
             'content-type': 'application/json',
             authorization: `Bearer ${this.apiKey}`,

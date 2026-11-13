@@ -33,7 +33,7 @@ export function AuthWelcome({ onContinue }: { onContinue: () => void }) {
           登录或注册
         </Button>
         <p>每一次分享，都由你决定。</p>
-        <span>开发验证版 · AI 使用 Mock</span>
+        <span>开发验证版 · 模型状态登录后显示</span>
       </div>
     </main>
   );

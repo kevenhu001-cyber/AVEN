@@ -3,6 +3,7 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'reac
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { AgentRuntime } from '@aven/contracts';
 import type { PrivateProps } from './api';
 import { Icon } from './icon';
 import { Mascot } from './mascot';
@@ -26,17 +27,19 @@ const labels = {
 export type ChatHandle = { reset: () => void; openConnectors: () => void };
 export function Chat({
   suspended,
+  runtime,
   visible = true,
   onExpired,
   onBusyChange,
   ref,
 }: PrivateProps & {
   suspended: boolean;
+  runtime: AgentRuntime | null;
   visible?: boolean;
   onBusyChange?: (busy: boolean) => void;
   ref?: Ref<ChatHandle>;
 }) {
-  const chat = useAgentChat(suspended, onExpired);
+  const chat = useAgentChat(suspended, onExpired, runtime !== null);
   const transcript = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const nearBottom = useRef(true);
@@ -212,6 +215,7 @@ export function Chat({
             value={chat.draft}
             onChange={(event) => chat.setDraft(event.target.value)}
             placeholder="消息"
+            disabled={!runtime}
             maxLength={8000}
             rows={1}
             onKeyDown={(event) => {
@@ -243,14 +247,20 @@ export function Chat({
               type="submit"
               size="icon"
               className="round-button send-button"
-              disabled={!chat.draft.trim() || chat.busy}
+              disabled={!runtime || !chat.draft.trim() || chat.busy}
               aria-label="发送消息"
             >
               <Icon name="arrow-up" />
             </Button>
           )}
         </form>
-        <p className="composer-note">Mock 模拟回复 · 不会执行外部操作</p>
+        <p className="composer-note">
+          {runtime?.providerMode === 'live'
+            ? '真实模型 · 仅发送当前提问与获准上下文'
+            : runtime
+              ? 'Mock 模拟回复 · 不会执行外部操作'
+              : '正在确认模型状态…'}
+        </p>
       </div>
       {visible && connectorsOpen && (
         <Modal title="连接器" onClose={() => setConnectorsOpen(false)}>

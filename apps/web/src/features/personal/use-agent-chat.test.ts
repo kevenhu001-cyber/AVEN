@@ -105,6 +105,18 @@ describe('chat request and privacy lifecycle', () => {
     await act(async () => chat.resume(chat.turns[0]!));
     expect(chat.turns[0]?.answer).toBe('示例回复');
   });
+  it('clears partial text and explains an upstream rate or quota failure', async () => {
+    mocks.events.mockImplementationOnce(async function* () {
+      yield { type: 'message.delta', sequence: 1, text: 'unfinished-private-text' };
+      yield { type: 'turn.failed', sequence: 2, error_code: 'PROVIDER_RATE_LIMITED' };
+    });
+    await mount();
+    await send();
+    expect(chat.turns[0]?.answer).toBe('');
+    expect(chat.turns[0]?.status).toBe('failed');
+    expect(chat.turns[0]?.error).toContain('额度');
+    expect(mocks.createTurn).toHaveBeenCalledTimes(1);
+  });
   it('starts a new conversation without resending or reusing its old conversation id', async () => {
     await mount();
     await send();
