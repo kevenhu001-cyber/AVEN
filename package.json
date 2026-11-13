@@ -69,7 +69,8 @@
     "supplements:verify": "pnpm build && tsx scripts/referral-supplements-verify.ts",
     "personal-web:verify:account": "node scripts/personal-web-account-verify.mjs",
     "personal-web:verify:safety-action": "node scripts/personal-web-safety-action-verify.mjs",
-    "password-recovery:verify": "pnpm build:packages && pnpm --filter @aven/api build && tsx scripts/password-recovery-verify.ts"
+    "password-recovery:verify": "pnpm build:packages && pnpm --filter @aven/api build && tsx scripts/password-recovery-verify.ts",
+    "registration:verify": "pnpm build:packages && pnpm --filter @aven/api build && tsx scripts/registration-verify.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",

@@ -105,3 +105,10 @@
 参考 Socrates 的 Nodemailer/SMTP 传输方式；AVEN 使用独立注入的 Mailer，显式 `AUTH_MAIL_TRANSPORT=smtp` 时读取 SMTP_HOST/PORT/SECURE/USER/PASS/FROM。TLS 校验保持开启，465 使用隐式 TLS，非隐式 TLS 模式强制 STARTTLS，连接与发送设定超时；不打印正文、地址、凭据或底层 SMTP 错误。未配置时保留显式开发 file sink；生产不回退到文件。
 
 重置邮件提供 `WEB_ORIGIN/#reset_token=<token>` 链接及现有重置码；fragment 不发送给源站/CDN，客户端提取后立即清除。令牌仍为一小时、一次性，重置后撤销所有会话。重置请求保持非枚举 202；SMTP 投递是否成功与收件箱实际送达分别记账。
+
+
+## 注册冲突与投递恢复（2026-11-13）
+
+邮箱已注册且已验证、已停用或密码不匹配时，返回 409 ACCOUNT_ALREADY_EXISTS，客户端引导登录或找回密码。未验证的活跃账号以相同邮箱和正确密码重试注册时，复用既有用户、重发验证邮件，不覆盖显示名或密码；沿用注册频控。使用既有 create_email_verification_token 函数，无迁移。
+
+账号创建完成后，邮件传输失败不再伪装成整个注册失败；201 响应新增可选 verificationDelivery（sent/failed），失败时界面明确账号已创建、可先登录并重试验证。sent 仅表示传输接受，不代表收件箱送达。没有正确密码不能通过重复注册重发或改动既有账号。

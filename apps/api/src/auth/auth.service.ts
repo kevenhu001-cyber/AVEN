@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -24,7 +23,11 @@ import {
   withRequestContext,
   type DatabasePool,
 } from '@aven/database';
-import { RateLimitedException, ServiceNotReadyException } from '../http-errors.js';
+import {
+  ApiCodeException,
+  RateLimitedException,
+  ServiceNotReadyException,
+} from '../http-errors.js';
 import { API_ENVIRONMENT, MAILER } from './auth.constants.js';
 import type { AuthContext, LoginResult, RequestContext } from './auth.types.js';
 import { hashPassword, verifyDummyPassword, verifyPassword } from './password.js';
@@ -131,6 +134,9 @@ export class AuthService implements OnModuleDestroy {
     const verificationToken = randomToken();
     const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
     let userId: string | undefined;
+    let displayName = input.displayName;
+    let locale = 'zh-CN';
+    let timezone = 'Asia/Shanghai';
     try {
       const result = await this.getAuthPool().query<{ user_id: string }>(
         'SELECT app.register_user($1, $2, $3, $4, $5) AS user_id',
@@ -144,12 +150,37 @@ export class AuthService implements OnModuleDestroy {
       );
       userId = result.rows[0]?.user_id;
     } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new ConflictException('Unable to register with this email.');
+      if (!isUniqueViolation(error)) throw error;
+      const lookup = await this.getAuthPool().query<AuthLookupRow>(
+        'SELECT * FROM app.auth_lookup($1)',
+        [input.email],
+      );
+      const existing = lookup.rows[0];
+      if (!existing) throw error;
+      if (
+        existing.principal_status !== 'active' ||
+        existing.email_verified_at ||
+        !(await verifyPassword(existing.password_hash, input.password))
+      ) {
+        throw new ApiCodeException(
+          'ACCOUNT_ALREADY_EXISTS',
+          409,
+          'Use sign in or password recovery.',
+        );
       }
-      throw error;
+      // Prove password possession before issuing a new verification token.
+      await this.getAuthPool().query('SELECT app.create_email_verification_token($1, $2, $3)', [
+        existing.user_id,
+        sha256(verificationToken),
+        verificationExpiresAt,
+      ]);
+      userId = existing.user_id;
+      displayName = existing.display_name;
+      locale = existing.locale;
+      timezone = existing.timezone;
     }
     if (!userId) throw new Error('REGISTER_FAILED');
+    let verificationDelivery: 'sent' | 'failed' = 'sent';
     try {
       await this.mailer.send({
         to: input.email,
@@ -158,18 +189,19 @@ export class AuthService implements OnModuleDestroy {
         kind: 'verify_email',
       });
     } catch {
-      throw new ServiceNotReadyException('Email delivery is not configured.', true);
+      verificationDelivery = 'failed';
     }
     return RegisterResponseSchema.parse({
       user: {
         id: userId,
-        displayName: input.displayName,
+        displayName,
         email: input.email,
         emailVerified: false,
-        locale: 'zh-CN',
-        timezone: 'Asia/Shanghai',
+        locale,
+        timezone,
       },
       verificationRequired: true,
+      verificationDelivery,
     });
   }
 

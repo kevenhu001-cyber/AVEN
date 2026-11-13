@@ -7,6 +7,7 @@ export const ApiErrorCodeSchema = z.enum([
   'NOT_FOUND',
   'VALIDATION_ERROR',
   'CONFLICT',
+  'ACCOUNT_ALREADY_EXISTS',
   'VERSION_CONFLICT',
   'IDEMPOTENCY_CONFLICT',
   'CONSENT_REVOKED',
@@ -146,7 +147,11 @@ export const MeResponseSchema = z
 export const SessionListResponseSchema = z.object({ data: z.array(AuthSessionSchema) }).strict();
 
 export const RegisterResponseSchema = z
-  .object({ user: AuthUserSchema, verificationRequired: z.literal(true) })
+  .object({
+    user: AuthUserSchema,
+    verificationRequired: z.literal(true),
+    verificationDelivery: z.enum(['sent', 'failed']).optional(),
+  })
   .strict();
 
 export const VerifyEmailRequestSchema = z.object({ token: z.string().min(20).max(256) }).strict();

@@ -6,7 +6,9 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { api, errorText } from './api';
+import { api } from './api';
+import { authErrorText } from './auth-errors';
+import { ApiClientError } from '@aven/api-client';
 import { AuthShell } from './auth-shell';
 import { AuthPassword } from './auth-password';
 import { PasswordRecovery } from './password-recovery';
@@ -59,6 +61,7 @@ export function AuthForm({
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const [message, setMessage] = useState('');
+  const [registrationConflict, setRegistrationConflict] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -78,17 +81,25 @@ export function AuthForm({
     lock.current = true;
     setBusy(true);
     setMessage('');
+    setRegistrationConflict(false);
     try {
       if (mode === 'register') {
-        await api.auth.register({ email, password, displayName: name });
+        const result = await api.auth.register({ email, password, displayName: name });
         setMode('login');
-        setMessage('注册成功，请登录。邮箱验证完成后可发送连接邀请。');
+        setMessage(
+          result.verificationDelivery === 'failed'
+            ? '账号已创建，验证邮件暂未发出。你可以先登录，或使用相同邮箱和密码重试注册以重发验证邮件。'
+            : '注册成功，请登录。邮箱验证完成后可发送连接邀请。',
+        );
       } else {
         await api.auth.loginWeb({ email, password });
         await onLogin();
       }
     } catch (error) {
-      setMessage(errorText(error));
+      setMessage(authErrorText(error, mode));
+      setRegistrationConflict(
+        mode === 'register' && error instanceof ApiClientError && error.status === 409,
+      );
     } finally {
       lock.current = false;
       setPassword('');
@@ -127,6 +138,7 @@ export function AuthForm({
             onReset={onReset}
             onBack={() => {
               setRecovering(false);
+              setMode('login');
               setResetToken('');
               onRecoveryClose();
             }}
@@ -214,6 +226,31 @@ export function AuthForm({
                 </div>
               )}
               {message && <Alert variant="warning">{message}</Alert>}
+              {mode === 'register' && registrationConflict && (
+                <div className="button-row">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setMode('login');
+                      setRegistrationConflict(false);
+                      setMessage('');
+                      setPassword('');
+                    }}
+                  >
+                    直接登录
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setPassword('');
+                      onRecoveryOpen();
+                      setRecovering(true);
+                    }}
+                  >
+                    找回密码
+                  </Button>
+                </div>
+              )}
               <Button className="auth-submit" type="submit" disabled={busy || checking}>
                 {busy ? '正在验证…' : mode === 'login' ? '登录' : '创建账号'}
               </Button>
@@ -225,6 +262,7 @@ export function AuthForm({
                 disabled={busy}
                 onClick={() => {
                   setMode(mode === 'login' ? 'register' : 'login');
+                  setRegistrationConflict(false);
                   setPassword('');
                   setMessage('');
                 }}
