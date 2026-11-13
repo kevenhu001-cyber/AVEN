@@ -71,6 +71,8 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
     { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
   ]);
   await page.goto('/');
+  // Halo home first; the mascot opens the chat screen (ADR-018).
+  await page.getByRole('button', { name: '与 AVEN 对话', exact: true }).click();
   const input = page.getByLabel('向 AVEN 提问', { exact: true });
   await input.fill('还没写完');
   await input.dispatchEvent('keydown', {
@@ -86,6 +88,7 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
   await input.press('Enter');
   await expect(page.getByRole('button', { name: '核对发送结果', exact: true })).toBeVisible();
   expect(sends).toBe(1);
+  await page.getByRole('button', { name: '返回', exact: true }).click();
   await page.getByRole('button', { name: '我的账号', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expired = true;

@@ -1,5 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { newChat, openChat } from './lib/personal-web-nav.mjs';
 const base = process.env.PERSONAL_WEB_ORIGIN ?? 'http://127.0.0.1:3000';
 if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname))
   throw new Error('Local synthetic verification only.');
@@ -38,6 +39,7 @@ try {
     else await route.fulfill({ response: result });
   });
   await page.goto(base);
+  await openChat(page);
   await page.getByLabel('向 AVEN 提问', { exact: true }).fill('合成验证：发送结果未知，手动核对。');
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
   await expect(page.getByRole('button', { name: '核对发送结果', exact: true })).toBeVisible();
@@ -49,7 +51,7 @@ try {
     'manual retry keeps same key and real run',
   );
   await page.unroute('**/api/v1/agent/turns');
-  await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await newChat(page);
   let streamRequests = 0;
   await page.route('**/api/v1/agent/runs/*/events', async (route) => {
     streamRequests++;
@@ -64,6 +66,7 @@ try {
       body: firstDelta + '\n\n',
     });
   });
+  await openChat(page);
   await page.getByLabel('向 AVEN 提问', { exact: true }).fill('合成验证：截断后的重新读取。');
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
   await expect(page.getByRole('button', { name: '重新读取回复', exact: true })).toBeVisible({
@@ -78,7 +81,7 @@ try {
   check(streamRequests === 2, 'explicit replay reuses the real run');
   // Failure injection only: the backend response is completed, but this transport holds a running frame.
   await page.unroute('**/api/v1/agent/runs/*/events');
-  await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await newChat(page);
   let release;
   const held = new Promise((resolve) => {
     release = resolve;
@@ -90,6 +93,7 @@ try {
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: started + '\n\n' });
     release();
   });
+  await openChat(page);
   await page.getByLabel('向 AVEN 提问', { exact: true }).fill('合成验证：停止后的状态核对。');
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
   // Use the visible queued control before the intentionally incomplete stream ends.
