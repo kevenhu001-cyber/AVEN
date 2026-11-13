@@ -60,7 +60,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 后端业务闭环已推进到 **M6 日程与活动**。已实现并通过真实 HTTP/数据库验证：
 
-- **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**尚未在 GitHub Actions 实跑**）。
+- **M0 工程基础**：workspace、Compose/PostgreSQL/Redis、迁移与 seed、就绪探针、Outbox/BullMQ、CI 工作流（**2026-11-13 已在 GitHub Actions 对 `main` 实跑并全绿**，PR 路径待再验证）。
 - **M1 设计**：令牌层（M1-01）、可点击原型（M1-07，**正式双端评审未做**）及 ADR-017 限定个人 Web；M1-02–M1-06 仍为部分实现。
 - **M2 身份与组织**：认证会话、资料/校园、组织成员与邀请、强制 RLS、跨账号/跨组织隔离。
 - **M3 个人上下文与 AI**：记忆、复核、生命周期、Provider 与工具、Agent 运行时/SSE、行动确认；M3-07 已有评估集/预算门和首批个人 Web，**候选记忆复核与完整个人页面仍未完成**。
@@ -161,7 +161,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 
 ## 开发入口
 
-下一项是补齐个人 Web 的候选记忆复核与会话小组件，并继续 **M1-07 正式双端设计评审**；首批限定 Web 依据 ADR-017 接入，不能替代其余页面与原生端的验收；向量召回按模型/维度门独立推进，真实 Provider 仍受数据发送与验证门约束。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 GitHub Actions 实跑仍待环境；CI 工作流已定义、本地命令已通过，但不能宣称 CI 已绿。
+下一项是补齐个人 Web 的候选记忆复核与会话小组件，并继续 **M1-07 正式双端设计评审**；首批限定 Web 依据 ADR-017 接入，不能替代其余页面与原生端的验收；向量召回按模型/维度门独立推进，真实 Provider 仍受数据发送与验证门约束。真实 Provider 评估、M0-03 的 Expo Go 真机连接与 M0-08 的 PR 触发路径实跑仍待环境；CI 已于 2026-11-13 在 `main` 实跑全绿（run 43398062266），但这不等于生产部署或试点准入。
 
 契约见 [认证与会话 API](docs/api/AUTH.md)、[个人资料与校园 API](docs/api/PROFILE.md)、[组织成员与邀请 API](docs/api/ORGANIZATIONS.md)、[个人记忆 API](docs/api/MEMORIES.md)、[组织机会 API](docs/api/OPPORTUNITIES.md)、[匹配候选 API](docs/api/MATCHING.md)、[引荐与授权 API](docs/api/REFERRALS.md)、[关系空间 API](docs/api/RELATIONSHIPS.md)、[日程与活动 API](docs/api/AVAILABILITY_EVENTS.md)、[Agent 运行时 API](docs/api/AGENT.md)、[行动确认 API](docs/api/ACTIONS.md)。实现记录见 [M2-01](docs/development/M2-01_AUTH.md)、[M2-02](docs/development/M2-02_PROFILE.md)、[M2-03](docs/development/M2-03_ORGANIZATIONS.md)、[M2-04](docs/development/M2-04_RLS.md)、[M2-05](docs/development/M2-05_ISOLATION.md)、[M3-01](docs/development/M3-01_MEMORY.md)、[M3-02](docs/development/M3-02_MEMORY_REVIEW.md)、[M3-03](docs/development/M3-03_MEMORY_LIFECYCLE.md)、[M3-04](docs/development/M3-04_AI_CORE.md)、[M3-05](docs/development/M3-05_AGENT_RUNTIME.md)、[M3-06](docs/development/M3-06_ACTIONS.md)、[M3-07](docs/development/M3-07_EVALUATION.md)、[M4](docs/development/M4_ORGANIZATION.md)、[M5](docs/development/M5_MATCHING_RELATIONSHIP.md)、[M6](docs/development/M6_CALENDAR_EVENT.md)。原型入口：[M1-07 可点击原型](docs/design/prototypes/m1-07/index.html)；评审记录见 [M1-07 设计评审](docs/design/M1-07_REVIEW.md)。首次启动、日常命令与故障处理见 [开发环境启动](docs/development/SETUP.md)。开始前请阅读 [AGENTS.md](AGENTS.md) 和 [TDD](docs/architecture/TDD.md)。
 
@@ -180,7 +180,7 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | Android SDK/adb | 未安装；开发期用真机 Expo Go |
 | 资源 | 4 核 / 3.6 GB 内存 / 约 15 GB 可用磁盘 |
 
-Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 **140 项**（2026-11-11）；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、个人记忆 97 项真实检查、AI Provider/工具 28 项检查、Agent 运行时 45 项检查、行动确认 33 项检查通过；**机会 34 项、组织边界 25 项、首条闭环 21 项（M5）、日程与活动 30 项（M6）** 通过；**数据库层 184 项检查通过**（29 个迁移、45 张业务表，全部 FORCE RLS），强制 RLS/隔离 63 项数据库检查与 21 项隔离检查通过；M3-07 评估 10/10 用例（含结构化输出与取消）、阈值与预算检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件、GitHub Actions 实跑与双端高保真尚未验证；CI 工作流与本地命令已就绪，不能宣称 CI 已绿。
+Next 16.4.6、Nest 12.4.2、Expo SDK 58 与 Node 24.19.0 的最小安装、类型检查和生产构建已实际通过；PostgreSQL/Redis 启动、角色隔离、D1 空库迁移、已有库升级、seed 幂等与 RLS 读策略已实际验证；API 就绪 200、Redis 故障 503、Worker 消费者运行时就绪 200 已通过真实进程验证；Outbox/BullMQ 的成功、重复投递、未知结果、死信、租约、崩溃与 Redis 重启恢复已通过 29 项验证；单元测试已通过 **140 项**（2026-11-11）；认证与会话 42 项、资料/校园 16 项、组织成员 31 项、个人记忆 97 项真实检查、AI Provider/工具 28 项检查、Agent 运行时 45 项检查、行动确认 33 项检查通过；**机会 34 项、组织边界 25 项、首条闭环 21 项（M5）、日程与活动 30 项（M6）** 通过；**数据库层 184 项检查通过**（29 个迁移、45 张业务表，全部 FORCE RLS），强制 RLS/隔离 63 项数据库检查与 21 项隔离检查通过；M3-07 评估 10/10 用例（含结构化输出与取消）、阈值与预算检查通过。数据库扩展镜像、真机连接、生产队列运维、真实邮件与双端高保真尚未验证；CI 已于 2026-11-13 在 `main` 实跑全绿（run 43398062266，verify 与 infrastructure 两个 job），PR 路径与生产环境仍待验证。
 
 ## 开发命令
 

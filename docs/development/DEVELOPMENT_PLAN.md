@@ -8,6 +8,8 @@
 
 2026-11-13 执行记录：完成 WEB-05 插件动作表单隔离、参数边界反馈、异步结果与菜单竞态修复及动作过渡。单测 334 项、类型 20 任务、非移动端构建 11 任务及 lint 通过。完整范围、E2E 环境限制与未实现项见 [WEB-05](WEB_05.md)，不改变 M1-07 REVIEW 或真实服务接入门。
 
+2026-11-13 提交与部署执行记录：本轮 8 个提交已推送到 `main`（9be2b12–6a862ab）。CI 首次在 `main` 实跑全绿（run 43398062266，verify + infrastructure），修正了此前 `check:expo` 与 `db:verify` 失败。本机按生产构建重启 API（3001）、Worker（3002）与 Web（3000），`/health/ready` 报告数据库、Redis 与 0042 迁移正常，`/admin`、`/connectors`、`/plugins` 返回 200，`production:preflight` 对当前开发 `.env` 报出 9 项不合规、用候选生产变量通过。本仓库没有云端生产环境与发布脚本，因此“部署”仅指本机生产模式运行与推送到 `main`；真实生产发布、备份、告警与试点准入仍未验证。
+
 2026-11-13 用户授权管理员手动模型配置、Socrates 同渠道 Open Connector、原生与生产增量。新增 ADR-019，实施与验证记录见 [管理员与原生增量](ADMIN_CONNECTORS_NATIVE.md)。此授权允许上述编码，不表示真实联调、原生真机或生产准入完成。
 
 2026-11-13 后续：按 ADR-020 复用 Socrates 的 6 个插件 SVG 和本地 OOMOL 网关环境密钥；数据库配置优先，无密钥回显、无自动 OAuth 或角色变更。验证见 [增量记录](ADMIN_CONNECTORS_NATIVE.md)。
@@ -49,11 +51,11 @@ iOS 保留技术路径并进行条件允许的验证；原生 Android 与组织 
 - M0-02 已建立 pnpm/Turbo workspace、锁定依赖与 strict TypeScript/lint；M0-03 已建立 Web/API/Worker/Expo 骨架并通过实际构建，真机与原生流式验证未完成；M0-04 已建立 Compose、PostgreSQL/Redis 与逐用途数据库角色；M0-05 已建立迁移 runner、D1 表、只读 RLS 与开发 seed；M0-06 已接入真实依赖就绪检查与 Web/Expo 探针；M0-07 已建立 Outbox/BullMQ 样例、消费回执与故障注入；M0-08 已定义 CI 工作流、启动/故障文档与部署网络初查；M1-01 已实现语义/状态色、排版、断点、深色主题与减少动态令牌；M2-01 已实现 Argon2id、不透明会话、CSRF、限流、邮箱验证与密码重置；M2-02 已实现资料更新、校园列表与校园成员申请；M2-03 已实现组织创建、成员、邀请/接受、角色与最后 owner 保护；M2-04 已强制 21 张表 RLS；M2-05 已通过跨账号/跨组织隔离验证；M3-01 已实现手工确认记忆、来源、字段策略与软删除；M3-02–M3-07 已实现候选复核、生命周期、Provider/工具、Agent 运行时与流式、行动确认与评估预算；M4 已实现组织资料、机会生命周期、组织控制台、组织 Agent 与边界验证；M5 已实现意向与可解释候选、用途授权、引荐双向决定、原子建联、共享上下文与撤销传播；M6 已实现忙闲、忙闲用途授权共享、多方求交与活动状态机。当前共 36 个迁移、55 张 public 租户表与 3 张 app 租户表（共 58 张，全部 FORCE RLS）；P2P-01–04 补充个人连接、共享客户端/读取协议、正文保留清理与会话消息收发/双删物理清除。
 - 已有原始规格、启动建议、本计划、M0-01 文档集及 M0-02/03/04/05/06/07/08、M1-01、M1-07 原型、M2-01–M2-05、M3-01 交付记录；README 说明当前状态。
 - 2026-11-11 复检：Node v24.19.0、npm 11.17.0、pnpm 12.18.0（Corepack）、Docker 29.1.3 可用、PostgreSQL 客户端 16.14、无 Android SDK/adb；Next/Nest/Expo 最小构建已实际通过。
-- PostgreSQL 17.11 与 Redis 7.4.12 已通过 Compose 启动并验证角色隔离；D1 空库迁移、已有库升级、seed 幂等、RLS 读策略、API/Worker 就绪检查与 Outbox 故障恢复已实际验证。扩展按 ADR-008 启用门单独验证；CI 尚未在 GitHub Actions 实跑。
+- PostgreSQL 17.11 与 Redis 7.4.12 已通过 Compose 启动并验证角色隔离；D1 空库迁移、已有库升级、seed 幂等、RLS 读策略、API/Worker 就绪检查与 Outbox 故障恢复已实际验证。扩展按 ADR-008 启用门单独验证；CI 已于 2026-11-13 在 `main` 实跑并全绿（run 43398062266），PR 触发路径自本轮修复后尚未再实跑。
 - 仓库与后续工程文档使用 AVEN，原始规格中的 PAN 代号保留。
 - 项目初期采用直接推送 `main` 的方式；需要审查、多人协作或高风险变更时再开分支 + PR。
 
-每项工作分为 `TODO → IN_PROGRESS → REVIEW → DONE`；遇到外部阻塞记录原因和下一步，不将阻塞视为完成。M0-02、M0-04、M0-05、M0-06 与 M0-07 的限定工程包已交付，M0-08 尚缺 CI 实跑；M0-03 骨架与构建已完成但真机验证未完成；实际执行状态记录在第 19 节，只有交付并验证后才更新。文档修订单独记录，不推进应用里程碑。
+每项工作分为 `TODO → IN_PROGRESS → REVIEW → DONE`；遇到外部阻塞记录原因和下一步，不将阻塞视为完成。M0-02、M0-04、M0-05、M0-06 与 M0-07 的限定工程包已交付，M0-08 已在 push 路径实跑 CI，PR 路径与真实部署测量仍缺；M0-03 骨架与构建已完成但真机验证未完成；实际执行状态记录在第 19 节，只有交付并验证后才更新。文档修订单独记录，不推进应用里程碑。
 
 任务编号保持稳定，可用于分支、提交和后续 issue。任务实施者负责代码及验证，验收按本文标准执行；具体人员在实际开始任务时记录，不预设不存在的团队配置。
 
@@ -433,7 +435,7 @@ M0-01 及契约修订见第 19 节。M0-02 已锁定 ADR-001 兼容矩阵并建�
 | M0-05 | DONE | 2026-11-11 | `packages/database`（Drizzle Schema、迁移 runner、seed、verify）、6 个迁移、`scripts/db-verify.mjs`；空库迁移、已有库升级、seed/迁移幂等、39 项 RLS/约束检查通过；见 MIGRATIONS.md | 仅 D1 表、异步样例表与只读/受控策略；认证写路径、FORCE RLS、D2–D6 与业务连接池未实现 |
 | M0-06 | DONE | 2026-11-11 | `packages/service-health`、readiness 契约/客户端、API/Worker `/health/ready`、Web/Expo 探针、`scripts/check-readiness.mjs`；API 200、Redis 故障 503、Worker 消费者运行时就绪 200、48 项单测与 6 项 E2E 通过；见 READINESS.md | 就绪检查已验证；业务队列、限流、认证与生产编排未实现 |
 | M0-07 | DONE | 2026-11-11 | `outbox_events`/`job_receipts`/样例表、`packages/domain`、Outbox 派发器、BullMQ Worker、`scripts/async-verify.ts`；29 项成功/重复/未知/死信/租约/崩溃/Redis 重启检查通过；见 ASYNC.md | 仅工程样例；业务队列、死信运维、指标与 exactly-once 未实现 |
-| M0-08 | PARTIAL | 2026-11-11 | `.github/workflows/ci.yml`（verify + infrastructure）、`docs/development/SETUP.md`、`docs/development/DEPLOYMENT_INVESTIGATION.md`、README 实测命令；本地 format/lint/type/test/build/e2e/db/readiness/async 全部通过 | CI 工作流已定义但未在 GitHub Actions 实跑；部署/预算/校园网络仅为初查清单，无真实测量或报价 |
+| M0-08 | PARTIAL | 2026-11-13 | `.github/workflows/ci.yml`（verify + infrastructure）、`docs/development/SETUP.md`、`docs/development/DEPLOYMENT_INVESTIGATION.md`、README 实测命令；本地 format/lint/type/test/build/e2e/db/readiness/async 全部通过；2026-11-13 在 `main` 实际实跑，verify 与 infrastructure 两个 job 全绿（安装、format、lint、依赖边界、Expo 兼容、类型、单测 347 项、构建、AI 评估与报告、Playwright E2E、Compose、迁移、seed、db:verify） | PR 触发路径自本轮修复后尚未再实跑；部署/预算/校园网络仍仅为初查清单，无真实测量或报价；CI 变绿不等于生产发布 |
 | M1-01 | DONE | 2026-11-11 | `packages/design-tokens` 语义/状态色、字体/行高/字重/字距、断点、深色主题、减少动态；Web/Expo 使用令牌；52 项测试、对比度矩阵与生成 CSS 检查通过；见 M1-01_TOKENS.md | 仅令牌层；组件、页面、双端高保真与真机字体缩放未验证 |
 | M1-07 | REVIEW | 2026-11-11 | 可点击原型 `docs/design/prototypes/m1-07/index.html`、令牌快照、原型说明与 `M1-07_REVIEW.md`；覆盖 8 个页面、双身份、浅深色、状态切换、接受/发送/撤销对话框；Chrome 无头自检通过、移动端溢出 0 | 正式双端设计评审未进行；底栏标签、代表范围文案、撤销文案、关系用途流程等未决；不标记 DONE |
 | M2-01 | DONE | 2026-11-11 | `0007_authentication.sql`、认证 contracts、`apps/api/src/auth/*`、`scripts/auth-verify.ts`、`AUTH.md`、ADR-009；42 项真实 HTTP/数据库/Redis 检查、59 项单测通过 | 认证闭环已验证；生产邮件、MFA、账号锁定、空闲超时、真实设备与 Web/Mobile 页面未实现 |
