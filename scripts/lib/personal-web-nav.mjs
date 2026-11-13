@@ -40,3 +40,10 @@ export async function openPanel(page, name) {
   await page.getByRole('dialog').getByRole('button', { name, exact: true }).click();
   await page.getByRole('dialog').waitFor();
 }
+
+/** Independent plugin directory; the existing connect-apps sheet remains available in chat. */
+export async function openPluginDirectory(page) {
+  await openAccount(page);
+  await page.getByRole('dialog').getByRole('link', { name: '插件目录', exact: true }).click();
+  await page.getByRole('heading', { name: '给对话更多能力' }).waitFor();
+}

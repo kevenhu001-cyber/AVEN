@@ -1,0 +1,79 @@
+.platform-page {
+  min-height: 100dvh;
+  color: var(--aven-color-foreground, #ededed);
+}
+.platform-page h1 {
+  font-size: 28px;
+  font-weight: 650;
+  margin: 24px 0;
+}
+.platform-page h2 {
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.platform-page section {
+  padding: 20px;
+  border: 1px solid #555;
+  border-radius: 20px;
+  animation: platform-enter 180ms ease-out both;
+}
+.platform-page p {
+  margin: 12px 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.platform-page input {
+  border: 1px solid #777;
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+.platform-page button,
+.platform-page a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  margin: 4px 4px 4px 0;
+}
+.platform-page button {
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+.platform-page button:active {
+  transform: scale(0.98);
+}
+.platform-page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.platform-page :focus-visible {
+  outline: 2px solid #7da7ff;
+  outline-offset: 3px;
+}
+@keyframes platform-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-page section {
+    animation: none;
+  }
+  .platform-page button {
+    transition: none;
+  }
+  .platform-page button:active {
+    transform: none;
+  }
+}

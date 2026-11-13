@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   useCallback,
   useEffect,
@@ -286,6 +287,7 @@ export function Workspace({
     panelTitle = `${shown.plugin.name} · 动作`;
     panelBody = action ? (
       <ActionForm
+        key={`${shown.plugin.id}:${action.name}`}
         plugin={shown.plugin}
         action={action}
         onClose={() => setPanel(null)}
@@ -498,6 +500,15 @@ function Account({
       )}
       {error && <Alert variant="warning">{error}</Alert>}
       <nav className="halo-group" aria-label="个人导航">
+        <Link className="halo-row" href="/plugins">
+          插件目录
+        </Link>
+        <a className="halo-row" href="/connectors">
+          第三方账号连接
+        </a>
+        <a className="halo-row" href="/admin">
+          平台管理
+        </a>
         <button type="button" className="halo-row halo-press-soft" onClick={() => onOpen('memory')}>
           <Icon name="library" size={22} className="halo-row-icon" />
           <span className="halo-row-label">记忆与上下文</span>
