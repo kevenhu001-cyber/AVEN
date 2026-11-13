@@ -1,5 +1,8 @@
 import {
   AgentRuntimeSchema,
+  UserAIProviderInputSchema,
+  UserAIProviderMetadataSchema,
+  UserAIProviderTestSchema,
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
   AgentRunSchema,
@@ -10,7 +13,7 @@ import {
   AgentHistorySchema,
   AgentHistoryQuerySchema,
 } from '@aven/contracts';
-import type { AgentTurnRequest, AgentStreamEvent } from '@aven/contracts';
+import type { UserAIProviderInput, AgentTurnRequest, AgentStreamEvent } from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
 import { ApiClientError } from './errors';
 import { readSse } from './sse';
@@ -32,6 +35,50 @@ export function createAgentClient(
   }
   const path = (runId: string) => `/api/v1/agent/runs/${id(runId)}`;
   return {
+    async provider(call: ConnectionCallOptions) {
+      return request(
+        '/api/v1/agent/provider',
+        (value) => {
+          const body = value as { data: unknown };
+          return body.data === null ? null : UserAIProviderMetadataSchema.parse(body.data);
+        },
+        authenticatedOptions(call, false, invalid),
+      );
+    },
+    saveProvider(input: UserAIProviderInput, call: ConnectionCallOptions) {
+      return request(
+        '/api/v1/agent/provider',
+        (value) => UserAIProviderMetadataSchema.parse((value as { data: unknown }).data),
+        {
+          ...authenticatedOptions(call, true, invalid),
+          method: 'PUT',
+          body: UserAIProviderInputSchema.parse(input),
+        },
+      );
+    },
+    testProvider(input: UserAIProviderInput, call: ConnectionCallOptions) {
+      return request('/api/v1/agent/provider/test', UserAIProviderTestSchema.parse, {
+        ...authenticatedOptions(call, true, invalid),
+        body: UserAIProviderInputSchema.parse(input),
+      });
+    },
+    deleteProvider(version: number, configId: string, call: ConnectionCallOptions) {
+      if (!Number.isInteger(version) || version < 1) throw invalid();
+      return request(
+        `/api/v1/agent/provider?version=${version}&configId=${id(configId)}`,
+        (value) => {
+          if (
+            typeof value !== 'object' ||
+            value === null ||
+            !('deleted' in value) ||
+            typeof value.deleted !== 'boolean'
+          )
+            throw new Error('Invalid deletion response.');
+          return value.deleted;
+        },
+        { ...authenticatedOptions(call, true, invalid), method: 'DELETE' },
+      );
+    },
     runtime(call: ConnectionCallOptions) {
       return request(
         '/api/v1/agent/runtime',

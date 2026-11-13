@@ -7,10 +7,15 @@ import { Workspace } from './workspace';
 import { MessageContent } from './message-content';
 const mocks = vi.hoisted(() => ({
   runtime: vi.fn(),
+  provider: vi.fn(),
   createTurn: vi.fn(),
   events: vi.fn(),
   copy: vi.fn(),
   expired: vi.fn(),
+}));
+vi.mock('@aven/api-client', async () => ({
+  ...(await vi.importActual('@aven/api-client')),
+  createApiClient: () => ({ agent: mocks }),
 }));
 vi.mock('./api', () => ({
   api: { agent: mocks },
@@ -76,6 +81,7 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('navigator', { clipboard: { writeText: mocks.copy } });
   vi.clearAllMocks();
+  mocks.provider.mockResolvedValue(null);
   mocks.runtime.mockResolvedValue({ providerMode: 'mock', externalActions: false });
   mocks.createTurn.mockResolvedValue({ runId: 'run-1', conversationId: 'conversation-1' });
   mocks.events.mockImplementation(async function* () {
@@ -175,6 +181,28 @@ describe('chat workspace interactions', () => {
     expect(renderer.root.findByProps({ id: 'chat-input' }).props.disabled).toBe(true);
     expect(JSON.stringify(renderer.toJSON())).toContain('暂时无法确认模型状态');
     expect(mocks.createTurn).not.toHaveBeenCalled();
+  });
+  it('masks channel fields during a transient session check without dropping the unsaved key', async () => {
+    await act(async () => {
+      renderer = create(createElement(Workspace, { ...props, initialPage: 'provider' }));
+    });
+    await act(async () =>
+      renderer.root
+        .findByProps({ id: 'provider-key' })
+        .props.onChange({ target: { value: 'unsaved-synthetic-key' } }),
+    );
+    await act(async () =>
+      renderer.update(
+        createElement(Workspace, { ...props, initialPage: 'provider', suspended: true }),
+      ),
+    );
+    expect(renderer.root.findByProps({ className: 'workspace-page' }).props.hidden).toBe(true);
+    await act(async () =>
+      renderer.update(createElement(Workspace, { ...props, initialPage: 'provider' })),
+    );
+    expect(renderer.root.findByProps({ id: 'provider-key' }).props.value).toBe(
+      'unsaved-synthetic-key',
+    );
   });
   it('escapes raw HTML while rendering readable lists and code', () => {
     const html = renderToStaticMarkup(

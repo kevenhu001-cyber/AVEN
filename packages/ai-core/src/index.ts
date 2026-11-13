@@ -214,3 +214,10 @@ export {
   type RegisteredMcpServerRecord,
   type TaobaoFlashPluginOptions,
 } from './plugins/index.js';
+export {
+  publicProviderFetch,
+  publicProviderUrl,
+  isPublicIPv4,
+  resolvePublicProviderAddress,
+} from './public-provider-fetch.js';
+export { decryptProviderKey } from './provider-credentials.js';

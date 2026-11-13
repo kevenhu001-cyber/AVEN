@@ -123,7 +123,12 @@ export function HistoryPanel({ onExpired }: PrivateProps) {
         <div className="memory-card flex flex-col gap-2" key={item.id}>
           <strong>{new Date(item.createdAt).toLocaleString('zh-CN')}</strong>
           <span>
-            {item.provider === 'mock' ? '模拟对话' : item.provider} ·{' '}
+            {item.provider === 'mock'
+              ? '模拟对话'
+              : item.provider === 'user_openai_compatible'
+                ? '个人渠道'
+                : '默认模型'}{' '}
+            ·{' '}
             {
               {
                 queued: '等待回复',

@@ -1,12 +1,13 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { AuthForm } from './auth-form';
+import type { WorkspacePage } from './workspace-navigation';
 import { Workspace } from './workspace';
 import { usePersonalSession } from './use-personal-session';
 import './personal.css';
 import './workspace.css';
 
-export function PersonalApp() {
+export function PersonalApp({ initialPage = 'chat' }: { initialPage?: WorkspacePage }) {
   const session = usePersonalSession();
   const [recoveryRoute, setRecoveryRoute] = useState(false);
   const openRecovery = useCallback(() => setRecoveryRoute(true), []);
@@ -31,6 +32,7 @@ export function PersonalApp() {
       <Workspace
         key={session.me.user.id}
         me={session.me}
+        initialPage={initialPage}
         suspended={session.status !== 'ready'}
         problem={session.problem}
         onRetry={() => void session.recheck(true)}

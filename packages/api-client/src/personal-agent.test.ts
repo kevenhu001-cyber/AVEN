@@ -176,17 +176,39 @@ describe('runtime metadata', () => {
     expect(fetcher.mock.calls[0]?.[0]).toBe('/api/v1/agent/runtime');
   });
   it('rejects metadata containing a credential', async () => {
-    const fetcher = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(
-        Response.json({
-          providerMode: 'live',
-          externalActions: false,
-          apiKey: 'never-return-keys',
-        }),
-      );
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        providerMode: 'live',
+        externalActions: false,
+        apiKey: 'never-return-keys',
+      }),
+    );
     await expect(createApiClient({ fetcher }).agent.runtime(call)).rejects.toMatchObject({
       code: 'INVALID_RESPONSE',
     });
   });
+});
+
+it('saves a provider with PUT and a fresh CSRF token, refusing missing CSRF before fetch', async () => {
+  const provider = {
+    baseUrl: 'https://api.channel.org/v1',
+    model: 'channel-model',
+    apiKey: 'synthetic-key',
+    expectedVersion: 0,
+    expectedConfigId: null,
+  };
+  const metadata = {
+    configId: runId,
+    baseUrl: provider.baseUrl,
+    model: provider.model,
+    version: 1,
+    updatedAt: '2026-11-13T00:00:00.000Z',
+  };
+  const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ data: metadata }));
+  const agent = createApiClient({ fetcher }).agent;
+  expect(() => agent.saveProvider(provider, { auth: { kind: 'web' } })).toThrow();
+  expect(fetcher).not.toHaveBeenCalled();
+  await agent.saveProvider(provider, call);
+  expect(fetcher.mock.calls[0]?.[1]?.method).toBe('PUT');
+  expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).get('X-CSRF-Token')).toBe('fresh-csrf');
 });

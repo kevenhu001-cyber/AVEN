@@ -1,7 +1,9 @@
 export function agentFailureText(code: unknown): string {
   if (code === 'PROVIDER_RATE_LIMITED')
     return '模型通道当前受限，可能是额度不足或请求过多。请稍后重试，或联系管理员检查额度。';
-  if (code === 'PROVIDER_AUTH_FAILED') return '模型通道认证失败，请联系管理员检查配置。';
+  if (code === 'PROVIDER_AUTH_FAILED') return '模型通道认证失败，请检查 API Key 和渠道权限。';
+  if (code === 'PROVIDER_INVALID_REQUEST')
+    return '渠道拒绝了请求，请检查接口地址、模型名称和协议是否匹配。';
   if (code === 'PROVIDER_TIMEOUT') return '模型回复超时。本次未完成，请稍后重新提问。';
   if (code === 'PROVIDER_UNAVAILABLE' || code === 'PROVIDER_NOT_CONFIGURED')
     return '模型通道暂不可用，请稍后重试。';

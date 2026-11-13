@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Client } from 'pg';
 import { databaseUrlFor, migrationDatabaseUrl } from './env.js';
 import { seedIds } from './seed-data.js';
@@ -77,7 +79,13 @@ async function main(): Promise<void> {
     const migrations = await migrator.query<{ count: string }>(
       'SELECT count(*)::text AS count FROM app.schema_migrations',
     );
-    check('thirty-eight migrations are recorded', migrations.rows[0]?.count === '38');
+    const expectedMigrations = readdirSync(resolve(import.meta.dirname, '../migrations')).filter(
+      (file) => file.endsWith('.sql'),
+    ).length;
+    check(
+      'all repository migrations are recorded',
+      Number(migrations.rows[0]?.count) === expectedMigrations,
+    );
     const availabilityContext = { principalId: seedIds.userOne, userId: seedIds.userOne };
     await app.query('BEGIN');
     try {

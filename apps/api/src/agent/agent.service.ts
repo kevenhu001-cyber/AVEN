@@ -164,9 +164,15 @@ export class AgentService implements OnModuleDestroy {
     this.model = config.model;
   }
 
-  runtime() {
+  async runtime(auth: AuthContext) {
+    const personal = await withRequestContext(
+      this.getPool(),
+      this.context(auth),
+      async (client) =>
+        (await client.query('SELECT * FROM app.get_user_ai_provider_metadata()')).rows.length > 0,
+    );
     return AgentRuntimeSchema.parse({
-      providerMode: this.provider === 'mock' ? 'mock' : 'live',
+      providerMode: personal || this.provider !== 'mock' ? 'live' : 'mock',
       externalActions: false,
     });
   }
@@ -228,7 +234,7 @@ export class AgentService implements OnModuleDestroy {
           conversation_id: string;
           status: AgentRunStatus;
           created: boolean;
-        }>(`SELECT * FROM app.create_agent_turn($1, $2, $3, $4, $5, $6, $7, $8)`, [
+        }>(`SELECT * FROM app.create_personal_agent_turn($1, $2, $3, $4, $5, $6, $7, $8)`, [
           idempotencyKey,
           'POST',
           '/api/v1/agent/turns',

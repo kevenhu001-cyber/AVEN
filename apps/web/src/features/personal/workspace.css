@@ -1,23 +1,111 @@
-/* Chat workspace: shared reading width, dark neutral surfaces, no decorative motion. */
+/*
+ * Personal workspace theme.
+ * Structural language follows mainstream AI chat products (centered reading
+ * column, plain assistant prose, compact user bubbles, floating composer,
+ * grouped sidebar). Color is fully tokenized so light/dark switch via
+ * html[data-aven-theme]. No decorative shadows or gradients.
+ */
 .workspace-theme {
-  --aven-color-background: #080808;
-  --aven-color-surface: #1b1b1b;
-  --aven-color-surface-secondary: #222222;
-  --aven-color-surface-hover: #2b2b2b;
-  --aven-color-foreground: #eeeeee;
-  --aven-color-foreground-secondary: #999999;
-  --aven-color-primary: #f4f4f4;
-  --aven-color-primary-foreground: #111111;
-  --aven-color-border: #303030;
-  --aven-color-control-border: #484848;
-  --aven-color-focus-ring: #d6d6d6;
-  --aven-color-overlay: rgb(0 0 0 / 75%);
-  --aven-color-warning-surface: #29241c;
-  --reading-width: 720px;
+  /* Dark is the default palette. */
+  --ws-bg: #000000;
+  --ws-sidebar: #0b0b0d;
+  --ws-surface: #141416;
+  --ws-surface-2: #1c1c1e;
+  --ws-surface-3: #252528;
+  --ws-hover: #242427;
+  --ws-border: #26262a;
+  --ws-border-soft: #1a1a1e;
+  --ws-border-strong: #3a3a42;
+  --ws-control-border: #4a4a52;
+  --ws-text: #f5f5f7;
+  --ws-text-2: #8e8e93;
+  --ws-text-3: #71717a;
+  --ws-user-bg: #2c2c30;
+  --ws-user-text: #f5f5f7;
+  --ws-composer-bg: #1c1c1e;
+  --ws-code-bg: #121212;
+  --ws-code-head: #282828;
+  --ws-accent: #f5b544;
+  --ws-overlay: rgb(0 0 0 / 72%);
+  --ws-destructive: #e57373;
+  --ws-success: #81c995;
+  --ws-warning: #e0b060;
+  --ws-info: #90b8d4;
+  --ws-reading: 720px;
+  --ws-sidebar-w: 260px;
+  --ws-radius-bubble: 20px;
+  --ws-radius-card: 20px;
   color-scheme: dark;
-  color: var(--aven-color-foreground);
-  background: var(--aven-color-background);
+
+  /* Map shadcn primitives onto the same palette. */
+  --aven-color-background: var(--ws-bg);
+  --aven-color-surface: var(--ws-surface);
+  --aven-color-surface-secondary: var(--ws-surface-2);
+  --aven-color-surface-hover: var(--ws-surface-3);
+  --aven-color-foreground: var(--ws-text);
+  --aven-color-foreground-secondary: var(--ws-text-2);
+  --aven-color-primary: #ffffff;
+  --aven-color-primary-foreground: #0b0b0d;
+  --aven-color-border: var(--ws-border);
+  --aven-color-control-border: var(--ws-control-border);
+  --aven-color-focus-ring: #ffffff;
+  --aven-color-overlay: var(--ws-overlay);
+  --aven-color-warning-surface: #241c10;
+  --aven-color-accent: var(--ws-accent);
+  --aven-color-accent-foreground: #0b0b0d;
+  --aven-color-accent-surface: #2a2416;
+  --aven-color-destructive: var(--ws-destructive);
+  --aven-color-destructive-foreground: #1a0f0f;
+  --aven-color-destructive-surface: #281a1a;
+  --aven-color-success: var(--ws-success);
+  --aven-color-success-surface: #18231b;
+  --aven-color-info: var(--ws-info);
+  --aven-color-info-surface: #172129;
+  --aven-color-warning: var(--ws-warning);
+
+  color: var(--ws-text);
+  background: var(--ws-bg);
 }
+
+html[data-aven-theme='light'] .workspace-theme {
+  --ws-bg: #ffffff;
+  --ws-sidebar: #f9f9f9;
+  --ws-surface: #ffffff;
+  --ws-surface-2: #f4f4f4;
+  --ws-surface-3: #ececec;
+  --ws-hover: #ececec;
+  --ws-border: #e6e6e6;
+  --ws-border-soft: #f0f0f0;
+  --ws-border-strong: #d4d4d4;
+  --ws-control-border: #b8b8b8;
+  --ws-text: #0d0d0d;
+  --ws-text-2: #5d5d5d;
+  --ws-text-3: #8f8f8f;
+  --ws-user-bg: #f0f0f0;
+  --ws-user-text: #0d0d0d;
+  --ws-composer-bg: #ffffff;
+  --ws-code-bg: #f7f7f7;
+  --ws-code-head: #eeeeee;
+  --ws-accent: #b45309;
+  --ws-overlay: rgb(17 18 20 / 32%);
+  --ws-destructive: #b94b4b;
+  --ws-success: #2f6b4f;
+  --ws-warning: #8a5a1f;
+  --ws-info: #3d5a73;
+  color-scheme: light;
+
+  --aven-color-primary: #202020;
+  --aven-color-primary-foreground: #ffffff;
+  --aven-color-focus-ring: #526b5f;
+  --aven-color-accent-foreground: #ffffff;
+  --aven-color-accent-surface: #f0f4f1;
+  --aven-color-destructive-foreground: #ffffff;
+  --aven-color-destructive-surface: #fdf6f6;
+  --aven-color-success-surface: #f2f8f4;
+  --aven-color-info-surface: #f2f6f9;
+  --aven-color-warning-surface: #fcf7ef;
+}
+
 .workspace-theme *,
 .workspace-theme {
   box-shadow: none;
@@ -26,20 +114,28 @@
 .workspace-theme .mascot {
   filter: invert(1);
 }
+html[data-aven-theme='light'] .workspace-theme .mascot {
+  filter: none;
+}
+
+/* ------------------------------------------------------------------ shell */
 .workspace-theme.app-shell {
-  grid-template-columns: 228px minmax(0, 1fr);
-  background: #080808;
+  grid-template-columns: var(--ws-sidebar-w) minmax(0, 1fr);
+  background: var(--ws-bg);
 }
 .workspace-theme .personal-sidebar {
-  background: #141414;
-  border: 0;
-  padding: 26px 14px 18px;
-  gap: 24px;
+  background: var(--ws-sidebar);
+  border-right: 1px solid var(--ws-border-soft);
+  padding: 18px 12px 14px;
+  gap: 18px;
 }
 .workspace-theme .sidebar-brand {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  padding-inline: 10px;
-  letter-spacing: 0.05em;
+  padding: 4px 8px 2px;
+  letter-spacing: 0.04em;
+  font-size: 17px;
 }
 .workspace-theme .sidebar-brand .mascot {
   width: 30px;
@@ -48,91 +144,162 @@
 .workspace-theme .new-chat-button {
   display: flex;
   justify-content: flex-start;
-  gap: 12px;
-  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
   width: 100%;
-  border: 1px solid #353535;
-  border-radius: 14px;
-  background: #222;
-  color: #eee;
+  border: 1px solid var(--ws-border);
+  border-radius: 12px;
+  background: var(--ws-surface-2);
+  color: var(--ws-text);
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+.workspace-theme .new-chat-button:hover {
+  background: var(--ws-hover);
+}
+.workspace-theme .new-chat-icon {
+  display: none;
 }
 .workspace-theme .personal-nav {
-  gap: 4px;
+  gap: 2px;
+}
+.workspace-theme .nav-section-label {
+  padding: 12px 12px 4px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ws-text-3);
 }
 .workspace-theme .workspace-nav-item {
   width: 100%;
   justify-content: flex-start;
-  gap: 12px;
-  min-height: 48px;
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: #aaa;
+  gap: 11px;
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--ws-text-2);
+  font-size: 14px;
+  font-weight: 450;
+}
+.workspace-theme .workspace-nav-item:hover {
+  color: var(--ws-text);
+  background: var(--ws-hover);
 }
 .workspace-theme .workspace-nav-item[aria-current='page'] {
-  color: #fff;
-  background: #252525;
+  color: var(--ws-text);
+  background: var(--ws-surface-3);
+  font-weight: 500;
 }
 .workspace-theme .workspace-nav-item svg {
   flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+}
+.workspace-theme .sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ws-border-soft);
 }
 .workspace-theme .profile-button {
-  padding: 10px 8px;
-  border-radius: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--ws-text);
 }
 .workspace-theme .profile-name {
   flex: 1;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+  font-size: 14px;
 }
 .workspace-theme .profile-button small {
   font-size: 11px;
+  color: var(--ws-text-3);
 }
 .workspace-theme .name-avatar {
-  width: 34px;
-  height: 34px;
-  background: #303030;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ws-surface-3);
+  color: var(--ws-text);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
+
+/* ----------------------------------------------------------------- header */
 .workspace-theme .personal-header {
   position: relative;
   flex-shrink: 0;
-  min-height: 88px;
-  padding: 18px 30px;
-  gap: 16px;
+  min-height: 60px;
+  padding: 10px 22px;
+  gap: 12px;
+  border-bottom: 1px solid var(--ws-border-soft);
+  background: var(--ws-bg);
 }
 .workspace-theme .assistant-identity {
-  gap: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   border: 0;
-  padding: 0;
-  font-size: 18px;
-  letter-spacing: 0.01em;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--ws-text);
+  cursor: pointer;
+}
+.workspace-theme .assistant-identity:hover {
+  background: var(--ws-hover);
 }
 .workspace-theme .assistant-identity .mascot {
-  width: 42px;
-  height: 42px;
+  width: 26px;
+  height: 26px;
 }
 .workspace-theme .assistant-identity small {
   display: block;
   font-size: 11px;
   font-weight: 400;
-  color: #999;
+  color: var(--ws-text-3);
   letter-spacing: 0;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+.workspace-theme .assistant-identity > span {
+  text-align: left;
+  line-height: 1.2;
+}
+.workspace-theme .header-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .workspace-theme .header-circle {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: #222;
-  color: #ddd;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ws-text-2);
 }
-.workspace-theme .new-chat-icon {
-  margin-left: auto;
+.workspace-theme .header-circle:hover {
+  background: var(--ws-hover);
+  color: var(--ws-text);
 }
 .workspace-theme .personal-main {
   overflow: hidden;
+  background: var(--ws-bg);
 }
 .workspace-chat-host {
   display: flex;
@@ -147,8 +314,10 @@
   flex: 1;
   min-height: 0;
 }
+
+/* ------------------------------------------------------------- transcript */
 .workspace-theme .chat-transcript {
-  padding: 16px 28px 20px;
+  padding: 18px 28px 24px;
   scroll-padding: 20px;
 }
 .workspace-theme .chat-transcript.is-empty {
@@ -157,80 +326,162 @@
 }
 .workspace-theme .chat-thread {
   width: 100%;
-  max-width: var(--reading-width);
+  max-width: var(--ws-reading);
   margin: 0 auto;
 }
+
+/* Welcome: headline-first, mascot de-emphasized. */
 .workspace-theme .chat-welcome {
-  width: min(100%, 510px);
+  width: min(100%, 620px);
   margin: auto;
-  padding: 30px 0;
+  padding: 32px 0 16px;
+  text-align: center;
+}
+.workspace-theme .chat-welcome .welcome-hero {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 14px;
 }
 .workspace-theme .chat-welcome .mascot {
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 28px;
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  opacity: 0.95;
+}
+.workspace-theme .chat-welcome .hero-star-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ws-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  border: 2px solid var(--ws-bg);
+}
+.workspace-theme .chat-welcome .hero-star-badge svg {
+  width: 11px;
+  height: 11px;
+  fill: #ffffff;
+  stroke: none;
 }
 .workspace-theme .chat-welcome h1 {
-  font-size: clamp(25px, 2.7vw, 32px);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  margin: 0 0 12px;
+  font-size: clamp(28px, 3.4vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 0 0 8px;
+  color: var(--ws-text);
 }
-.workspace-theme .chat-welcome p {
-  color: #999;
-  margin: 0 0 30px;
+.workspace-theme .chat-welcome .welcome-tagline {
+  color: var(--ws-text-2);
+  margin: 0 0 26px;
   font-size: 15px;
 }
 .workspace-theme .chat-starters {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 .workspace-theme .chat-starters button {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  width: min(100%, 320px);
-  border: 1px solid #303030;
-  border-radius: 16px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--ws-border);
+  border-radius: 999px;
   background: transparent;
-  color: #bcbcbc;
+  color: var(--ws-text-2);
   font-size: 13px;
-  text-align: left;
-  padding: 10px 16px;
+  text-align: center;
+  padding: 8px 16px;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .workspace-theme .chat-starters button:hover {
-  color: #eee;
-  background: #1b1b1b;
+  color: var(--ws-text);
+  background: var(--ws-surface-2);
+  border-color: var(--ws-border-strong);
 }
 .workspace-theme .chat-starters svg {
-  width: 16px;
-  height: 16px;
+  display: none;
 }
+
+/* ---------------------------------------------------------------- messages */
 .workspace-theme .chat-turn {
-  margin-bottom: 26px;
+  margin-bottom: 28px;
+}
+.workspace-theme .chat-time-divider {
+  margin: 0 0 18px;
+  padding-top: 6px;
+  text-align: center;
+  color: var(--ws-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+.workspace-theme .message-user {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
 }
 .workspace-theme .chat-bubble {
-  max-width: 92%;
-  font-size: 16px;
-  line-height: 26px !important;
-  padding: 14px 18px;
-  margin: 0 0 12px;
-  border-radius: 24px;
+  font-size: 15.5px;
+  line-height: 25px !important;
+  border-radius: var(--ws-radius-bubble);
   white-space: normal;
 }
 .workspace-theme .user-bubble {
-  margin: 0 0 24px auto;
-  max-width: 85%;
-  color: #eee;
-  background: #252525;
+  width: fit-content;
+  max-width: 80%;
+  margin: 0;
+  color: var(--ws-user-text);
+  background: var(--ws-user-bg);
+  border-radius: 20px;
+  padding: 11px 16px;
   white-space: pre-wrap;
+  font-weight: 450;
+}
+.workspace-theme .message-assistant {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.workspace-theme .assistant-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin-top: 1px;
+}
+.workspace-theme .assistant-avatar .mascot {
+  width: 30px;
+  height: 30px;
+}
+.workspace-theme .assistant-main {
+  flex: 1;
+  min-width: 0;
+}
+.workspace-theme .assistant-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ws-text);
+  margin-bottom: 3px;
+}
+.workspace-theme .assistant-body {
+  color: var(--ws-text);
 }
 .workspace-theme .assistant-bubble {
-  background: #1e1e1e;
-  border-bottom-left-radius: 7px;
-  color: #eee;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--ws-text);
 }
 .workspace-theme .message-content {
   overflow-wrap: anywhere;
@@ -273,22 +524,22 @@
 }
 .workspace-theme .message-content :not(pre) > code {
   padding: 2px 5px;
-  background: #333;
+  background: var(--ws-surface-3);
   border-radius: 5px;
   font-size: 0.88em;
 }
 .workspace-theme .message-content blockquote {
-  border-left: 2px solid #555;
+  border-left: 2px solid var(--ws-border-strong);
   padding-left: 12px;
-  color: #aaa;
+  color: var(--ws-text-2);
   margin: 12px 0;
 }
 .workspace-theme .message-code {
   margin: 12px 0;
-  border: 1px solid #3c3c3c;
-  border-radius: 14px;
+  border: 1px solid var(--ws-border);
+  border-radius: 12px;
   overflow: hidden;
-  background: #121212;
+  background: var(--ws-code-bg);
   max-width: 100%;
 }
 .workspace-theme .code-heading {
@@ -296,8 +547,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 10px 0 14px;
-  background: #282828;
-  color: #aaa;
+  background: var(--ws-code-head);
+  color: var(--ws-text-2);
   font-size: 12px;
 }
 .workspace-theme .message-code pre {
@@ -314,27 +565,39 @@
 .workspace-theme .turn-actions {
   display: flex;
   align-items: center;
+  gap: 2px;
   min-height: 0;
-  margin-top: -6px;
-  color: #999;
+  margin-top: 4px;
+  color: var(--ws-text-2);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.workspace-theme .chat-turn:hover .turn-actions,
+.workspace-theme .chat-turn:focus-within .turn-actions,
+.workspace-theme .turn-actions:focus-within {
+  opacity: 1;
 }
 .workspace-theme .turn-actions:empty {
   display: none;
 }
 .workspace-theme .message-action {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 34px;
+  min-height: 34px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  color: #999;
+  border-radius: 8px;
+  color: var(--ws-text-2);
   background: transparent;
 }
+.workspace-theme .message-action:hover {
+  color: var(--ws-text);
+  background: var(--ws-hover);
+}
 .workspace-theme .message-action svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 .copy-control {
   display: inline-flex;
@@ -342,102 +605,204 @@
 }
 .copy-failure {
   font-size: 12px;
+  color: var(--ws-destructive);
 }
 .workspace-theme .turn-state {
   font-size: 12px;
   padding-block: 8px;
+  color: var(--ws-text-2);
 }
 .workspace-theme .reply-pending {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  color: #aaa;
+  color: var(--ws-text-2);
   font-size: 13px;
 }
 .reply-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #bbb;
+  background: var(--ws-text-2);
 }
+
+/* --------------------------------------------------------------- composer */
 .workspace-theme .composer-dock {
   flex-shrink: 0;
-  padding: 12px 28px 12px;
-  background: #080808;
+  padding: 10px 28px 16px;
+  background: linear-gradient(to top, var(--ws-bg) 78%, transparent);
 }
 .workspace-theme .chat-composer {
   width: 100%;
-  max-width: var(--reading-width);
-  border: 1px solid transparent;
-  border-radius: 30px;
-  padding: 6px;
+  max-width: var(--ws-reading);
+  border: 1px solid var(--ws-border);
+  border-radius: 24px;
+  padding: 6px 8px;
   margin: 0 auto;
-  gap: 4px;
+  gap: 6px;
   align-items: flex-end;
-  background: #222;
+  background: var(--ws-composer-bg);
+  transition: border-color 0.15s ease;
 }
 .workspace-theme .chat-composer:focus-within {
-  border-color: #646464;
+  border-color: var(--ws-control-border);
 }
 .workspace-theme .chat-composer textarea {
-  font-size: 16px;
-  line-height: 26px;
-  padding: 9px 6px;
-  min-height: 44px;
-  max-height: 156px;
+  font-size: 15.5px;
+  line-height: 24px;
+  padding: 8px 6px;
+  min-height: 40px;
+  max-height: 180px;
   border: 0;
   border-radius: 0;
   background: transparent;
   outline: none;
   box-shadow: none;
   overflow-y: auto;
+  color: var(--ws-text);
 }
 .workspace-theme .chat-composer textarea::placeholder {
-  color: #939393;
+  color: var(--ws-text-3);
 }
 .workspace-theme .composer-add {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   flex-shrink: 0;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #ddd;
+  color: var(--ws-text-2);
+  transition: background 0.15s ease;
 }
-.workspace-theme .send-button {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  min-width: 44px;
+.workspace-theme .composer-add:hover {
+  background: var(--ws-hover);
+  color: var(--ws-text);
+}
+.workspace-theme .composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.workspace-theme .voice-indicator-button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ws-text-2);
   padding: 0;
-  color: #111;
-  background: #eee;
   border: 0;
 }
+.workspace-theme .send-button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0;
+  color: var(--aven-color-primary-foreground);
+  background: var(--aven-color-primary);
+  border: 0;
+  border-radius: 50%;
+  transition: opacity 0.15s ease;
+}
 .workspace-theme .send-button:disabled {
-  color: #999;
-  background: #363636;
+  color: var(--ws-text-3);
+  background: var(--ws-surface-3);
   opacity: 1;
 }
 .workspace-theme .composer-note {
-  color: #888;
+  color: var(--ws-text-3);
   font-size: 11px;
-  margin: 9px 0 0;
+  margin: 8px 0 0;
   padding: 0;
-  line-height: 18px;
+  line-height: 16px;
+  text-align: center;
 }
 .workspace-theme .latest-button {
-  bottom: 112px;
-  width: 44px;
-  height: 44px;
+  bottom: 108px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: 50%;
-  background: #292929;
-  border: 1px solid #444;
-  color: #eee;
+  background: var(--ws-surface-2);
+  border: 1px solid var(--ws-border);
+  color: var(--ws-text);
 }
+
+/* ----------------------------------------------------------- grouped cards */
+.grok-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ws-text-3);
+  letter-spacing: 0.04em;
+  margin: 20px 4px 8px;
+  text-transform: uppercase;
+}
+.grok-card-group {
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-radius-card);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.grok-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  gap: 14px;
+}
+.grok-cell-interactive {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.grok-cell-interactive:hover {
+  background: var(--ws-hover);
+}
+.grok-cell-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.grok-cell-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.grok-cell-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ws-text);
+}
+.grok-cell-sub {
+  font-size: 12.5px;
+  color: var(--ws-text-2);
+  line-height: 1.4;
+}
+.grok-cell-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ws-text-2);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.grok-divider {
+  height: 1px;
+  background: var(--ws-border);
+  margin: 0 18px;
+}
+
+/* ------------------------------------------------------------- widget turn */
 .workspace-theme .widget-turn {
   align-items: flex-start;
   gap: 10px;
@@ -445,22 +810,30 @@
 .workspace-theme .widget-turn-head {
   font-size: 12px;
   flex-wrap: wrap;
+  color: var(--ws-text-2);
 }
 .workspace-theme .widget-turn .widget-card {
   max-width: min(100%, 520px);
   border: 0;
-  background: #222;
-  border-radius: 22px;
+  background: var(--ws-surface-2);
+  border-radius: 18px;
 }
 .workspace-theme .widget-turn .assistant-bubble {
   margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--ws-border);
+  border-radius: 16px;
+  background: var(--ws-surface-2);
 }
+
+/* ----------------------------------------------------------------- panels */
 .workspace-theme .workspace-page {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 16px 28px 40px;
+  padding: 22px 28px 48px;
   overscroll-behavior: contain;
+  background: var(--ws-bg);
 }
 .workspace-page-inner {
   width: min(100%, 760px);
@@ -471,11 +844,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 .workspace-theme .workspace-page-heading h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   letter-spacing: -0.03em;
 }
 .workspace-theme .workspace-page-heading button {
@@ -487,8 +860,8 @@
   width: 16px;
 }
 .workspace-theme .space-description {
-  margin: -8px 0 30px;
-  color: #999;
+  margin: -6px 0 24px;
+  color: var(--ws-text-2);
   font-size: 14px;
 }
 .workspace-theme .space-menu {
@@ -498,67 +871,145 @@
 .workspace-theme .space-menu-row {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
-  min-height: 92px;
-  padding: 18px 4px;
+  min-height: 72px;
+  padding: 16px 4px;
   text-align: left;
   border-radius: 0;
-  border-bottom: 1px solid #242424;
-  color: #ddd;
+  border-bottom: 1px solid var(--ws-border);
+  color: var(--ws-text);
+}
+.workspace-theme .space-menu-row:hover {
+  background: var(--ws-hover);
 }
 .workspace-theme .space-menu-row > svg {
-  width: 25px;
-  height: 25px;
+  width: 22px;
+  height: 22px;
+  color: var(--ws-text-2);
 }
 .workspace-theme .space-menu-row > svg:last-child {
   margin-left: auto;
   width: 18px;
-  color: #777;
+  color: var(--ws-text-3);
 }
 .workspace-theme .space-menu-row span {
   flex: 1;
   min-width: 0;
 }
 .workspace-theme .space-menu-row strong {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
 }
 .workspace-theme .space-menu-row small {
   display: block;
-  margin-top: 5px;
-  color: #999;
+  margin-top: 4px;
+  color: var(--ws-text-2);
   font-size: 12px;
   font-weight: 400;
 }
 .workspace-theme .space-footnote {
-  margin-top: 32px;
+  margin-top: 28px;
   font-size: 12px;
-  color: #888;
+  color: var(--ws-text-3);
 }
 .workspace-theme .memory-card,
 .workspace-theme .notification-row {
-  border-radius: 18px;
-  border-color: #303030;
-  background: transparent;
+  border-radius: 16px;
+  border-color: var(--ws-border);
+  background: var(--ws-surface);
 }
 .workspace-theme .workspace-page [data-slot='card'] {
-  border-color: #303030;
+  border-color: var(--ws-border);
+  background: var(--ws-surface);
 }
 .workspace-theme .connector-row {
-  border-radius: 18px;
-  border-color: #363636;
+  border-radius: 16px;
+  border-color: var(--ws-border);
 }
-.workspace-theme.workspace-modal {
-  background: #171717;
-  border-color: #383838;
+.workspace-theme .memory-create {
+  margin-top: 12px;
+  border: 1px solid var(--ws-border);
+  border-radius: 16px;
+  padding: 0 16px;
+  background: var(--ws-surface);
+}
+.workspace-theme .memory-create summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ws-text);
+}
+.workspace-theme .memory-create summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-theme .memory-create summary:focus-visible {
+  outline: 2px solid var(--ws-text);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.workspace-theme .memory-create[open] summary {
+  border-bottom: 1px solid var(--ws-border);
+}
+.workspace-theme .workspace-empty {
+  padding: 56px 16px;
+  text-align: center;
+  color: var(--ws-text-2);
+}
+.workspace-theme .workspace-empty > svg {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  color: var(--ws-text-3);
+}
+.workspace-theme .workspace-empty h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 10px;
+  color: var(--ws-text);
+}
+.workspace-theme .workspace-empty p {
+  font-size: 13px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.workspace-theme .history-answer {
+  margin-top: 12px;
 }
 .workspace-theme .session-cover .mascot {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
+}
+.workspace-theme.workspace-modal {
+  background: var(--ws-surface);
+  border-color: var(--ws-border);
 }
 .mobile-bottom-nav {
   display: none;
+}
+
+/* ------------------------------------------------------------- responsive */
+@media (max-width: 900px) {
+  .workspace-theme.app-shell {
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+  .workspace-theme .personal-header {
+    padding: 10px 16px;
+  }
+  .workspace-theme .chat-transcript {
+    padding: 16px 16px 20px;
+  }
+  .workspace-theme .composer-dock {
+    padding: 8px 16px 12px;
+  }
+  .workspace-theme .workspace-page {
+    padding: 18px 16px 36px;
+  }
 }
 @media (max-width: 768px) {
   .workspace-theme.app-shell {
@@ -568,8 +1019,8 @@
     display: none;
   }
   .workspace-theme .personal-header {
-    min-height: 92px;
-    padding: 18px 16px;
+    min-height: 56px;
+    padding: 8px 12px;
     justify-content: space-between;
   }
   .workspace-theme .personal-header .mobile-nav-button {
@@ -579,56 +1030,67 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    gap: 8px;
-    font-size: 16px;
+    gap: 7px;
+    font-size: 15px;
   }
   .workspace-theme .assistant-identity .mascot {
-    width: 42px;
-    height: 42px;
+    width: 24px;
+    height: 24px;
   }
   .workspace-theme .assistant-identity small {
     font-size: 10px;
   }
+  .workspace-theme .header-tools {
+    gap: 0;
+  }
+  .workspace-theme .new-chat-icon {
+    display: inline-grid;
+  }
   .workspace-theme .chat-transcript {
-    padding: 12px 16px 16px;
+    padding: 12px 14px 16px;
   }
   .workspace-theme .chat-bubble {
     max-width: 96%;
-    padding: 12px 16px;
-    border-radius: 23px;
-  }
-  .workspace-theme .assistant-bubble {
-    border-bottom-left-radius: 6px;
   }
   .workspace-theme .user-bubble {
-    max-width: 87%;
-    margin-bottom: 22px;
+    max-width: 86%;
   }
   .workspace-theme .chat-turn {
-    margin-bottom: 22px;
+    margin-bottom: 24px;
+  }
+  .workspace-theme .message-assistant {
+    gap: 10px;
+  }
+  .workspace-theme .assistant-avatar,
+  .workspace-theme .assistant-avatar .mascot {
+    width: 26px;
+    height: 26px;
+  }
+  .workspace-theme .turn-actions {
+    opacity: 1;
   }
   .workspace-theme .chat-welcome {
-    padding: 24px 12px;
+    padding: 20px 12px;
   }
   .workspace-theme .chat-welcome .mascot {
-    width: 76px;
-    height: 76px;
-    margin-bottom: 24px;
+    width: 56px;
+    height: 56px;
   }
   .workspace-theme .chat-welcome h1 {
     font-size: 26px;
   }
-  .workspace-theme .chat-welcome p {
-    font-size: 14px;
+  .workspace-theme .chat-starters {
+    flex-direction: column;
+    align-items: stretch;
   }
   .workspace-theme .chat-starters button {
-    font-size: 12px;
+    justify-content: flex-start;
   }
   .workspace-theme .composer-dock {
-    padding: 8px 16px 6px;
+    padding: 8px 12px 6px;
   }
   .workspace-theme .chat-composer {
-    width: 100%;
+    border-radius: 22px;
   }
   .workspace-theme .composer-note {
     font-size: 10px;
@@ -638,8 +1100,9 @@
     display: flex;
     flex-shrink: 0;
     justify-content: space-around;
-    padding: 5px 6px max(5px, env(safe-area-inset-bottom));
-    background: #080808;
+    padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+    background: var(--ws-bg);
+    border-top: 1px solid var(--ws-border-soft);
   }
   .workspace-theme .mobile-bottom-nav button {
     display: flex;
@@ -647,39 +1110,33 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 58px;
-    padding: 7px 4px;
-    gap: 5px;
-    border-radius: 12px;
-    color: #858585;
+    min-height: 56px;
+    padding: 6px 4px;
+    gap: 4px;
+    border-radius: 10px;
+    color: var(--ws-text-3);
     background: transparent;
     font-size: 10px;
     font-weight: 400;
   }
   .workspace-theme .mobile-bottom-nav svg {
-    width: 23px;
-    height: 23px;
+    width: 22px;
+    height: 22px;
   }
   .workspace-theme .mobile-bottom-nav [aria-current='page'] {
-    color: #f4f4f4;
-  }
-  .workspace-theme .workspace-page {
-    padding: 16px 16px 28px;
+    color: var(--ws-text);
   }
   .workspace-theme .workspace-page-heading h1 {
-    font-size: 26px;
+    font-size: 24px;
   }
   .workspace-theme .workspace-page-heading {
-    margin-bottom: 24px;
-  }
-  .workspace-theme .space-menu-row {
-    min-height: 92px;
+    margin-bottom: 20px;
   }
 }
 @media (max-height: 580px) {
   .workspace-theme .personal-header {
-    min-height: 64px;
-    padding-block: 10px;
+    min-height: 52px;
+    padding-block: 6px;
   }
   .workspace-theme .chat-welcome .mascot {
     display: none;
@@ -692,68 +1149,94 @@
     margin-bottom: 16px;
   }
 }
-.workspace-theme .memory-create {
-  margin-top: 12px;
-  border: 1px solid #363636;
-  border-radius: 20px;
-  padding: 0 16px;
+
+/* -------------------------------------------------------- provider panels */
+.workspace-theme .provider-settings {
+  max-width: 600px;
 }
-.workspace-theme .memory-create summary {
+.workspace-theme .provider-intro {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 8px 0;
-  font-size: 14px;
-  cursor: pointer;
-  list-style: none;
+  gap: 14px;
+  margin-bottom: 24px;
 }
-.workspace-theme .memory-create summary::-webkit-details-marker {
-  display: none;
+.workspace-theme .provider-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  background: var(--ws-surface-2);
+  border-radius: 14px;
 }
-.workspace-theme .memory-create summary:focus-visible {
-  outline: 2px solid #ddd;
-  outline-offset: 4px;
-  border-radius: 10px;
-}
-.workspace-theme .memory-create[open] summary {
-  border-bottom: 1px solid #333;
-}
-.workspace-theme .workspace-empty {
-  padding: 50px 16px;
-  text-align: center;
-  color: #999;
-}
-.workspace-theme .workspace-empty > svg {
-  width: 42px;
-  height: 42px;
-  margin: 0 auto 18px;
-  color: #777;
-}
-.workspace-theme .workspace-empty h3 {
-  font-size: 18px;
+.workspace-theme .provider-intro h2 {
+  font-size: 19px;
   font-weight: 500;
-  margin: 0 0 12px;
-  color: #bbb;
+  margin: 0 0 5px;
 }
-.workspace-theme .workspace-empty p {
+.workspace-theme .provider-intro p,
+.workspace-theme .provider-field p,
+.workspace-theme .provider-remove p {
+  font-size: 12px;
+  color: var(--ws-text-2);
+  margin: 6px 0 0;
+}
+.workspace-theme .provider-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 8px 20px;
+  color: var(--ws-text-2);
   font-size: 13px;
-  max-width: 320px;
-  margin: 0 auto;
 }
-.workspace-theme .history-answer {
-  margin-top: 12px;
+.workspace-theme .provider-status button {
+  font-size: 12px;
 }
-.workspace-theme {
-  --aven-color-destructive: #e57373;
-  --aven-color-destructive-foreground: #1a0f0f;
-  --aven-color-destructive-surface: #281a1a;
-  --aven-color-success: #a0c9ae;
-  --aven-color-success-surface: #18231b;
-  --aven-color-info: #a3bdcd;
-  --aven-color-info-surface: #172129;
-  --aven-color-warning: #d5b680;
+.workspace-theme .provider-form {
+  gap: 24px;
+  margin-top: 24px;
 }
-.workspace-theme.app-shell.is-suspended {
-  grid-template-columns: minmax(0, 1fr);
+.workspace-theme .provider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.workspace-theme .provider-field input {
+  height: 48px;
+  padding-inline: 16px;
+  border-radius: 12px;
+  background: var(--ws-surface);
+}
+.workspace-theme .provider-field p {
+  margin: 0;
+  line-height: 1.6;
+}
+.workspace-theme .provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.workspace-theme .provider-actions button {
+  min-height: 44px;
+}
+.workspace-theme .provider-disclosure {
+  margin: -6px 0 4px;
+  color: var(--ws-text-2);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.workspace-theme .provider-remove {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 20px;
+}
+.workspace-theme .provider-remove h3 {
+  margin: 0;
+}
+.workspace-theme .workspace-page[hidden] {
+  display: none;
 }

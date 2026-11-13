@@ -1,18 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import type { AgentHistoryItem, AgentTurnRequest } from '@aven/contracts';
 import { useSession } from './session';
 import { expired, problemText, uncertain } from './api';
-import { Action, Card, Copy, Field, Loading, Mascot, Page, Problem } from './ui';
+import {
+  Action,
+  ChatBubble,
+  Composer,
+  Copy,
+  Loading,
+  Mascot,
+  Page,
+  Problem,
+  TimeDivider,
+  usePalette,
+} from './ui';
 import { ConnectorScreen } from './connector-screen';
 import { NativeWidget } from './widget-card';
 import type { PluginInvokeResponse } from '@aven/contracts';
+import { dayDividers, groupLabel } from './time-label';
 
 type Turn = {
   key: string;
   cancelKey: string;
   request: AgentTurnRequest;
   runId?: string;
+  createdAt: number;
   answer: string;
   status: string;
   problem?: string;
@@ -28,8 +42,14 @@ const statuses: Record<string, string> = {
   failed: '未完成',
   disconnected: '读取已断开',
 };
-export function ChatScreen() {
+export type ChatScreenHandle = {
+  newChat: () => void;
+  openHistory: () => void;
+  openConnectors: () => void;
+};
+export function ChatScreen({ ref }: { ref?: Ref<ChatScreenHandle> }) {
   const { api, call, invalidate } = useSession();
+  const palette = usePalette();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,6 +71,22 @@ export function ChatScreen() {
       cancellation.current?.abort();
     };
   }, []);
+  useImperativeHandle(ref, () => ({
+    newChat() {
+      if (lock.current) return;
+      setTurns([]);
+      setResults([]);
+      setHistory(null);
+      conversation.current = undefined;
+      setDraft('');
+    },
+    openHistory() {
+      setHistory([]);
+    },
+    openConnectors() {
+      setPlugins(true);
+    },
+  }));
   function patch(key: string, change: Partial<Turn>) {
     if (mounted.current)
       setTurns((old) => old.map((turn) => (turn.key === key ? { ...turn, ...change } : turn)));
@@ -152,6 +188,36 @@ export function ChatScreen() {
   const unresolved = turns.some((turn) =>
     ['unknown', 'sending', 'queued', 'running', 'cancelling'].includes(turn.status),
   );
+  function cancel(target: Turn) {
+    if (!target.runId) return;
+    patch(target.key, { status: 'cancelling' });
+    const abort = new AbortController();
+    cancellation.current = abort;
+    void api.agent
+      .cancel(target.runId, target.cancelKey, call(abort.signal))
+      .then((result) => {
+        if (abort.signal.aborted || !mounted.current) return;
+        if (['completed', 'failed', 'cancelled'].includes(result.status)) {
+          controller.current?.abort();
+          patch(target.key, {
+            status: result.status,
+            ...(result.status === 'failed' ? { answer: '' } : {}),
+          });
+        }
+      })
+      .catch((error) => {
+        if (abort.signal.aborted || !mounted.current) return;
+        if (expired(error)) invalidate();
+        else
+          setTurns((old) =>
+            old.map((turn) =>
+              turn.key === target.key && turn.status === 'cancelling'
+                ? { ...turn, status: 'running', problem: problemText(error) }
+                : turn,
+            ),
+          );
+      });
+  }
   if (plugins)
     return (
       <ConnectorScreen
@@ -162,140 +228,105 @@ export function ChatScreen() {
         }}
       />
     );
-  return (
-    <Page>
-      <Mascot />
-      <Copy title>今天，想聊点什么？</Copy>
-      <Copy muted>AI · Mock。确定性回复不代表真实模型能力。</Copy>
-      <Problem message={message} />
-      <Action
-        secondary
-        disabled={busy || unresolved}
-        onPress={() => {
-          setTurns([]);
-          setResults([]);
-          setHistory(null);
+  if (history)
+    return (
+      <HistoryScreen
+        items={history}
+        cursor={cursor}
+        busy={busy}
+        message={message}
+        onBack={() => setHistory(null)}
+        onMore={() => void loadHistory(true)}
+        onReload={() => void loadHistory()}
+        onReplay={(item) => {
+          const turn: Turn = {
+            key: Crypto.randomUUID(),
+            cancelKey: Crypto.randomUUID(),
+            request: { input: '历史回复' },
+            runId: item.id,
+            createdAt: Date.now(),
+            answer: '',
+            status: 'queued',
+          };
+          setTurns([turn]);
           conversation.current = undefined;
+          setHistory(null);
+          void replay(turn);
         }}
-      >
-        新对话
-      </Action>
-      <Action secondary disabled={busy || unresolved} onPress={() => void loadHistory()}>
-        对话记录
-      </Action>
-      {history && (
-        <Card>
-          <Copy title>运行记录</Copy>
-          <Copy muted>
-            只列元数据。回复需重新验证来源授权，仅支持 24 小时内重读，不恢复用户输入或连接器结果。
-          </Copy>
-          {history.length === 0 && <Copy>暂无记录。</Copy>}
-          {history.map((item) => (
-            <Action
-              key={item.id}
-              secondary
-              disabled={busy || unresolved}
-              onPress={() => {
-                const turn: Turn = {
-                  key: Crypto.randomUUID(),
-                  cancelKey: Crypto.randomUUID(),
-                  request: { input: '历史回复' },
-                  runId: item.id,
-                  answer: '',
-                  status: 'queued',
-                };
-                setTurns([turn]);
-                conversation.current = undefined;
-                setHistory(null);
-                void replay(turn);
-              }}
-            >
-              {new Date(item.createdAt).toLocaleString('zh-CN')} · {item.status}
-            </Action>
-          ))}
-          {cursor && (
-            <Action secondary disabled={busy} onPress={() => void loadHistory(true)}>
-              更早的记录
-            </Action>
-          )}
-        </Card>
-      )}
-      {turns.map((turn) => (
-        <Card key={turn.key}>
-          <Copy>{turn.request.input}</Copy>
-          {!!turn.answer && <Copy>{turn.answer}</Copy>}
-          <Copy muted>{statuses[turn.status] ?? turn.status}</Copy>
-          <Problem message={turn.problem ?? ''} />
-          {turn.status === 'unknown' && (
-            <Action secondary disabled={busy} onPress={() => void create(turn)}>
-              沿用本次请求核对发送结果
-            </Action>
-          )}
-          {turn.status === 'disconnected' && (
-            <Action secondary disabled={busy} onPress={() => void replay(turn)}>
-              重新验证并读取回复
-            </Action>
-          )}
-        </Card>
-      ))}
-      {results.map((result) => (
-        <Card key={result.invocationId}>
-          <Copy>{result.summary}</Copy>
-          {result.widgets.map((widget) => (
-            <NativeWidget key={widget.widgetId} widget={widget} />
-          ))}
-        </Card>
-      ))}
-      {busy && <Loading />}
-      {active && (
-        <Action
-          secondary
-          disabled={active.status === 'cancelling'}
-          onPress={() => {
-            patch(active.key, { status: 'cancelling' });
-            const abort = new AbortController();
-            cancellation.current = abort;
-            void api.agent
-              .cancel(active.runId!, active.cancelKey, call(abort.signal))
-              .then((result) => {
-                if (abort.signal.aborted || !mounted.current) return;
-                if (['completed', 'failed', 'cancelled'].includes(result.status)) {
-                  controller.current?.abort();
-                  patch(active.key, {
-                    status: result.status,
-                    ...(result.status === 'failed' ? { answer: '' } : {}),
-                  });
-                }
-              })
-              .catch((error) => {
-                if (abort.signal.aborted || !mounted.current) return;
-                if (expired(error)) invalidate();
-                else
-                  setTurns((old) =>
-                    old.map((turn) =>
-                      turn.key === active.key && turn.status === 'cancelling'
-                        ? { ...turn, status: 'running', problem: problemText(error) }
-                        : turn,
-                    ),
-                  );
-              });
-          }}
-        >
-          停止回复
-        </Action>
-      )}
-      <Field
-        label="向 AVEN 提问"
+      />
+    );
+  const ordered = [...turns].sort((a, b) => a.createdAt - b.createdAt);
+  const dividers = dayDividers(ordered.map((turn) => turn.createdAt));
+  return (
+    <View style={{ flex: 1, backgroundColor: palette.canvas }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={chatContent}>
+        {ordered.length === 0 && results.length === 0 && (
+          <View style={emptyState}>
+            <Mascot />
+            <Copy title>有什么可以帮你？</Copy>
+            <Copy muted>AI 队友 · 为你连接工具并推进真实成果</Copy>
+            <View style={starterWrap}>
+              {['帮我安排今天的学习', '如何管理我的记忆？', '我可以连接哪些工具？'].map((text) => (
+                <Pressable
+                  key={text}
+                  accessibilityRole="button"
+                  onPress={() => setDraft(text)}
+                  style={({ pressed }) => [
+                    starter,
+                    { borderColor: palette.border, opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Text style={{ color: palette['text-secondary'], fontSize: 13 }}>{text}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+        {busy && !active && <Loading />}
+        {ordered.map((turn, index) => (
+          <View key={turn.key}>
+            {dividers[index] && <TimeDivider>{groupLabel(turn.createdAt)}</TimeDivider>}
+            <ChatBubble role="user">{turn.request.input}</ChatBubble>
+            {!!turn.answer && <ChatBubble role="assistant">{turn.answer}</ChatBubble>}
+            {turn.status !== 'completed' && (
+              <View style={statusRow}>
+                <Copy muted>{statuses[turn.status] ?? turn.status}</Copy>
+              </View>
+            )}
+            {turn.problem && <Problem message={turn.problem} />}
+            {turn.status === 'unknown' && (
+              <Action secondary disabled={busy} onPress={() => void create(turn)}>
+                沿用本次请求核对发送结果
+              </Action>
+            )}
+            {turn.status === 'disconnected' && (
+              <Action secondary disabled={busy} onPress={() => void replay(turn)}>
+                重新验证并读取回复
+              </Action>
+            )}
+          </View>
+        ))}
+        {results.map((result) => (
+          <View key={result.invocationId}>
+            <ChatBubble role="assistant">{result.summary}</ChatBubble>
+            {result.widgets.map((widget) => (
+              <NativeWidget key={widget.widgetId} widget={widget} />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+      {message ? (
+        <View style={footerNote}>
+          <Problem message={message} />
+        </View>
+      ) : null}
+      <Composer
         value={draft}
         onChangeText={setDraft}
-        multiline
-        maxLength={8000}
-        editable={!busy && !unresolved}
-      />
-      <Action
-        testID="chat-send"
-        disabled={busy || unresolved || !draft.trim()}
-        onPress={() => {
+        busy={busy}
+        disabled={unresolved}
+        onPlugins={() => setPlugins(true)}
+        onSend={() => {
           const turn: Turn = {
             key: Crypto.randomUUID(),
             cancelKey: Crypto.randomUUID(),
@@ -303,6 +334,7 @@ export function ChatScreen() {
               input: draft.trim(),
               ...(conversation.current ? { conversationId: conversation.current } : {}),
             },
+            createdAt: Date.now(),
             answer: '',
             status: 'sending',
           };
@@ -310,12 +342,79 @@ export function ChatScreen() {
           setDraft('');
           void create(turn);
         }}
-      >
-        发送消息
+        onStop={() => {
+          const target = turns.find((turn) =>
+            ['queued', 'running', 'cancelling'].includes(turn.status),
+          );
+          if (target) cancel(target);
+        }}
+      />
+    </View>
+  );
+}
+
+/* 参考图 2：空态使用大圆形角色与名称，而不是表单列表。 */
+const emptyState = {
+  alignItems: 'center' as const,
+  paddingTop: 64,
+  paddingHorizontal: 8,
+  gap: 8,
+};
+const starterWrap = {
+  flexDirection: 'row' as const,
+  flexWrap: 'wrap' as const,
+  justifyContent: 'center' as const,
+  gap: 8,
+  marginTop: 18,
+};
+const starter = { borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 };
+const chatContent = { padding: 16, gap: 0, paddingBottom: 12 };
+const statusRow = { paddingBottom: 4, paddingLeft: 2 };
+const footerNote = { paddingHorizontal: 16, paddingBottom: 6 };
+
+function HistoryScreen({
+  items,
+  cursor,
+  busy,
+  message,
+  onBack,
+  onMore,
+  onReload,
+  onReplay,
+}: {
+  items: AgentHistoryItem[];
+  cursor: { createdAt: string; id: string } | null;
+  busy: boolean;
+  message: string;
+  onBack: () => void;
+  onMore: () => void;
+  onReload: () => void;
+  onReplay: (item: AgentHistoryItem) => void;
+}) {
+  return (
+    <Page>
+      <Action secondary onPress={onBack}>
+        返回对话
       </Action>
-      <Action secondary disabled={busy || unresolved} onPress={() => setPlugins(true)}>
-        连接器
+      <Copy title>对话记录</Copy>
+      <Copy muted>
+        只列元数据。回复需重新验证来源授权，仅支持 24 小时内重读，不恢复用户输入或连接器结果。
+      </Copy>
+      <Problem message={message} />
+      <Action secondary disabled={busy} onPress={onReload}>
+        刷新记录
       </Action>
+      {items.length === 0 && <Copy muted>暂无记录。</Copy>}
+      {items.map((item) => (
+        <Action key={item.id} secondary disabled={busy} onPress={() => onReplay(item)}>
+          {new Date(item.createdAt).toLocaleString('zh-CN')} · {item.status}
+        </Action>
+      ))}
+      {cursor && (
+        <Action secondary disabled={busy} onPress={onMore}>
+          更早的记录
+        </Action>
+      )}
     </Page>
   );
 }

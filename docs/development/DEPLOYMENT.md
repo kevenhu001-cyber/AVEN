@@ -39,3 +39,8 @@
 ## 2026-11-13 个人真实模型配置
 
 按用户明确授权与 ADR-019，将 Socrates 当前服务的内置模型配置复制到 root 0600 的 AVEN 服务环境，原配置留有同权限备份；未改 Socrates。API/Worker/Web 已重新构建并重启。公网 runtime 返回 live，但真实上游调用返回 429，未成功生成回复；没有回退 Mock。个人外发前复核当前来源，旧 Mock 与组织 run 保持 Mock。恢复/替换模型通道后需补成功与取消验收。详见 [WEB_LIVE_AI_01](WEB_LIVE_AI_01.md)。
+
+
+## 2026-11-13 模型与渠道页
+
+已部署 `/settings/models`，在受限服务环境配置个人密钥加密主密钥与 public_https 策略；已有主密钥保持不轮换，备份与运行文件均 root 0600。迁移 0039、0040 已按序应用并验证，API/Worker/Web 已重启；9 项公网合成配置检查通过，临时配置已删除，无真实模型或邮件调用。用户可自行填渠道测试并保存；默认通道 429 不因配置页存在自动解除。见 [WEB_PROVIDER_SETTINGS](WEB_PROVIDER_SETTINGS.md)。

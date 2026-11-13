@@ -17,9 +17,15 @@ export const viewport: Viewport = {
   ],
 };
 
+// Applies the stored/system theme before first paint to avoid a flash of the wrong palette.
+const themeBootstrap = `(function(){try{var s=localStorage.getItem('aven-theme');var t=(s==='light'||s==='dark')?s:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');var e=document.documentElement;e.dataset.avenTheme=t;e.style.colorScheme=t;}catch(_){}})();`;
+
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body>{children}</body>
     </html>
   );

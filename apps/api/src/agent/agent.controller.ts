@@ -50,8 +50,8 @@ export class AgentController {
   constructor(@Inject(AgentService) private readonly agent: AgentService) {}
 
   @Get('runtime')
-  runtime() {
-    return this.agent.runtime();
+  runtime(@CurrentAuth() auth: AuthContext) {
+    return this.agent.runtime(auth);
   }
 
   @Post('turns')

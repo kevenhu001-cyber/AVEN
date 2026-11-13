@@ -5,11 +5,12 @@ import {
   Get,
   Inject,
   Put,
+  Post,
   Query,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import { UserAIProviderInputSchema } from '@aven/contracts';
+import { UserAIProviderInputSchema, RequestIdSchema } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentAuth } from '../auth/current-auth.decorator.js';
@@ -26,9 +27,22 @@ export class UserAIProviderController {
   @Put() async save(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
     return { data: await this.service.save(auth, parse(UserAIProviderInputSchema, body)) };
   }
-  @Delete() async delete(@CurrentAuth() auth: AuthContext, @Query('version') rawVersion?: string) {
+  @Post('test') async test(@CurrentAuth() auth: AuthContext, @Body() body: unknown) {
+    return this.service.test(auth, parse(UserAIProviderInputSchema, body));
+  }
+  @Delete() async delete(
+    @CurrentAuth() auth: AuthContext,
+    @Query('version') rawVersion?: string,
+    @Query('configId') configId?: string,
+  ) {
     if (!rawVersion || !/^[1-9]\d{0,9}$/.test(rawVersion) || Number(rawVersion) > 2147483647)
       throw new UnprocessableEntityException('Invalid version.');
-    return { deleted: await this.service.delete(auth, Number(rawVersion)) };
+    return {
+      deleted: await this.service.delete(
+        auth,
+        Number(rawVersion),
+        parse(RequestIdSchema, configId),
+      ),
+    };
   }
 }

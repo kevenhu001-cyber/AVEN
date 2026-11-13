@@ -46,3 +46,15 @@ describe('user provider configuration security', () => {
     expect(() => approvedProviderUrl(allowed, undefined)).toThrow();
   });
 });
+
+it('allows public user URLs only with the explicit public_https policy', () => {
+  expect(approvedProviderUrl('https://api.channel.org/v1/', 'public_https')).toBe(
+    'https://api.channel.org/v1',
+  );
+  for (const value of [
+    'https://127.0.0.1/v1',
+    'https://service.internal/v1',
+    'https://api.channel.org:8443/v1',
+  ])
+    expect(() => approvedProviderUrl(value, 'public_https')).toThrow();
+});

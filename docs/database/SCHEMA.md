@@ -1264,3 +1264,11 @@ GRANT EXECUTE ON FUNCTION app.auth_lookup(text) TO aven_auth;
 5. 是否需要 `aven_readonly` 分析角色；如需要，必须排除 PII。
 6. PostGIS 的实际使用场景；地理需求出现前不安装、不建地理索引，不作为 M0 验收依赖。
 7. 备份与恢复演练的具体 RPO/RTO；接纳真实用户数据前确定并演练，M7 复验。
+
+## 0040 个人模型运行配置绑定（ADR-020）
+
+`user_ai_providers` 新增不可变 `config_id uuid`；删除重建产生新 ID，更新沿用 ID 并递增 version。`agent_runs` 新增 `user_provider_config_id` 和 `user_provider_version`，个人创建函数同事务选择并绑定配置。无新增租户表，原 FORCE RLS 与表级权限保持。
+
+新增应用侧当前用户元数据/密文、带配置 ID 与版本校验的保存/删除函数；密文只供服务端同用户保留/测试使用，不进入 HTTP 读取响应。Worker 仅能调用按 run ID 与当前绑定版本校验的配置读取函数，不能直接查询整张配置表。配置编辑、删除或删除重建后，旧 run 不读取新密钥。全局默认与组织 Mock run 的两个绑定字段为空。
+
+迁移遵循正常顺序：开发库已有 0038，本轮将经隔离空库/升级验证的 0039 函数迁移与 0040 一并应用；0039 不代表真实日历 OAuth 已接通。

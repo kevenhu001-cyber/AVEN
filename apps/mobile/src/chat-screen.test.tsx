@@ -2,7 +2,6 @@ import { createElement, type PropsWithChildren } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatScreen } from './chat-screen';
-import { Action, Field } from './ui';
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   events: vi.fn(),
@@ -26,13 +25,61 @@ vi.mock('./connector-screen', () => ({ ConnectorScreen: () => null }));
 vi.mock('./widget-card', () => ({ NativeWidget: () => null }));
 vi.mock('./ui', () => ({
   Action: () => null,
-  Field: () => null,
   Copy: ({ children }: PropsWithChildren) => children,
   Card: ({ children }: PropsWithChildren) => children,
   Page: ({ children }: PropsWithChildren) => children,
   Problem: () => null,
   Loading: () => null,
   Mascot: () => null,
+  ChatBubble: ({ children }: PropsWithChildren) => children,
+  TimeDivider: ({ children }: PropsWithChildren) => children,
+  Composer: ({
+    value,
+    onChangeText,
+    onSend,
+    onStop,
+    busy,
+  }: {
+    value: string;
+    onChangeText: (value: string) => void;
+    onSend: () => void;
+    onStop: () => void;
+    busy: boolean;
+  }) =>
+    createElement('composer', {
+      composer: true,
+      value,
+      onChangeText,
+      onSend,
+      onStop,
+      busy,
+    }),
+  dark: { canvas: '#000000' },
+  usePalette: () => ({
+    canvas: '#000000',
+    surface: '#141416',
+    'surface-raised': '#1C1C1E',
+    'surface-hover': '#252528',
+    border: '#28282C',
+    'border-strong': '#38383E',
+    text: '#F5F5F7',
+    'text-secondary': '#8E8E93',
+    'text-tertiary': '#71717A',
+    'user-bubble': '#2C2C30',
+    'user-bubble-text': '#F5F5F7',
+    accent: '#F5B544',
+    'accent-text': '#FFFFFF',
+    'send-bg': '#FFFFFF',
+    'send-text': '#000000',
+    'mascot-bg': '#FFFFFF',
+    'mascot-eye': '#000000',
+  }),
+}));
+vi.mock('react-native', () => ({
+  View: ({ children }: PropsWithChildren) => children,
+  ScrollView: ({ children }: PropsWithChildren) => children,
+  Text: ({ children }: PropsWithChildren) => children,
+  Pressable: ({ children }: PropsWithChildren) => children,
 }));
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -48,6 +95,9 @@ afterEach(async () => {
   await act(async () => renderer?.unmount());
   vi.clearAllMocks();
 });
+function composer() {
+  return renderer.root.findAllByProps({ composer: true })[0]!.props;
+}
 async function start() {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   const complete = deferred<void>();
@@ -62,13 +112,10 @@ async function start() {
   await act(async () => {
     renderer = create(createElement(ChatScreen));
   });
-  await act(async () => renderer.root.findByType(Field).props.onChangeText('Synthetic input'));
-  await act(async () => renderer.root.findByProps({ testID: 'chat-send' }).props.onPress());
-  const stop = renderer.root
-    .findAllByType(Action)
-    .find((node) => node.props.children === '停止回复');
-  expect(stop).toBeDefined();
-  await act(async () => stop!.props.onPress());
+  await act(async () => composer().onChangeText('Synthetic input'));
+  await act(async () => composer().onSend());
+  expect(composer().busy).toBe(true);
+  await act(async () => composer().onStop());
   return { complete, cancel };
 }
 describe('mobile stream and cancellation races', () => {
@@ -76,10 +123,8 @@ describe('mobile stream and cancellation races', () => {
     const { complete, cancel } = await start();
     await act(async () => complete.resolve());
     await act(async () => cancel.reject(new Error('network')));
-    expect(
-      renderer.root.findAllByType(Action).some((node) => node.props.children === '停止回复'),
-    ).toBe(false);
-    expect(renderer.root.findByType(Field).props.editable).toBe(true);
+    expect(composer().busy).toBe(false);
+    expect(mocks.cancel).toHaveBeenCalledTimes(1);
   });
   it('aborts outstanding cancellation and ignores a stale 401 after leaving the screen', async () => {
     const { complete, cancel } = await start();

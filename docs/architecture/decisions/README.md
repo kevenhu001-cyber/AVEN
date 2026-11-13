@@ -22,6 +22,8 @@
 
 | [ADR-019](0019-personal-live-provider.md) | 用户授权的个人聊天真实模型接入与外发边界 | 已接受，真实上游验收单独记录 |
 
+| [ADR-020](0020-personal-provider-settings.md) | 用户自配渠道页、加密凭据与 run 配置绑定 | 用户要求实施，外部真实成功独立验收 |
+
 新增 ADR 时：
 
 1. 使用下一个编号和 `kebab-case` 文件名。

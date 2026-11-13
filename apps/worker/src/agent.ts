@@ -73,6 +73,7 @@ type OrgOpportunityRow = {
 export type AgentRunProcessorOptions = {
   deltaDelayMs?: number;
   cancelPollMs?: number;
+  userProvider?: (runId: string) => Promise<AIProvider>;
   authorizeExternal?: (identity: ExternalRunIdentity) => Promise<boolean>;
 };
 
@@ -289,11 +290,8 @@ export async function processAgentRun(
     await appendEvent(pool, runId, 'turn.started', {});
 
     const isOrgRun = run.principal_id !== run.initiated_by_user_id;
-    const provider = providerForRun(configuredProvider, {
-      provider: run.provider,
-      model: run.model,
-      personal: !isOrgRun,
-    });
+    if (isOrgRun && run.provider !== 'mock')
+      throw new AIError('TOOL_SCOPE_DENIED', 'External organization runs are not enabled.');
 
     const actor: ToolActor = isOrgRun
       ? {
@@ -438,6 +436,16 @@ export async function processAgentRun(
       });
     }
 
+    const provider =
+      run.provider === 'user_openai_compatible'
+        ? await options.userProvider?.(runId)
+        : providerForRun(configuredProvider, {
+            provider: run.provider,
+            model: run.model,
+            personal: !isOrgRun,
+          });
+    if (!provider || provider.metadata.model !== run.model)
+      throw new AIError('PROVIDER_NOT_CONFIGURED', 'Personal provider configuration changed.');
     if (!provider.metadata.mock) {
       const allowed = await options.authorizeExternal?.({
         runId,

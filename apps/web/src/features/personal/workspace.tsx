@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, type FormEvent } from 'react';
+import { ProviderPanel } from './provider-panel';
 import { useAgentRuntime } from './use-agent-runtime';
 import type { AgentRuntime, MeResponse } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
@@ -21,9 +22,11 @@ import { NotificationsPanel } from './notifications-panel';
 import { SettingsPanel } from './settings-panel';
 import { HistoryPanel } from './history-panel';
 import { SafetyPanel } from './safety-panel';
+import { useTheme } from './use-theme';
 
 export function Workspace({
   me,
+  initialPage = 'chat',
   suspended,
   problem,
   onRetry,
@@ -31,13 +34,15 @@ export function Workspace({
   onLogout,
 }: PrivateProps & {
   me: MeResponse;
+  initialPage?: WorkspacePage;
   suspended: boolean;
   problem: string;
   onRetry: () => void;
   onLogout: () => void;
 }) {
   const model = useAgentRuntime(suspended, onExpired);
-  const [page, setPage] = useState<WorkspacePage>('chat');
+  const { theme, toggle } = useTheme();
+  const [page, setPage] = useState<WorkspacePage>(initialPage);
   const [menu, setMenu] = useState(false);
   const chatControls = useRef<ChatHandle>(null);
   const [chatBusy, setChatBusy] = useState(false);
@@ -49,6 +54,7 @@ export function Workspace({
     more: '你的空间',
     history: '对话记录',
     account: '账号与设置',
+    provider: '模型与渠道',
   }[page];
   const navigate = (next: WorkspacePage) => {
     setPage(next);
@@ -65,6 +71,7 @@ export function Workspace({
   };
   const nav = (
     <nav className="personal-nav" aria-label="个人导航">
+      <p className="nav-section-label">工作区</p>
       {workspacePages.map((item) => (
         <Button
           key={item.id}
@@ -84,9 +91,14 @@ export function Workspace({
           <span>{item.label}</span>
         </Button>
       ))}
+      <p className="nav-section-label">更多</p>
       <Button variant="ghost" className="workspace-nav-item" onClick={() => navigate('history')}>
         <Icon name="history" />
         <span>对话记录</span>
+      </Button>
+      <Button variant="ghost" className="workspace-nav-item" onClick={() => navigate('provider')}>
+        <Icon name="settings" />
+        <span>模型与渠道</span>
       </Button>
       <Button variant="ghost" className="workspace-nav-item" onClick={openConnectors}>
         <Icon name="plug" />
@@ -115,6 +127,15 @@ export function Workspace({
           <div className="sidebar-bottom">
             <Button
               variant="ghost"
+              className="workspace-nav-item theme-toggle"
+              aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+              onClick={toggle}
+            >
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+              <span>{theme === 'dark' ? '浅色模式' : '深色模式'}</span>
+            </Button>
+            <Button
+              variant="ghost"
               className="profile-button"
               aria-label="我的账号"
               onClick={() => navigate('account')}
@@ -141,7 +162,12 @@ export function Workspace({
             >
               <Icon name="menu" />
             </Button>
-            <div className="assistant-identity">
+            <button
+              type="button"
+              className="assistant-identity"
+              aria-label="模型与渠道"
+              onClick={() => navigate('provider')}
+            >
               <Mascot state="static" />
               <span>
                 AVEN
@@ -153,18 +179,31 @@ export function Workspace({
                       : '正在确认模型'}
                 </small>
               </span>
+              <Icon name="chevron" />
+            </button>
+            <div className="header-tools">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="header-circle new-chat-icon"
+                aria-label="开始新对话"
+                title="新对话"
+                onClick={newChat}
+                disabled={chatBusy}
+              >
+                <Icon name="compose" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="header-circle theme-toggle"
+                aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+                title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+                onClick={toggle}
+              >
+                <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="header-circle new-chat-icon"
-              aria-label="开始新对话"
-              title="新对话"
-              onClick={newChat}
-              disabled={chatBusy}
-            >
-              <Icon name="compose" />
-            </Button>
           </header>
         )}
         {suspended && (
@@ -193,8 +232,8 @@ export function Workspace({
             onExpired={onExpired}
           />
         </div>
-        {!suspended && page !== 'chat' && (
-          <section className="workspace-page" aria-label={title} key={page}>
+        {page !== 'chat' && (!suspended || page === 'provider') && (
+          <section className="workspace-page" aria-label={title} key={page} hidden={suspended}>
             <div className="workspace-page-inner">
               <header className="workspace-page-heading">
                 <h1>{title}</h1>
@@ -215,10 +254,19 @@ export function Workspace({
                   onConnections={() => navigate('connections')}
                 />
               )}
+              {page === 'provider' && (
+                <ProviderPanel onExpired={onExpired} onChanged={model.retry} />
+              )}
               {page === 'history' && <HistoryPanel onExpired={onExpired} />}
               {page === 'account' && (
                 <>
-                  <Account me={me} runtime={model.runtime} onRetry={onRetry} onLogout={onLogout} />
+                  <Account
+                    me={me}
+                    runtime={model.runtime}
+                    onRetry={onRetry}
+                    onLogout={onLogout}
+                    onOpenConnectors={openConnectors}
+                  />
                   <SettingsPanel me={me} onChanged={onRetry} onExpired={onExpired} />
                   <SafetyPanel onExpired={onExpired} />
                 </>
@@ -227,6 +275,12 @@ export function Workspace({
                 <>
                   <p className="space-description">把想法、连接和进展放在一起。</p>
                   <div className="space-menu">
+                    <SpaceRow
+                      icon="settings"
+                      title="模型与渠道"
+                      description="配置自己的接口、模型与 API Key"
+                      onClick={() => navigate('provider')}
+                    />
                     <SpaceRow
                       icon="history"
                       title="对话记录"
@@ -293,6 +347,15 @@ export function Workspace({
           <Separator />
           <Button
             variant="ghost"
+            className="workspace-nav-item theme-toggle"
+            aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            onClick={toggle}
+          >
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+            <span>{theme === 'dark' ? '浅色模式' : '深色模式'}</span>
+          </Button>
+          <Button
+            variant="ghost"
             className="profile-button"
             aria-label="我的账号"
             onClick={() => navigate('account')}
@@ -334,11 +397,13 @@ function Account({
   runtime,
   onRetry,
   onLogout,
+  onOpenConnectors,
 }: {
   me: MeResponse;
   runtime: AgentRuntime | null;
   onRetry: () => void;
   onLogout: () => void;
+  onOpenConnectors: () => void;
 }) {
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -361,18 +426,55 @@ function Account({
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="m-0">{me.user.displayName}</h3>
-          <p className="wrap m-0 text-sm text-muted-foreground">{me.user.email}</p>
+    <section className="flex flex-col gap-4">
+      {/* Profile Card */}
+      <div className="grok-card-group">
+        <div className="grok-cell">
+          <div className="flex items-center gap-3">
+            <span className="name-avatar">{Array.from(me.user.displayName)[0]}</span>
+            <div className="grok-cell-main">
+              <span className="grok-cell-title">{me.user.displayName}</span>
+              <span className="grok-cell-sub">{me.user.email}</span>
+            </div>
+          </div>
+          <div className="grok-cell-side">
+            <Badge variant={me.user.emailVerified ? 'success' : 'warning'}>
+              {me.user.emailVerified ? '邮箱已验证' : '邮箱尚未验证'}
+            </Badge>
+            <Icon name="chevron" />
+          </div>
         </div>
-        <Badge variant={me.user.emailVerified ? 'success' : 'warning'}>
-          {me.user.emailVerified ? '邮箱已验证' : '邮箱尚未验证'}
-        </Badge>
+        <div className="grok-divider" />
+        <div className="grok-cell">
+          <div className="grok-cell-main">
+            <span className="grok-cell-title">用量</span>
+            <span className="grok-cell-sub">计量统计尚未接入，此处不展示估算数字</span>
+          </div>
+          <div className="grok-cell-side">
+            <span>未统计</span>
+          </div>
+        </div>
       </div>
+
+      {/* Connected Apps Card Group */}
+      <div className="grok-card-group">
+        <button
+          type="button"
+          className="grok-cell grok-cell-interactive grok-cell-button"
+          onClick={onOpenConnectors}
+        >
+          <div className="grok-cell-main">
+            <span className="grok-cell-title">连接应用</span>
+            <span className="grok-cell-sub">搜索插件并按用途调用，当前为 Mock 样例</span>
+          </div>
+          <div className="grok-cell-side">
+            <Icon name="chevron" />
+          </div>
+        </button>
+      </div>
+
       {!me.user.emailVerified && (
-        <form className="stack-form" onSubmit={(event) => void verify(event)}>
+        <form className="stack-form grok-card-group p-4" onSubmit={(event) => void verify(event)}>
           <p className="small muted m-0">连接邀请等操作需要验证邮箱。请使用验证邮件中的验证码。</p>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="verify-email-token">邮箱验证码</Label>
@@ -393,15 +495,49 @@ function Account({
         </form>
       )}
       {error && <Alert variant="warning">{error}</Alert>}
-      <Separator />
-      <p className="small muted m-0">
-        {runtime?.providerMode === 'live'
-          ? 'AI 使用真实模型，发送当前提问及本次获准上下文。'
-          : runtime
-            ? 'AI 当前为 Mock。'
-            : '正在确认模型状态。'}
-        外部连接器仍为模拟；账号验证与密码恢复使用邮件。对话记录按服务端保留期读取；通知需手动刷新。
-      </p>
+
+      {/* Bot Runtime Card Group */}
+      <div className="grok-group-title">Bot</div>
+      <div className="grok-card-group">
+        <div className="grok-cell">
+          <div className="grok-cell-main">
+            <span className="grok-cell-title">自动审查</span>
+            <span className="grok-cell-sub">AVEN 会检查每个操作，并在需要你同意时询问你</span>
+          </div>
+          <div className="grok-cell-side">
+            <span>不可用</span>
+          </div>
+        </div>
+        <div className="grok-divider" />
+        <div className="grok-cell">
+          <div className="grok-cell-main">
+            <span className="grok-cell-title">时区</span>
+            <span className="grok-cell-sub">Bot 的运行环境跟随账号设置的时区</span>
+          </div>
+          <div className="grok-cell-side">
+            <span>{me.user.timezone || 'Asia/Shanghai'}</span>
+          </div>
+        </div>
+        <div className="grok-divider" />
+        <div className="grok-cell">
+          <div className="grok-cell-main">
+            <span className="grok-cell-title">Bot 运行环境</span>
+            <span className="grok-cell-sub">
+              {runtime?.providerMode === 'live'
+                ? '真实模型 · 发送当前提问及获准上下文'
+                : runtime
+                  ? 'Mock 模拟环境'
+                  : '正在确认模型状态'}
+            </span>
+          </div>
+          <div className="grok-cell-side">
+            <Badge variant={runtime?.providerMode === 'live' ? 'success' : 'outline'}>
+              {runtime?.providerMode === 'live' ? 'Live' : 'Mock'}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
       <div>
         <Button variant="secondary" onClick={onLogout}>
           退出登录

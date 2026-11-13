@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import { redisUrl } from '@aven/config/env';
 import type { LogWriter } from '@aven/config/logger';
 import { createAIProvider, parseAIProviderConfig } from '@aven/ai-core';
+import { userProviderForRun } from './user-provider.js';
 import { authorizeExternalRun } from './external-preflight.js';
 import { createApplicationPool, createPool } from '@aven/database';
 import {
@@ -87,6 +88,7 @@ export function createWorkerRuntime(log: LogWriter): WorkerRuntime {
     'aven-agent',
     async (job) =>
       processAgentRun(pool, job.data.runId, provider, log, {
+        userProvider: (runId) => userProviderForRun(pool, runId),
         authorizeExternal: (identity) => authorizeExternalRun(externalReadPool, identity),
       }),
     { connection: agentWorkerConnection, concurrency: 1 },

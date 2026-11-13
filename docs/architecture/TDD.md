@@ -809,6 +809,8 @@ SENTRY_DSN=
 
 | [ADR-019](decisions/0019-personal-live-provider.md) | 个人真实模型、外发边界与配置绑定 | 用户已授权；上游成功另验 |
 
+| [ADR-020](decisions/0020-personal-provider-settings.md) | 个人渠道配置页与 Worker 配置版本绑定 | 已实现，用户实际渠道待实测 |
+
 ## 19. 开放问题与验证门
 
 | 问题 | 关闭阶段 | 验证方式 |

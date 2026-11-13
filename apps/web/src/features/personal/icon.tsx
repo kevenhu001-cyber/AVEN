@@ -18,6 +18,13 @@ import {
   Square,
   SquarePen,
   X,
+  Star,
+  Mic,
+  ChevronRight,
+  Search,
+  Activity,
+  Sun,
+  Moon,
 } from 'lucide-react';
 const icons = {
   menu: Menu,
@@ -39,6 +46,13 @@ const icons = {
   compose: SquarePen,
   copy: Copy,
   check: Check,
+  star: Star,
+  mic: Mic,
+  chevron: ChevronRight,
+  search: Search,
+  waveform: Activity,
+  sun: Sun,
+  moon: Moon,
 };
 export type IconName = keyof typeof icons;
 export function Icon({ name }: { name: IconName }) {

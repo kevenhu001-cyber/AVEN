@@ -1666,18 +1666,30 @@ export const UserAIProviderInputSchema = z
   .object({
     baseUrl: z.url().max(2048),
     model: z.string().trim().min(1).max(120),
-    apiKey: z.string().min(1).max(500),
+    apiKey: z
+      .string()
+      .trim()
+      .min(1)
+      .max(500)
+      .refine((value) => !/[\r\n\0]/.test(value), 'Invalid API key.')
+      .optional(),
+    expectedConfigId: z.uuid().nullable(),
     expectedVersion: z.number().int().min(0).max(2147483646),
   })
   .strict();
 export const UserAIProviderMetadataSchema = z
   .object({
+    configId: z.uuid(),
     baseUrl: z.string(),
     model: z.string(),
     version: z.number().int().positive(),
     updatedAt: z.iso.datetime(),
   })
   .strict();
+export const UserAIProviderTestSchema = z
+  .object({ ok: z.boolean(), errorCode: z.string().max(100).optional() })
+  .strict();
+export type UserAIProviderTest = z.infer<typeof UserAIProviderTestSchema>;
 export type UserAIProviderInput = z.infer<typeof UserAIProviderInputSchema>;
 export type UserAIProviderMetadata = z.infer<typeof UserAIProviderMetadataSchema>;
 

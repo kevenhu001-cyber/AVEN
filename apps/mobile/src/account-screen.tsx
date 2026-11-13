@@ -1,14 +1,42 @@
 import { useState } from 'react';
+import { View, Text } from 'react-native';
 import { Link } from 'expo-router';
 import { useSession } from './session';
 import { SafetyScreen } from './safety-screen';
 import { useOperation, useRemote } from './remote';
-import { Action, Card, Copy, Field, Loading, Page, Problem, confirm } from './ui';
+import {
+  Action,
+  Card,
+  Copy,
+  Field,
+  GrokDivider,
+  GrokRow,
+  Loading,
+  Page,
+  Problem,
+  Toggle,
+  confirm,
+  usePalette,
+  useTheme,
+} from './ui';
 
-export function AccountScreen() {
+/* 设备时区：仅用于“自动设置时区”开关，取不到时保持禁用而不是写死值。 */
+function deviceTimezoneValue(): string | null {
+  try {
+    const value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return value && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function AccountScreen({ onOpenConnectors }: { onOpenConnectors?: () => void }) {
   const { api, me, call, refresh, logout, invalidate } = useSession();
+  const theme = useTheme();
+  const palette = usePalette();
   const [safety, setSafety] = useState(false);
   const remote = useRemote((signal) => api.auth.sessions(call(signal)));
+  const preferences = useRemote((signal) => api.notifications.getPreferences(call(signal)));
   const op = useOperation();
   const [name, setName] = useState(me.user.displayName);
   const [timezone, setTimezone] = useState(me.user.timezone);
@@ -16,12 +44,144 @@ export function AccountScreen() {
   const [code, setCode] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [autoTimezone, setAutoTimezone] = useState(false);
+  const deviceTimezone = deviceTimezoneValue();
+
   if (safety) return <SafetyScreen onBack={() => setSafety(false)} />;
   return (
     <Page>
-      <Copy title>我的账号</Copy>
-      <Copy>{me.user.email}</Copy>
-      <Copy muted>{me.user.emailVerified ? '邮箱已验证' : '邮箱尚未验证'}</Copy>
+      {/* Grok Bot Profile Card Group */}
+      <Card>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: palette['surface-hover'],
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: palette.text, fontSize: 18, fontWeight: '600' }}>
+                {Array.from(me.user.displayName)[0]}
+              </Text>
+            </View>
+            <View style={{ gap: 2 }}>
+              <Text style={{ color: theme.foreground, fontSize: 16, fontWeight: '600' }}>
+                {me.user.displayName}
+              </Text>
+              <Text style={{ color: theme['foreground-secondary'], fontSize: 13 }}>
+                {me.user.email}
+              </Text>
+            </View>
+          </View>
+          <Text style={{ color: theme['foreground-tertiary'], fontSize: 16 }}>›</Text>
+        </View>
+        <GrokDivider />
+        <GrokRow title="用量" subtitle="计量统计尚未接入，不展示估算数字" value="未统计" />
+      </Card>
+
+      {/* Connected Apps Card Group */}
+      <Card>
+        <GrokRow
+          title="连接应用"
+          subtitle="搜索插件并按用途调用，当前为 Mock 样例"
+          onPress={onOpenConnectors}
+        />
+      </Card>
+
+      {/* Bot Section Group */}
+      <Text
+        style={{
+          color: theme['foreground-secondary'],
+          fontSize: 13,
+          fontWeight: '600',
+          letterSpacing: 0.5,
+          marginTop: 6,
+          marginLeft: 4,
+          textTransform: 'uppercase',
+        }}
+      >
+        Bot
+      </Text>
+      <Card>
+        <GrokRow
+          title="自动审查"
+          subtitle="AVEN 会检查每个操作，并在需要你同意时询问你"
+          value="不可用"
+        />
+        <GrokDivider />
+        <GrokRow title="自动设置时区" subtitle="Bot 的电脑跟随此设备的时区。">
+          <Toggle
+            label=""
+            accessibilityLabel="自动设置时区"
+            value={autoTimezone}
+            disabled={op.busy || !deviceTimezone}
+            onChange={(value) => {
+              setAutoTimezone(value);
+              if (!value || !deviceTimezone) return;
+              setTimezone(deviceTimezone);
+              void op.run(async (signal) => {
+                await api.auth.updateProfile(
+                  { displayName: name, timezone: deviceTimezone, locale },
+                  call(signal),
+                );
+                refresh();
+              });
+            }}
+          />
+        </GrokRow>
+        <GrokDivider />
+        <GrokRow title="时区" value={timezone || 'Asia/Shanghai'} />
+        <GrokDivider />
+        <GrokRow title="Bot 电脑" value="查看环境" />
+      </Card>
+
+      {/* Preferences Group */}
+      <Card>
+        <GrokRow title="通知" subtitle="连接与活动通知偏好">
+          <Toggle
+            label=""
+            accessibilityLabel="通知"
+            value={
+              preferences.data
+                ? preferences.data.connectionInvitations || preferences.data.eventInvitations
+                : false
+            }
+            disabled={op.busy || !preferences.data}
+            onChange={(value) =>
+              void op.run(async (signal) => {
+                const current = preferences.data;
+                if (!current) return;
+                await api.notifications.updatePreferences(
+                  {
+                    connectionInvitations: value,
+                    eventInvitations: value,
+                    expectedVersion: current.version,
+                  },
+                  call(signal),
+                );
+                await preferences.reload();
+              })
+            }
+          />
+        </GrokRow>
+        <GrokDivider />
+        <GrokRow title="外观" value="跟随系统" />
+        <GrokDivider />
+        <GrokRow title="语言" value={locale || 'zh-CN'} />
+      </Card>
+
       <Problem message={op.problem || remote.problem} />
       {!me.user.emailVerified && (
         <Card>

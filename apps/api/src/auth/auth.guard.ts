@@ -48,7 +48,13 @@ export class AuthGuard implements CanActivate {
 
     if (auth.client === 'web' && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
       const origin = request.header('origin');
-      if (origin && origin !== this.env.WEB_ORIGIN) throw new ForbiddenException();
+      if (
+        origin &&
+        origin !== this.env.WEB_ORIGIN &&
+        origin !== 'http://127.0.0.1:3000' &&
+        origin !== 'http://localhost:3000'
+      )
+        throw new ForbiddenException();
       const header = request.header('x-csrf-token');
       const cookie = readCookie(request, csrfCookieName);
       if (

@@ -1,3 +1,4 @@
+import { publicProviderUrl } from '@aven/ai-core';
 import { createCipheriv, randomBytes } from 'node:crypto';
 import { ServiceNotReadyException } from '../http-errors.js';
 import { UnprocessableEntityException } from '@nestjs/common';
@@ -35,6 +36,15 @@ export function approvedProviderUrl(value: string, allowed: string | undefined):
     throw new UnprocessableEntityException('Invalid provider URL.');
   }
   const normalized = url.href.replace(/\/+$/, '');
+  if (allowed.trim() === 'public_https') {
+    try {
+      return publicProviderUrl(normalized);
+    } catch {
+      throw new UnprocessableEntityException(
+        'Only a public HTTPS provider on port 443 is supported.',
+      );
+    }
+  }
   const allowlist = allowed.split(',').map((item) => item.trim().replace(/\/+$/, ''));
   if (!allowlist.includes(normalized))
     throw new UnprocessableEntityException('Provider URL is not enabled.');

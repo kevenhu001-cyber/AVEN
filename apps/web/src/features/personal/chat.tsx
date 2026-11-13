@@ -8,6 +8,7 @@ import type { PrivateProps } from './api';
 import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { MessageContent, CopyMessage } from './message-content';
+import { dayDividers, groupLabel } from './message-time';
 import { Modal } from './modal';
 import { ConnectorDialog, type ConnectorResult } from './plugins/connector-dialog';
 import { WidgetCard } from './plugins/widget-card';
@@ -101,6 +102,7 @@ export function Chat({
       value: result,
     })),
   ].sort((a, b) => a.createdAt - b.createdAt);
+  const dividers = dayDividers(items.map((item) => item.createdAt));
   return (
     <section className="chat-space" aria-label="与 AVEN 对话">
       <div
@@ -118,9 +120,14 @@ export function Chat({
       >
         {!items.length && (
           <div className="chat-welcome">
-            <Mascot large state="static" />
+            <div className="welcome-hero">
+              <Mascot large state="static" />
+              <div className="hero-star-badge" title="AI 伙伴">
+                <Icon name="star" />
+              </div>
+            </div>
             <h1>从一个想法开始</h1>
-            <p>有什么想一起理清的？</p>
+            <p className="welcome-tagline">AI 队友 · 为你连接工具并推进真实成果</p>
             <div className="chat-starters" aria-label="开始对话">
               {['帮我安排今天的学习', '如何管理我的记忆？', '我可以连接哪些工具？'].map((text) => (
                 <Button
@@ -131,7 +138,7 @@ export function Chat({
                     input.current?.focus();
                   }}
                 >
-                  {text}
+                  <span>{text}</span>
                   <Icon name="arrow-right" />
                 </Button>
               ))}
@@ -139,34 +146,40 @@ export function Chat({
           </div>
         )}
         <div className="chat-thread">
-          {items.map((item) =>
-            item.kind === 'turn' ? (
-              <Turn
-                key={item.value.key}
-                turn={item.value}
-                retry={() => void chat.retryCreate(item.value)}
-                resume={() => void chat.resume(item.value)}
-              />
-            ) : (
-              <article key={item.value.key} className="chat-turn widget-turn">
-                <div className="widget-turn-head">
-                  <Icon name="plug" />
-                  <span>
-                    {item.value.pluginName} · {item.value.actionTitle}
-                  </span>
-                  <Badge variant={item.value.providerMode === 'live' ? 'success' : 'outline'}>
-                    {item.value.providerMode === 'live' ? '实时数据' : 'Mock 数据'}
-                  </Badge>
-                </div>
-                <div className="chat-bubble assistant-bubble">
-                  <MessageContent text={item.value.summary} />
-                </div>
-                {item.value.widgets.map((widget) => (
-                  <WidgetCard key={widget.widgetId} widget={widget} />
-                ))}
-              </article>
-            ),
-          )}
+          {items.map((item, index) => (
+            <div key={item.value.key}>
+              {dividers[index] && (
+                <p className="chat-time-divider" role="separator">
+                  {groupLabel(item.createdAt)}
+                </p>
+              )}
+              {item.kind === 'turn' ? (
+                <Turn
+                  turn={item.value}
+                  retry={() => void chat.retryCreate(item.value)}
+                  resume={() => void chat.resume(item.value)}
+                />
+              ) : (
+                <article className="chat-turn widget-turn">
+                  <div className="widget-turn-head">
+                    <Icon name="plug" />
+                    <span>
+                      {item.value.pluginName} · {item.value.actionTitle}
+                    </span>
+                    <Badge variant={item.value.providerMode === 'live' ? 'success' : 'outline'}>
+                      {item.value.providerMode === 'live' ? '实时数据' : 'Mock 数据'}
+                    </Badge>
+                  </div>
+                  <div className="chat-bubble assistant-bubble">
+                    <MessageContent text={item.value.summary} />
+                  </div>
+                  {item.value.widgets.map((widget) => (
+                    <WidgetCard key={widget.widgetId} widget={widget} />
+                  ))}
+                </article>
+              )}
+            </div>
+          ))}
         </div>
       </div>
       {latest && (
@@ -214,7 +227,7 @@ export function Chat({
             ref={input}
             value={chat.draft}
             onChange={(event) => chat.setDraft(event.target.value)}
-            placeholder="消息"
+            placeholder="向 AVEN 提问…"
             disabled={!runtime}
             maxLength={8000}
             rows={1}
@@ -231,28 +244,41 @@ export function Chat({
               }
             }}
           />
-          {active ? (
+          <div className="composer-actions">
             <Button
               type="button"
+              variant="ghost"
               size="icon"
-              className="round-button send-button"
-              disabled={active.status === 'cancelling'}
-              onClick={() => void chat.cancel(active)}
-              aria-label="停止回复"
+              className="voice-indicator-button"
+              aria-label="语音模式"
+              title="语音模式"
+              disabled
             >
-              <Icon name="square" />
+              <Icon name="mic" />
             </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="icon"
-              className="round-button send-button"
-              disabled={!runtime || !chat.draft.trim() || chat.busy}
-              aria-label="发送消息"
-            >
-              <Icon name="arrow-up" />
-            </Button>
-          )}
+            {active ? (
+              <Button
+                type="button"
+                size="icon"
+                className="round-button send-button"
+                disabled={active.status === 'cancelling'}
+                onClick={() => void chat.cancel(active)}
+                aria-label="停止回复"
+              >
+                <Icon name="square" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className="round-button send-button"
+                disabled={!runtime || !chat.draft.trim() || chat.busy}
+                aria-label="发送消息"
+              >
+                <Icon name="arrow-up" />
+              </Button>
+            )}
+          </div>
         </form>
         <p className="composer-note">
           {runtime?.providerMode === 'live'
@@ -282,10 +308,28 @@ function Turn({ turn, retry, resume }: { turn: ChatTurn; retry: () => void; resu
   const pending = ['sending', 'queued', 'running', 'cancelling'].includes(turn.status);
   return (
     <article className="chat-turn">
-      <p className="chat-bubble user-bubble">{turn.input}</p>
+      <div className="message-user">
+        <p className="chat-bubble user-bubble">{turn.input}</p>
+      </div>
       {turn.answer && (
-        <div className="chat-bubble assistant-bubble">
-          <MessageContent text={turn.answer} />
+        <div className="message-assistant">
+          <div className="assistant-avatar">
+            <Mascot state="static" />
+          </div>
+          <div className="assistant-main">
+            <div className="assistant-name">AVEN</div>
+            <div className="assistant-body assistant-bubble">
+              <MessageContent text={turn.answer} />
+            </div>
+            <div className="turn-actions">
+              {turn.status === 'completed' && <CopyMessage text={turn.answer} />}
+              {pending && (
+                <span className="turn-state" role="status">
+                  {labels[turn.status]}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
       {pending && !turn.answer && (
@@ -294,19 +338,11 @@ function Turn({ turn, retry, resume }: { turn: ChatTurn; retry: () => void; resu
           {labels[turn.status]}
         </div>
       )}
-      <div className="turn-actions">
-        {turn.answer && turn.status === 'completed' && <CopyMessage text={turn.answer} />}
-        {!pending && turn.status !== 'completed' && (
-          <span className="turn-state" role="status">
-            {labels[turn.status]}
-          </span>
-        )}
-        {pending && turn.answer && (
-          <span className="turn-state" role="status">
-            {labels[turn.status]}
-          </span>
-        )}
-      </div>
+      {!pending && turn.status !== 'completed' && !turn.answer && (
+        <span className="turn-state" role="status">
+          {labels[turn.status]}
+        </span>
+      )}
       {turn.error && (
         <Alert variant="warning" className="my-2">
           {turn.error}

@@ -847,6 +847,7 @@ export const userAiProviders = pgTable(
     userId: uuid('user_id')
       .primaryKey()
       .references(() => users.id, { onDelete: 'cascade' }),
+    configId: uuid('config_id').notNull().defaultRandom(),
     baseUrl: text('base_url').notNull(),
     model: text('model').notNull(),
     encryptedKey: text('encrypted_key').notNull(),

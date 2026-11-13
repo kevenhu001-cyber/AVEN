@@ -115,3 +115,13 @@ Web 只提供 Mock 对话与停止/手动核对/重读，不提供高影响行�
 ## 个人真实模型运行信息（ADR-019，2026-11-13）
 
 `GET /api/v1/agent/runtime` 需有效会话，返回 `{providerMode:'mock'|'live', externalActions:false}`，不返回 endpoint、key 或内部模型名。该信息表示所选模型通道，不证明上游额度/连通正常；真实调用错误通过现有 turn.failed 告知，不回退 Mock。个人聊天遵循 ADR-019 外发边界，组织与历史 Mock run 不升级为外发。
+
+## 用户配置页与个人渠道选择（ADR-020，2026-11-13）
+
+此节替代上方“用户模型配置”中尚未进入 Worker/UI 的历史范围。GET 返回元数据新增 configId；PUT 请求新增 expectedConfigId（创建为 null），apiKey 可省略以保留当前同 ID/版本的密钥，新建仍必须提供。DELETE 同时要求 version 和 configId。ID/版本冲突返回 409，不静默覆盖。
+
+POST `/agent/provider/test` 使用同一配置输入，支持测试未保存字段；只发送固定短探针，无记忆或历史，无持久保存。返回 `{ok:boolean,errorCode?:string}`，错误码是统一安全 Provider 错误，不包含上游正文、密钥或探针回复。保存不等于已通过连接测试；连接测试成功不等于智能能力验收。
+
+部署可显式设 `AI_USER_ALLOWED_BASE_URLS=public_https`，允许公网 HTTPS/443 根地址；实际连接逐次校验和绑定 IPv4 DNS，拒绝私网、保留地址及重定向；不支持 IPv6-only。未显式开启时仍按原精确 allowlist。密钥 AES-GCM 与用户 ID 绑定，HTTP 读取不返回明/密文。
+
+个人建轮优先选择本人配置并绑定 configId/version；Worker 按 run 读取当前仍匹配的密文，任何配置变动/删除导致旧轮次失败。删除后新轮次回站点默认渠道。组织与历史 Mock run 不升级。前端入口“更多 → 模型与渠道”，直达 `/settings/models`，需登录；密钥仅保留于未保存表单的内存，不写浏览器存储。
