@@ -27,5 +27,9 @@ export function PlatformShell({ children }: { children: ReactNode }) {
     return () => controller.abort();
   }, []);
 
-  return <AppShell me={me}>{children}</AppShell>;
+  return (
+    <AppShell me={me} variant="platform">
+      {children}
+    </AppShell>
+  );
 }
