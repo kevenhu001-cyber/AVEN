@@ -50,3 +50,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.local
+
+# Generated native projects (Expo prebuild output)
+apps/mobile/android/
+apps/mobile/ios/
