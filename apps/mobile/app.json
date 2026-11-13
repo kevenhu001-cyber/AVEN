@@ -6,8 +6,12 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router"],
-    "android": { "package": "dev.aven.mobile" },
-    "ios": { "bundleIdentifier": "dev.aven.mobile" }
+    "plugins": ["expo-router", "expo-font", "expo-splash-screen", "expo-status-bar"],
+    "android": {
+      "package": "dev.aven.mobile"
+    },
+    "ios": {
+      "bundleIdentifier": "dev.aven.mobile"
+    }
   }
 }

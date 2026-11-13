@@ -37,6 +37,28 @@ export function createPersonalClient(request: ApiRequest, invalid: () => Error) 
       me(signal?: AbortSignal) {
         return request('/api/v1/auth/me', MeResponseSchema.parse, { signal });
       },
+      loginMobile(input: { email: string; password: string }, signal?: AbortSignal) {
+        const parsed = LoginRequestSchema.safeParse({ ...input, client: 'mobile' });
+        if (!parsed.success) throw invalid();
+        return request(
+          '/api/v1/auth/login',
+          (value) => {
+            const result = AuthResponseSchema.parse(value);
+            if (!result.sessionToken || result.session.client !== 'mobile')
+              throw new Error('Invalid mobile session.');
+            return result;
+          },
+          { method: 'POST', body: parsed.data, signal },
+        );
+      },
+      meMobile(call: ConnectionCallOptions) {
+        if (call.auth.kind !== 'mobile') throw invalid();
+        return request(
+          '/api/v1/auth/me',
+          MeResponseSchema.parse,
+          authenticatedOptions(call, false, invalid),
+        );
+      },
       loginWeb(input: { email: string; password: string }, signal?: AbortSignal) {
         const parsed = LoginRequestSchema.safeParse({ ...input, client: 'web' });
         if (!parsed.success) throw invalid();
