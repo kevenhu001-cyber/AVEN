@@ -8,6 +8,17 @@
 
 ## 1. 定位与原则
 
+### Halo 个人 Web 方向（2026-11-13，WEB-04，待评审）
+
+依据用户提供的 6 张 Grok Bot 手机截图与 [ADR-018](../architecture/decisions/0018-personal-web-halo-ui.md)，个人 Web（`/`）固定使用 Halo 近黑主题，部分取代 v0.4 浅色方向在个人 Web 上的适用；组织控制台、`/diagnostics` 与原型不变。
+
+- 令牌：`colors.halo` 与 light/dark 同键（背景 `#141414`、表面 `#1F1F1F`/`#2C2C2E`、主色白、强调 `#8AB4F8`），次要文字 `#A1A1A6`、三级文字 `#9A9AA0`，比截图更亮以满足 4.5:1；`haloExtras` 提供用户气泡 `#5C5C5C`、授权蓝 `#3366CC`、徽标橙 `#F29A38`、开关与查找高亮。另有 `easing`、`duration.screen/sheet`、`radius.menu/sheet/tile`。生成类名 `.aven-theme-halo`。
+- 结构：手机优先屏幕栈（首页 → Bot 资料页 / 对话页），桌面居中 480px 手机列；次级面板一律为底部 Sheet，连接器目录为全高“连接应用”Sheet。
+- 连接器不使用第三方品牌 Logo，统一为中性白色方块 + Lucide 类别图标；角色为白色正圆主体 + 深色胶囊眼睛。
+- 动效全部 CSS，见 [WEB-04 动效](../development/WEB_04.md#动效)；`prefers-reduced-motion` 下停止循环与位移，只保留状态变化。
+- 不存在的能力（语音、电脑、Slack、定时任务、分享/编辑 Bot）保留入口外形，点击说明“尚未开放”；Mock 授权、Mock 回复与 Mock 数据必须带标签。
+- 截图：[`screenshots/halo/`](screenshots/halo/)（390×844 UI 夹具，非业务验证）。
+
 ### 圆形角色动效稿（2026-11-12，待评审）
 
 用户要求角色没有手脚，外轮廓为标准正圆。设计资产见 [角色动效](prototypes/mascot-motion/README.md)：黑色圆形与两只白色胶囊眼睛，主体仅允许平移、旋转、等比缩放，不使用非等比压缩或拉长；眨眼、眯眼、视线偏移发生在眼睛层。无嘴、手脚、阴影、光晕或渐变。

@@ -19,6 +19,7 @@
 | [ADR-013](0013-in-app-connection-notifications.md) | 个人连接站内通知、事务回执与按代数重排 | M6-06A1 后端；活动/推送/UI 待交付 |
 
 | [ADR-017](0017-personal-web-increment.md) | 用户授权的个人 Web 限定接入 | 本轮实施；整体设计门与其他范围保持待验收 |
+| [ADR-018](0018-personal-web-halo-ui.md) | 个人 Web 采用 Halo（Grok Bot 风格）深色界面 | 已接受；部分取代 ADR-017 视觉方向，功能与安全范围不变 |
 
 新增 ADR 时：
 
