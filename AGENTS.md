@@ -4,6 +4,8 @@
 
 ## 1. 当前阶段
 
+- 2026-11-13 用户明确授权管理员手动模型配置、参考 Socrates 经 Open Connector 授权、继续原生与生产保障。见 ADR-019 和 `docs/development/ADMIN_CONNECTORS_NATIVE.md`。该范围允许编码，取代下方历史禁止开始 OAuth/Android 的实施限制；不等于真实 Provider 启用、OAuth 联调、原生真机或生产准入验收通过。
+
 - WEB-01 个人 Web 已按 ADR-017 限定接入注册/登录、Mock SSE、手工记忆、连接邀请/消息与站内通知。首页为开发验证版，工程诊断迁至 `/diagnostics`。最新范围和实际证据以 `docs/development/WEB_PERSONAL.md` 为准；下方历史“无 UI”仅限原交付阶段。M1-07 整体仍 REVIEW，不授权真实 Provider、外部 OAuth 或 Android。
 
 - 2026-11-13 用户明确授权开始下一阶段：按 [ADR-017](docs/architecture/decisions/0017-personal-web-increment.md) 实施个人 Web 限定主线。该范围可进入 UI 编码，M1-07 整体仍为 REVIEW，其他页面/原生/真实 Provider/试点门不变；以下历史“不能进入 UI 编码”在本轮限定范围内按此授权执行。

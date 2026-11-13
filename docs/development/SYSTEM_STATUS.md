@@ -4,6 +4,10 @@
 
 AVEN 当前已接入首批个人 Web：登录、Mock SSE 对话、手工记忆、候选记忆复核、记忆编辑撤回、个人邀请/消息、站内通知与通知偏好，以及连接器调用与会话小组件；仍不是完整 AI 社交应用。工程诊断迁至 `/diagnostics`，移动端仍是骨架。限定范围与实际验证见 [WEB-01](WEB_PERSONAL.md)、[WEB-02](WEB_02.md) 与 [WEB-03](WEB_03.md)。2026-11-13 WEB-04 按 [ADR-018](../architecture/decisions/0018-personal-web-halo-ui.md) 将个人 Web 改为 Halo（Grok Bot 风格）深色界面与动效（草稿 PR，见 [WEB-04](WEB_04.md)）：只改视觉与交互结构，连接器授权仍为本页 Mock，语音等入口为“尚未开放”占位；依赖数据库的个人 Web 复验脚本已适配新导航，但本轮未实跑。
 
+## 2026-11-13 管理员与原生增量
+
+新增管理员配置 `/admin`、OOMOL Open Connector 授权入口 `/connectors`、原生内存会话登录与生产配置预检。开发库已应用 0040–0042；专用隔离空库迁移与权限检查 15 项通过。真实模型仍未启用，OAuth 待凭据联调，生产发布与原生验收未完成。范围、使用及最终验证见 [本轮记录](ADMIN_CONNECTORS_NATIVE.md)。下方本机状态按历史日期理解。
+
 ## 2026-11-12 本机状态复核
 
 - 设计已更新到 v0.4：按用户图片调整气泡、圆角、SVG 和 Gmail/Outlook 连接器卡；原型检查 557 次通过。另交付正圆无手脚角色的 8 种 SVG 动效与交互预览，69 项动效校验通过。角色的 idle/thinking/happy/sleepy 现已接入 Web 真实 Mock Agent 状态；原生端和外部邮箱未接入。

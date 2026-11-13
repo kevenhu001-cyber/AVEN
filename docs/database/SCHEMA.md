@@ -1264,3 +1264,8 @@ GRANT EXECUTE ON FUNCTION app.auth_lookup(text) TO aven_auth;
 5. 是否需要 `aven_readonly` 分析角色；如需要，必须排除 PII。
 6. PostGIS 的实际使用场景；地理需求出现前不安装、不建地理索引，不作为 M0 验收依赖。
 7. 备份与恢复演练的具体 RPO/RTO；接纳真实用户数据前确定并演练，M7 复验。
+
+
+## 16. 管理员配置与网关关联（0040–0042）
+
+`platform_configurations` 按 kind（model/open_connector）保存地址、模型、加密密钥、version、updated_by 与时间，普通 app/worker 无直接 DML，仅有效平台管理员可通过受控函数读元数据和按版本写入。运行时受控读取仅开放网关加密配置，不开放模型密钥。`platform_configuration_events` 通过触发器追加 kind/version/actor/time，不含密钥、地址或私人正文；普通运行角色不可修改。`open_connector_connections` 以 (user_id,service) 为主键保存请求 ID、状态、账号 ID、期限与更新时间，aven_app RLS 仅允许本人访问。三表均 ENABLE + FORCE RLS；提供 API 范围及已知授权限制见 [API](../api/ADMIN_CONNECTORS.md)。

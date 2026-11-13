@@ -1,5 +1,13 @@
 # AVEN
 
+2026-11-13 **插件目录与 SVG 扩充**：新增 `/plugins`、`/plugins/[id]`，提供搜索、分类、可用状态、动作表单与 Mock 结果；新增 17 个 SVG，本地图标共 23 个。9 个扩展服务仅作“即将开放”介绍，不代表真实集成。见 [交付与验证](docs/development/PLUGIN_DIRECTORY.md)。
+
+2026-11-13 **插件图标与网关配置复用**：按用户授权复用 Socrates 的 6 个 SVG（保留来源），本地配置现有 OOMOL Project API Key；管理员数据库配置优先、密钥不回显。尚未自动创建真实授权或修改管理员角色，见 [ADR-020](docs/architecture/decisions/0020-connector-brand-assets-environment.md)。
+
+2026-11-13 **管理员配置与 Open Connector 增量**：新增 `/admin` 通用模型/网关配置、`/connectors` OOMOL 授权入口、0040–0042 强制 RLS 与配置审计、原生登录基础及生产配置预检。模型仍未启用真实推理，OAuth 待管理员凭据联调，原生与生产验收仍未完成。本轮 344 项单测、16 项夹具 E2E、数据库验证、类型/lint、12 项全仓构建及 Expo 兼容检查通过。见 [使用与验证](docs/development/ADMIN_CONNECTORS_NATIVE.md) 和 [API](docs/api/ADMIN_CONNECTORS.md)。
+
+2026-11-13 **WEB-05 基础交互与插件修复**：修复动作切换串值、参数格式与范围反馈、离开表单后的异步回写及菜单快速开关竞态；补充动作表单过渡并保留减少动态支持。单测 334 项、类型与 lint、非移动端构建通过。连接器仍为 Mock，完整项目尚未完成；详见 [验证与限制](docs/development/WEB_05.md)。
+
 AVEN 是面向个人与组织的 AI 连接网络，首个试点场景为西安交通大学。产品围绕个人上下文、组织资源、经授权的机会匹配，以及真实合作与活动协调展开。
 
 2026-11-13 **WEB-04 Halo 风格个人 Web 界面与动效**：按用户提供的 Grok Bot 截图与 [ADR-018](docs/architecture/decisions/0018-personal-web-halo-ui.md)，个人 Web 改为近黑 Halo 主题与手机优先屏幕栈（首页 → Bot 资料页 / 对话页，桌面居中 480px 列），记忆/连接/通知/账号改为底部 Sheet，连接器目录改为“连接应用”全高 Sheet，对话内新增 Mock 授权卡片、“…”菜单与聊天内查找；动效全部为 CSS 且遵循减少动态。授权仅为本页 Mock，语音/电脑/Slack/定时任务显示“尚未开放”；无新接口、迁移或依赖。实际验证：单测 331 项、E2E 12 项、构建（不含移动端）11 任务通过；依赖数据库的 `personal-web-*-verify` 本轮未运行。详见 [交付记录](docs/development/WEB_04.md)。
