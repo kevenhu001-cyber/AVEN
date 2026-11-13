@@ -58,51 +58,260 @@
   font-size: 0.9em;
 }
 .markdown-message :not(pre) > code {
-  padding: 0.1em 0.3em;
+  padding: 0.15em 0.42em;
   border-radius: var(--aven-radius-sm);
-  background: var(--aven-color-background-secondary);
+  background: #1C1C1F;
+  border: 1px solid var(--aven-color-border);
+  color: var(--aven-color-foreground);
+  font-size: 0.88em;
   white-space: break-spaces;
 }
 .markdown-code-block {
-  margin: 0.75em 0;
+  margin: 0.85em 0;
   overflow: hidden;
   border: 1px solid var(--aven-color-border-strong);
-  border-radius: var(--aven-radius-md);
-  background: var(--aven-color-background);
+  border-radius: var(--aven-radius-lg);
+  background: #141416;
 }
 .markdown-code-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75em;
-  padding: 0.35em 0.75em;
+  padding: 0.35em 0.85em;
   border-bottom: 1px solid var(--aven-color-border);
+  background: var(--aven-color-background-secondary);
   color: var(--aven-color-foreground-secondary);
   font-size: 0.8em;
 }
-.markdown-code-toolbar button {
-  min-height: 36px;
-  padding: 0 0.5em;
+.markdown-code-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--aven-font-family-mono);
+  font-weight: var(--aven-font-weight-medium);
+  letter-spacing: 0.02em;
+  color: var(--aven-color-foreground-secondary);
+}
+.markdown-code-lang-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aven-color-accent);
+  opacity: 0.85;
+}
+.markdown-code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 0.6em;
   border-radius: var(--aven-radius-sm);
+  color: var(--aven-color-foreground-secondary);
+  font-size: 0.9em;
+  transition:
+    background var(--aven-duration-fast) var(--aven-easing-standard),
+    color var(--aven-duration-fast) var(--aven-easing-standard),
+    transform var(--aven-duration-fast) var(--aven-easing-standard);
 }
-.markdown-code-toolbar button:hover {
+.markdown-code-copy-btn:hover {
   background: var(--aven-color-surface-hover);
+  color: var(--aven-color-foreground);
 }
-.markdown-code-toolbar button:focus-visible {
+.markdown-code-copy-btn:active {
+  transform: scale(0.94);
+}
+.markdown-code-copy-btn:focus-visible {
   outline: 2px solid var(--aven-color-focus-ring);
   outline-offset: 2px;
 }
+.token-copied-icon {
+  color: var(--aven-color-success);
+}
+.markdown-message pre.markdown-code-pre,
 .markdown-message pre {
   max-width: 100%;
   margin: 0;
-  padding: 0.85em;
+  padding: 0.85em 0;
   overflow-x: auto;
   white-space: pre;
   overflow-wrap: normal;
   tab-size: 2;
+  font-family: var(--aven-font-family-mono);
+  font-size: 0.88em;
+  line-height: 1.65;
 }
 .markdown-message pre code {
+  display: block;
   font-size: inherit;
+  font-family: inherit;
+}
+.markdown-code-line {
+  display: flex;
+  min-width: 100%;
+  padding: 0 1em;
+}
+.markdown-code-line:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.markdown-code-gutter {
+  flex: 0 0 auto;
+  min-width: 2.2em;
+  padding-right: 1.25em;
+  text-align: right;
+  color: var(--aven-color-foreground-tertiary);
+  opacity: 0.5;
+  font-size: 0.85em;
+  user-select: none;
+  -webkit-user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.markdown-code-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre;
+}
+
+/* Syntax Token Colors (Halo Dark theme palette) */
+.token-keyword {
+  color: #C792EA;
+  font-weight: 500;
+}
+.token-type {
+  color: #4EC9B0;
+}
+.token-function {
+  color: #82AAFF;
+}
+.token-string {
+  color: #A8CC8C;
+}
+.token-number {
+  color: #F78C6C;
+}
+.token-boolean {
+  color: #F78C6C;
+}
+.token-comment {
+  color: #7E7E87;
+  font-style: italic;
+}
+.token-operator {
+  color: #89DDFF;
+}
+.token-punctuation {
+  color: #9A9AA0;
+}
+.token-property {
+  color: #80CBC4;
+}
+.token-tag {
+  color: #F07178;
+}
+.token-variable {
+  color: #FFCB6B;
+}
+.token-diff-add {
+  color: #7EE787;
+  background: rgba(46, 160, 67, 0.15);
+  display: inline-block;
+  width: 100%;
+}
+.token-diff-remove {
+  color: #F85149;
+  background: rgba(248, 81, 73, 0.15);
+  display: inline-block;
+  width: 100%;
+}
+.token-diff-meta {
+  color: #89DDFF;
+  font-weight: 500;
+}
+.token-plain {
+  color: #EDEDED;
+}
+
+.markdown-code-expand-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  border-top: 1px solid var(--aven-color-border);
+  background: var(--aven-color-background-secondary);
+}
+.markdown-code-expand-bar.collapsed {
+  position: relative;
+  margin-top: -32px;
+  padding-top: 40px;
+  background: linear-gradient(to bottom, transparent 0%, var(--aven-color-background-secondary) 55%);
+}
+.markdown-code-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: var(--aven-radius-sm);
+  color: var(--aven-color-foreground-secondary);
+  font-size: 0.82em;
+  font-weight: var(--aven-font-weight-medium);
+  background: var(--aven-color-surface);
+  border: 1px solid var(--aven-color-border);
+  transition:
+    background var(--aven-duration-fast) var(--aven-easing-standard),
+    color var(--aven-duration-fast) var(--aven-easing-standard),
+    transform var(--aven-duration-fast) var(--aven-easing-standard);
+}
+.markdown-code-expand-btn:hover {
+  background: var(--aven-color-surface-hover);
+  color: var(--aven-color-foreground);
+}
+.markdown-code-expand-btn:active {
+  transform: scale(0.96);
+}
+.markdown-code-expand-btn:focus-visible {
+  outline: 2px solid var(--aven-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Light Theme override */
+:root:not(.aven-theme-halo) .token-keyword {
+  color: #8957E5;
+}
+:root:not(.aven-theme-halo) .token-type {
+  color: #0086B3;
+}
+:root:not(.aven-theme-halo) .token-function {
+  color: #005CC5;
+}
+:root:not(.aven-theme-halo) .token-string {
+  color: #22863A;
+}
+:root:not(.aven-theme-halo) .token-number,
+:root:not(.aven-theme-halo) .token-boolean {
+  color: #E36209;
+}
+:root:not(.aven-theme-halo) .token-comment {
+  color: #6A737D;
+}
+:root:not(.aven-theme-halo) .token-operator {
+  color: #D73A49;
+}
+:root:not(.aven-theme-halo) .token-punctuation {
+  color: #444D56;
+}
+:root:not(.aven-theme-halo) .token-property {
+  color: #6F42C1;
+}
+:root:not(.aven-theme-halo) .token-tag {
+  color: #22863A;
+}
+:root:not(.aven-theme-halo) .token-variable {
+  color: #E36209;
+}
+:root:not(.aven-theme-halo) .token-plain {
+  color: #24292E;
 }
 .markdown-table-scroll {
   max-width: 100%;

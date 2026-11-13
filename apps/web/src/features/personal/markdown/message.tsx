@@ -14,8 +14,15 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import type { Element } from 'hast';
+import { Icon } from '../icon';
 import { normalizeQuery } from '../halo/text';
 import { appendRevealChunks, normalizeMath, rehypeTextLeaves } from './text';
+import {
+  findSearchMatches,
+  getLanguageLabel,
+  sliceTokenWithMatches,
+  tokenizeToLines,
+} from './syntax';
 
 type RenderState = { query: string; current: number; animate: boolean };
 const RenderContext = createContext<RenderState>({ query: '', current: 0, animate: false });
@@ -83,7 +90,24 @@ function nodeText(node: Element): string {
     .join('');
 }
 
-function CodeBlock({ node, children }: { node?: Element | undefined; children?: ReactNode }) {
+function findSearchOffset(element?: Element): number {
+  if (!element) return 0;
+  for (const child of element.children) {
+    if (child.type === 'element') {
+      if (
+        child.properties['data-aven-text'] &&
+        child.properties['data-search-offset'] !== undefined
+      ) {
+        return Number(child.properties['data-search-offset']) || 0;
+      }
+      const nested = findSearchOffset(child);
+      if (nested > 0) return nested;
+    }
+  }
+  return 0;
+}
+
+function CodeBlock({ node }: { node?: Element | undefined; children?: ReactNode }) {
   const source = node ? nodeText(node).replace(/\n$/, '') : '';
   const [copyState, setCopyState] = useState<{
     source: string;
@@ -91,17 +115,43 @@ function CodeBlock({ node, children }: { node?: Element | undefined; children?: 
   }>({ source, status: 'idle' });
   if (source !== copyState.source) setCopyState({ source, status: 'idle' });
   const copy = copyState.status;
+
   const code = node?.children.find((child) => child.type === 'element' && child.tagName === 'code');
   const classes = code?.type === 'element' ? code.properties.className : undefined;
   const language = Array.isArray(classes)
     ? String(classes.find((name) => String(name).startsWith('language-')) ?? '').slice(9)
     : '';
+  const langLabel = getLanguageLabel(language);
+
+  const { query, current } = useContext(RenderContext);
+  const baseOffset = useMemo(() => findSearchOffset(node), [node]);
+  const matches = useMemo(
+    () => findSearchMatches(source, query, baseOffset),
+    [source, query, baseOffset],
+  );
+  const lines = useMemo(() => tokenizeToLines(source, language), [source, language]);
+  const isMultiLine = lines.length > 1;
+  const isLong = lines.length > 24;
+  const [userExpanded, setUserExpanded] = useState(false);
+  const isCollapsed = isLong && !userExpanded && matches.length === 0;
+  const displayedLines = isCollapsed ? lines.slice(0, 18) : lines;
+
+  let charPos = 0;
+
   return (
-    <div className="markdown-code-block">
+    <div
+      className="markdown-code-block"
+      data-multiline={isMultiLine ? 'true' : 'false'}
+      data-collapsed={isCollapsed ? 'true' : 'false'}
+    >
       <div className="markdown-code-toolbar">
-        <span>{language || '代码'}</span>
+        <span className="markdown-code-lang">
+          <span className="markdown-code-lang-dot" aria-hidden="true" />
+          {langLabel}
+        </span>
         <button
           type="button"
+          className="markdown-code-copy-btn"
           onClick={() => {
             if (!node) return;
             void navigator.clipboard.writeText(source).then(
@@ -116,17 +166,93 @@ function CodeBlock({ node, children }: { node?: Element | undefined; children?: 
             );
           }}
         >
-          {copy === 'copied'
-            ? '已复制代码'
-            : copy === 'failed'
-              ? '复制失败，请手动选择'
-              : '复制代码'}
+          <Icon
+            name={copy === 'copied' ? 'check' : 'copy'}
+            size={13}
+            className={copy === 'copied' ? 'token-copied-icon' : ''}
+          />
+          <span>
+            {copy === 'copied'
+              ? '已复制代码'
+              : copy === 'failed'
+                ? '复制失败，请手动选择'
+                : '复制代码'}
+          </span>
         </button>
         <span className="sr-only" role="status">
           {copy === 'copied' ? '代码已复制' : ''}
         </span>
       </div>
-      <pre>{children}</pre>
+      <pre className="markdown-code-pre">
+        <code>
+          {displayedLines.map((lineTokens, lineIdx) => {
+            const renderedTokens = lineTokens.map((token, tokenIdx) => {
+              const tokenStart = charPos;
+              charPos += token.text.length;
+              const segments = sliceTokenWithMatches(token.text, tokenStart, matches, current);
+
+              if (segments.length === 1 && !segments[0]!.match) {
+                return (
+                  <span key={tokenIdx} className={`token token-${token.type}`}>
+                    {token.text}
+                  </span>
+                );
+              }
+
+              return (
+                <span key={tokenIdx} className={`token token-${token.type}`}>
+                  {segments.map((seg, sIdx) =>
+                    seg.match ? (
+                      <mark
+                        key={sIdx}
+                        className="halo-mark"
+                        data-match={seg.matchIndex}
+                        data-current={seg.isCurrent}
+                      >
+                        {seg.text}
+                      </mark>
+                    ) : (
+                      seg.text
+                    ),
+                  )}
+                </span>
+              );
+            });
+
+            if (lineIdx < displayedLines.length - 1) {
+              charPos += 1;
+            }
+
+            return (
+              <div key={lineIdx} className="markdown-code-line">
+                {isMultiLine && (
+                  <span className="markdown-code-gutter" aria-hidden="true">
+                    {lineIdx + 1}
+                  </span>
+                )}
+                <span className="markdown-code-content">
+                  {lineTokens.length > 0 ? renderedTokens : '\n'}
+                </span>
+              </div>
+            );
+          })}
+        </code>
+      </pre>
+      {isLong && (
+        <div className={`markdown-code-expand-bar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+          <button
+            type="button"
+            className="markdown-code-expand-btn"
+            onClick={() => setUserExpanded((prev) => !prev)}
+            aria-expanded={!isCollapsed}
+          >
+            <Icon name={isCollapsed ? 'down' : 'up'} size={14} />
+            <span>
+              {isCollapsed ? `展开剩余 ${lines.length - 18} 行代码` : '收起代码'}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
