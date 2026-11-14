@@ -2,13 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import type { MeResponse } from '@aven/contracts';
 import { useChat } from '@/features/personal/app-state';
+import { AppsCatalog } from '@/features/personal/apps-catalog';
+import { BotInfoDrawer } from '@/features/personal/halo/bot-info-drawer';
+import { Mascot } from '@/features/personal/mascot';
 import { Icon, type IconName } from '@/features/personal/icon';
 import { useProviderStatus } from '@/features/personal/use-provider-status';
-import { ShellNavigationContext } from './navigation-context';
+import {
+  ShellAppsContext,
+  ShellNavigationContext,
+  ShellProfileContext,
+} from './navigation-context';
 import './shell.css';
 
 const SIDEBAR_KEY = 'aven.shell.sidebar';
@@ -23,7 +30,7 @@ function readSidebarCollapsed(): boolean {
   } catch {
     // Storage can be unavailable in private modes; fall back to the viewport.
   }
-  return window.matchMedia(SIDEBAR_QUERY).matches;
+  return true;
 }
 
 function subscribeSidebar(listener: () => void) {
@@ -69,6 +76,14 @@ const personalMobileNav: NavItem[] = [
 ];
 
 const personalMorePaths = ['/profile', '/memory', '/notifications', '/account'];
+const appsNavItem = personalSecondaryNav[0]!;
+const desktopPersonalSections: NavSection[] = [
+  {
+    id: 'space',
+    label: '我的空间',
+    items: [...personalPrimaryNav.slice(1), ...personalSecondaryNav.slice(1)],
+  },
+];
 
 function isActive(pathname: string, item: NavItem) {
   if (item.activeOn?.includes(pathname)) return true;
@@ -80,24 +95,54 @@ function NavLink({
   item,
   pathname,
   onNavigate,
+  onOpenApps,
+  onOpenProfile,
 }: {
   item: NavItem;
   pathname: string;
   onNavigate?: (() => void) | undefined;
+  onOpenApps?: (() => void) | undefined;
+  onOpenProfile?: (() => void) | undefined;
 }) {
   const active = isActive(pathname, item);
   return (
     <Link
       href={item.href}
-      className="shell-nav-link"
+      className={`shell-nav-link${item.href === '/apps' ? ' shell-nav-link-apps' : ''}`}
       aria-label={item.label}
       title={item.label}
+      aria-haspopup={onOpenApps && item.href === '/apps' ? 'dialog' : undefined}
       aria-current={active ? 'page' : undefined}
-      {...(onNavigate ? { onClick: onNavigate } : {})}
+      onNavigate={(event) => {
+        if (item.href === '/apps' && onOpenApps) {
+          event.preventDefault();
+          onOpenApps();
+        } else if (item.href === '/profile' && onOpenProfile) {
+          event.preventDefault();
+          onOpenProfile();
+        } else {
+          onNavigate?.();
+        }
+      }}
     >
       <Icon name={item.icon} size={20} />
       <span className="shell-nav-label">{item.label}</span>
     </Link>
+  );
+}
+
+function SidebarBotButton({ onOpenProfile }: { onOpenProfile: () => void }) {
+  const chat = useChat();
+  return (
+    <button
+      type="button"
+      className="shell-chat-bot"
+      aria-label="查看 AVEN 资料"
+      title="AVEN"
+      onClick={onOpenProfile}
+    >
+      <Mascot size={48} state={chat.busy ? 'thinking' : 'idle'} badge />
+    </button>
   );
 }
 
@@ -113,7 +158,7 @@ function Avatar({ name }: { name: string }) {
  * New conversation from anywhere in the personal app. Navigating to `/chat`
  * keeps the chat screen mounted; resetting the shared state makes it empty.
  */
-function NewChatButton({ onNavigate }: { onNavigate?: () => void }) {
+function NewChatButton({ onNavigate, current }: { onNavigate?: () => void; current?: boolean }) {
   const chat = useChat();
   const router = useRouter();
   return (
@@ -122,6 +167,7 @@ function NewChatButton({ onNavigate }: { onNavigate?: () => void }) {
       className="shell-new-chat"
       aria-label="开启新对话"
       title="新对话"
+      data-current={current || undefined}
       disabled={chat.busy}
       onClick={() => {
         chat.newChat();
@@ -132,6 +178,57 @@ function NewChatButton({ onNavigate }: { onNavigate?: () => void }) {
       <Icon name="new-chat" size={18} />
       <span className="shell-new-chat-label">新对话</span>
     </button>
+  );
+}
+
+/**
+ * Stored conversation feed for the personal sidebar and drawer. Titles come from the
+ * first user message server-side; selecting one restores the durable messages feed.
+ * Only rendered inside the personal variant, where AppStateProvider supplies the chat.
+ */
+function RecentConversations({ onNavigate }: { onNavigate?: () => void }) {
+  const chat = useChat();
+  if (chat.conversationsStatus === 'idle') return null;
+  const activeId = chat.activeConversationId;
+  return (
+    <div className="shell-recent">
+      <p className="shell-recent-heading">最近对话</p>
+      {chat.conversationsStatus === 'loading' && (
+        <div className="shell-recent-skeleton" aria-hidden="true">
+          <span className="halo-skeleton" />
+          <span className="halo-skeleton" />
+          <span className="halo-skeleton" />
+        </div>
+      )}
+      {chat.conversationsStatus === 'error' && (
+        <p className="shell-recent-note">
+          无法加载历史对话。
+          <button type="button" className="halo-text-button" onClick={chat.reloadConversations}>
+            重试
+          </button>
+        </p>
+      )}
+      {chat.conversationsStatus === 'ready' && !chat.conversations.length && (
+        <p className="shell-recent-note">还没有历史对话。</p>
+      )}
+      {chat.conversations.length > 0 && (
+        <ul className="shell-recent-list">
+          {chat.conversations.map((conversation) => (
+            <li key={conversation.id}>
+              <Link
+                href={`/chat?c=${conversation.id}`}
+                className="shell-recent-link"
+                aria-current={conversation.id === activeId ? 'true' : undefined}
+                title={conversation.title}
+                {...(onNavigate ? { onClick: onNavigate } : {})}
+              >
+                <span className="shell-recent-label">{conversation.title}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -286,8 +383,18 @@ export function AppShell({
   // without an effect that resets state after the render.
   const [drawerPath, setDrawerPath] = useState<string | null>(null);
   const drawerOpen = drawerPath === pathname;
+  const [appsPath, setAppsPath] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const appsTrigger = useRef<HTMLElement | null>(null);
+  const openApps = () => {
+    appsTrigger.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setAppsPath(pathname);
+  };
   const openDrawer = () => setDrawerPath(pathname);
   const closeDrawer = () => setDrawerPath(null);
+  const openProfile = () => setProfileOpen(true);
+  const closeProfile = () => setProfileOpen(false);
   const toggleCollapsed = () => writeSidebarCollapsed(!collapsed);
   const moreActive = personalMorePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -301,27 +408,64 @@ export function AppShell({
       data-conversation={
         (variant === 'personal' && (pathname === '/' || pathname === '/chat')) || undefined
       }
+      data-profile-open={profileOpen || undefined}
     >
       <aside className="shell-sidebar" data-collapsed={collapsed ? 'true' : 'false'}>
         <div className="shell-sidebar-top">
-          <Link className="shell-brand" href="/" aria-label="AVEN 首页">
-            <span className="shell-brand-mark">A</span>
-            <span className="shell-brand-name">AVEN</span>
-          </Link>
-          <button
-            type="button"
-            className="shell-collapse"
-            aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
-            aria-expanded={!collapsed}
-            aria-controls="shell-nav"
-            title={collapsed ? '展开侧栏' : '收起侧栏'}
-            onClick={toggleCollapsed}
-          >
-            <Icon name={collapsed ? 'panel-left-open' : 'panel-left-close'} size={18} />
-          </button>
+          {variant === 'personal' && (pathname === '/' || pathname === '/chat') ? (
+            <>
+              <button
+                type="button"
+                className="shell-collapse"
+                aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+                aria-expanded={!collapsed}
+                aria-controls="shell-nav"
+                title={collapsed ? '展开侧栏' : '收起侧栏'}
+                onClick={toggleCollapsed}
+              >
+                <Icon name={collapsed ? 'panel-left-open' : 'panel-left-close'} size={18} />
+              </button>
+              <SidebarBotButton onOpenProfile={openProfile} />
+            </>
+          ) : (
+            <>
+              <Link className="shell-brand" href="/" aria-label="AVEN 首页">
+                <span className="shell-brand-mark">A</span>
+                <span className="shell-brand-name">AVEN</span>
+              </Link>
+              <button
+                type="button"
+                className="shell-collapse"
+                aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+                aria-expanded={!collapsed}
+                aria-controls="shell-nav"
+                title={collapsed ? '展开侧栏' : '收起侧栏'}
+                onClick={toggleCollapsed}
+              >
+                <Icon name={collapsed ? 'panel-left-open' : 'panel-left-close'} size={18} />
+              </button>
+            </>
+          )}
         </div>
-        {variant === 'personal' && <NewChatButton />}
-        <NavSections navId="shell-nav" sections={sections} pathname={pathname} />
+        {variant === 'personal' ? (
+          <>
+            <nav aria-label="对话">
+              <NewChatButton
+                current={(pathname === '/' || pathname === '/chat') && appsPath !== pathname}
+              />
+            </nav>
+            <NavSections
+              navId="shell-nav"
+              sections={desktopPersonalSections}
+              pathname={pathname}
+              onNavigate={profileOpen ? closeProfile : undefined}
+            />
+            <RecentConversations />
+            <NavLink item={appsNavItem} pathname={pathname} onOpenApps={openApps} />
+          </>
+        ) : (
+          <NavSections navId="shell-nav" sections={sections} pathname={pathname} />
+        )}
         <SidebarFooter
           me={me}
           variant={variant}
@@ -357,7 +501,11 @@ export function AppShell({
         </header>
         <main className="shell-main">
           <ShellNavigationContext.Provider value={openDrawer}>
-            {children}
+            <ShellAppsContext.Provider value={variant === 'personal' ? openApps : undefined}>
+              <ShellProfileContext.Provider value={variant === 'personal' ? openProfile : undefined}>
+                {children}
+              </ShellProfileContext.Provider>
+            </ShellAppsContext.Provider>
           </ShellNavigationContext.Provider>
         </main>
         <nav
@@ -366,7 +514,12 @@ export function AppShell({
           data-org-console={isOrganizationConsole || undefined}
         >
           {mobileNav.map((item) => (
-            <NavLink key={item.href} item={item} pathname={pathname} />
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              onOpenApps={variant === 'personal' ? openApps : undefined}
+            />
           ))}
           {variant === 'personal' ? (
             <button
@@ -383,6 +536,31 @@ export function AppShell({
           ) : null}
         </nav>
       </div>
+      {variant === 'personal' && (
+        <BotInfoDrawer open={profileOpen} onOpenChange={setProfileOpen} onOpenApps={openApps} />
+      )}
+      {variant === 'personal' && (
+        <DialogPrimitive.Root
+          open={appsPath === pathname}
+          onOpenChange={(open) => {
+            if (!open) setAppsPath(null);
+          }}
+        >
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="apps-dialog-overlay" />
+            <DialogPrimitive.Content
+              className="apps-dialog personal-app aven-theme-halo"
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                appsTrigger.current?.focus();
+              }}
+            >
+              <AppsCatalog dialog />
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
+      )}
       {variant === 'personal' ? (
         <DialogPrimitive.Root
           open={drawerOpen}
@@ -405,6 +583,7 @@ export function AppShell({
                 </DialogPrimitive.Close>
               </div>
               <NewChatButton onNavigate={closeDrawer} />
+              <RecentConversations onNavigate={closeDrawer} />
               <NavSections
                 navId="shell-drawer-nav"
                 sections={sections}

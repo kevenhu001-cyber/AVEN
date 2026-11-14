@@ -859,6 +859,68 @@ export const AgentCancelResponseSchema = z
   })
   .strict();
 
+/** Personal conversation list entry; the title is the first user message of the conversation. */
+export const ConversationSummarySchema = z
+  .object({
+    id: z.uuid(),
+    title: z.string().min(1).max(200),
+    createdAt: z.iso.datetime({ offset: true }),
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export type ConversationSummary = z.infer<typeof ConversationSummarySchema>;
+
+export const ConversationListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+    cursorCreatedAt: z.iso.datetime({ offset: true }).optional(),
+    cursorId: z.uuid().optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.cursorCreatedAt) === Boolean(value.cursorId));
+
+export const ConversationCursorSchema = z
+  .object({ createdAt: z.iso.datetime({ offset: true }), id: z.uuid() })
+  .strict();
+
+export const ConversationListSchema = z
+  .object({
+    data: z.array(ConversationSummarySchema),
+    nextCursor: ConversationCursorSchema.nullable(),
+  })
+  .strict();
+export type ConversationList = z.infer<typeof ConversationListSchema>;
+
+/** One durable row of public.messages: either the user's input or the assistant's final reply. */
+export const ConversationMessageSchema = z
+  .object({
+    id: z.uuid(),
+    body: z.string().min(1).max(20000),
+    contentType: z.enum(['text', 'card', 'system']),
+    derivedFromRunId: z.uuid().nullable(),
+    createdAt: z.iso.datetime({ offset: true }),
+    editedAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .strict();
+export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
+
+export const ConversationMessageListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(200).default(100),
+    cursorCreatedAt: z.iso.datetime({ offset: true }).optional(),
+    cursorId: z.uuid().optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.cursorCreatedAt) === Boolean(value.cursorId));
+
+export const ConversationMessageListSchema = z
+  .object({
+    data: z.array(ConversationMessageSchema),
+    nextCursor: ConversationCursorSchema.nullable(),
+  })
+  .strict();
+export type ConversationMessageList = z.infer<typeof ConversationMessageListSchema>;
+
 export const ActionTypeSchema = z.enum(['memory.create', 'opportunity.create']);
 export const ActionStatusSchema = z.enum([
   'draft',

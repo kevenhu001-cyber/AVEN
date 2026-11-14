@@ -8,9 +8,19 @@ import {
   UserAIProviderInputSchema,
   UserAIProviderMetadataSchema,
   ApiErrorResponseSchema,
+  ConversationListSchema,
+  ConversationListQuerySchema,
+  ConversationMessageListSchema,
+  ConversationMessageListQuerySchema,
   RequestIdSchema,
 } from '@aven/contracts';
-import type { AgentTurnRequest, AgentStreamEvent, UserAIProviderInput } from '@aven/contracts';
+import type {
+  AgentTurnRequest,
+  AgentStreamEvent,
+  UserAIProviderInput,
+  ConversationList,
+  ConversationMessageList,
+} from '@aven/contracts';
 import { authenticatedOptions, type ApiRequest, type ConnectionCallOptions } from './connections';
 import { ApiClientError } from './errors';
 import { readSse } from './sse';
@@ -94,6 +104,43 @@ export function createAgentClient(
     },
     getRun(runId: string, call: ConnectionCallOptions) {
       return request(path(runId), AgentRunSchema.parse, authenticatedOptions(call, false, invalid));
+    },
+    /** Owner-scoped conversation history over the durable messages table. */
+    async listConversations(
+      query: { limit?: number; cursorCreatedAt?: string; cursorId?: string },
+      call: ConnectionCallOptions,
+    ): Promise<ConversationList> {
+      const parsed = ConversationListQuerySchema.safeParse(query);
+      if (!parsed.success) throw invalid();
+      const params = new URLSearchParams({ limit: String(parsed.data.limit) });
+      if (parsed.data.cursorCreatedAt && parsed.data.cursorId) {
+        params.set('cursorCreatedAt', parsed.data.cursorCreatedAt);
+        params.set('cursorId', parsed.data.cursorId);
+      }
+      return request(
+        `/api/v1/agent/conversations?${params}`,
+        ConversationListSchema.parse,
+        authenticatedOptions(call, false, invalid),
+      );
+    },
+    async listConversationMessages(
+      conversationId: string,
+      query: { limit?: number; cursorCreatedAt?: string; cursorId?: string },
+      call: ConnectionCallOptions,
+    ): Promise<ConversationMessageList> {
+      const conversation = id(conversationId);
+      const parsed = ConversationMessageListQuerySchema.safeParse(query);
+      if (!parsed.success) throw invalid();
+      const params = new URLSearchParams({ limit: String(parsed.data.limit) });
+      if (parsed.data.cursorCreatedAt && parsed.data.cursorId) {
+        params.set('cursorCreatedAt', parsed.data.cursorCreatedAt);
+        params.set('cursorId', parsed.data.cursorId);
+      }
+      return request(
+        `/api/v1/agent/conversations/${conversation}/messages?${params}`,
+        ConversationMessageListSchema.parse,
+        authenticatedOptions(call, false, invalid),
+      );
     },
     cancel(runId: string, idempotencyKey: string, call: ConnectionCallOptions) {
       const options = authenticatedOptions(call, true, invalid);

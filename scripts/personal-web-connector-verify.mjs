@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
-import { openChat } from './lib/personal-web-nav.mjs';
+import { openChat, openConnectorDialog, openPluginDirectory } from './lib/personal-web-nav.mjs';
 const base = process.env.PERSONAL_WEB_ORIGIN ?? 'http://127.0.0.1:3000';
 if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname))
   throw new Error('Local synthetic verification only.');
@@ -54,7 +54,7 @@ try {
     await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
     await openChat(page);
-    await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '今天想探索什么？' })).toBeVisible();
     await context.storageState({ path: statePath });
     chmodSync(statePath, 0o600);
   }
@@ -62,14 +62,17 @@ try {
 
   await openChat(page);
 
-  await page.getByRole('button', { name: '连接器', exact: true }).click();
-  await expect(page).toHaveURL(/\/apps$/);
-  await expect(page.getByRole('heading', { name: '连接应用', exact: true })).toBeVisible();
+  const dialog = await openConnectorDialog(page);
+  await expect(page).toHaveURL(/\/chat$/);
+  await expect(dialog.getByText('高德地图', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await openPluginDirectory(page);
   await expect(page.getByText('高德地图', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('AVEN 日程协调', { exact: true }).first()).toBeVisible();
   check(true, 'connector catalog lists built-in connectors by category');
   await expect(page.getByText('缺少凭据', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('仅 Mock', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('尚未接入', { exact: true }).first()).toBeVisible();
   check(true, 'credential status distinguishes mock-only and missing-credential connectors');
 
   await page

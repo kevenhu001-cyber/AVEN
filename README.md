@@ -1,6 +1,14 @@
 # AVEN
 
-2026-11-14 **WEB-11 个人 Web 精致化**：首页与聊天共用可直接提问的工作区，跨资料页返回保留当前内存回复与草稿；正文和输入区最大 760px，侧栏 248/72px；统一 Geist / Noto Sans SC、Halo 灰阶、文字角色、圆角与图标，助手正文改为开放排版。手机聊天隐藏业务底栏，通过顶栏抽屉导航，移除输入区未开放语音占位。修复深色代码高亮误用浅色样式。实际验证：单测 53 文件/370 项、个人 Web E2E 40 项、完整 typecheck 20 任务、Web 构建、format/lint 通过。无新迁移、HTTP 接口或会话历史，不代表正式双端设计、真机或生产验收。详见 [WEB-11](docs/development/WEB_11.md)。
+2026-11-14 **WEB-14 桌面对话与侧栏对齐**：按本轮三张参考图，把桌面聊天改为窄图标栏、宽消息区、居中 Bot 标记、右侧分享入口与底部横向输入；Bot 资料从聊天右侧抽屉打开，连接应用在当前页面使用宽目录弹层，含真实网关计数、搜索与分类。电脑、语音模式与 Bot 模板仍明确标为未开放；保留现有 API、授权和模拟状态。已在本地模拟界面观察窄视口的抽屉、弹层、分类与关闭行为；参考图为约 2080×1520，而内置预览为 470×763，**同尺寸桌面视觉复核尚未完成**。本轮未运行测试、lint、类型检查或构建。详见 [WEB-14](docs/development/WEB_14.md)。
+
+2026-11-14 **个人 Web 桌面界面对齐**：首页与聊天使用近黑画布、细框双层输入区和可独立滚动的最近对话。点击输入框的 `+` 或桌面侧栏「连接应用」可在当前页面打开目录，桌面双列、手机单列，并支持搜索与按 `Esc` 返回。可用 `pnpm dev:web:mock` 启动模拟预览。
+
+2026-11-14 **WEB-13 会话历史全栈与语音听写**：新增迁移 `0044_conversation_history`（`app.list_conversations` / `app.list_conversation_messages`，keyset 分页、SECURITY DEFINER、归属校验）与 `GET api/v1/agent/conversations[/:id/messages]` 端点及 api-client 方法；个人 Web 侧栏新增「最近对话」分组（桌面侧栏 + 移动抽屉、当前会话高亮、回复完成后静默刷新），URL `?c=` 从持久化 messages 恢复历史会话（重开不重播动画，续聊复用同一会话 id，无回复的历史提问可「再试一次」）；麦克风按钮在支持浏览器上真实听写（Web Speech API，`zh-CN`，listening 态脉动），不支持时保留「尚未开放」提示，「语音模式」仍为占位。实际验证：format/lint、typecheck 20 任务、单测 55 文件/381 项、构建 12 任务、个人 Web E2E 42 项通过；合成夹具截图核对侧栏列表与恢复对话。**本机无 Docker，`db:verify`（0044 空库/升级路径）与真实链路复验未执行**，须补验；无会话删除/重命名、无移动推送，不代表正式双端设计、真机或生产验收。详见 [WEB-13](docs/development/WEB_13.md)。
+
+2026-11-14 **WEB-12 个人 Web 第二轮 Grok 对齐**：按用户提供的 5 张 Grok App 截图重排连接应用页——页头新增真实网关「已连接 n 个」计数 pill、扁平分区行、右侧「授权（蓝）/已连接/未接入」动作 pill、移动端底部 sticky 搜索栏（桌面在页头下），展开区保留动作表单与结果卡片；聊天顶栏新增会话时间戳，输入区改为麦克风 + 三态主钮（空草稿=语音模式占位、有草稿=发送、运行中=停止），消息 meta 状态文本降噪且动作按钮桌面 hover 显现（最后一条回复与触屏常驻），查找条双向滑动过渡，mode pill 激活色收敛到令牌，`chat.tsx` 拆分 `TurnArticle`/`TurnMeta`/`Composer`。实际验证：format/lint、typecheck 20 任务、单测 53 文件/374 项、构建 12 任务、个人 Web E2E 40 项通过；合成夹具截图核对 apps/profile/chat 桌面与移动布局。语音输入/模式、电脑、Slack、定时任务仍为占位，未新增迁移、接口或会话历史，不代表正式双端设计、真机或生产验收。详见 [WEB-12](docs/development/WEB_12.md)。
+
+2026-11-14 **WEB-11 个人 Web 精致化**：首页与聊天共用可直接提问的工作区，跨资料页返回保留当前内存回复与草稿；正文和输入区最大 760px，侧栏 248/72px；统一 Geist / Noto Sans SC、Halo 灰阶、文字角色、圆角与图标，助手正文改为开放排版。手机聊天隐藏业务底栏，通过顶栏抽屉导航，移除输入区未开放语音占位（已被 WEB-12 恢复为入口占位）。修复深色代码高亮误用浅色样式。实际验证：单测 53 文件/370 项、个人 Web E2E 40 项、完整 typecheck 20 任务、Web 构建、format/lint 通过。无新迁移、HTTP 接口或会话历史，不代表正式双端设计、真机或生产验收。详见 [WEB-11](docs/development/WEB_11.md)。
 
 2026-11-14 **WEB-10 侧边栏重构与 Markdown 渲染增强**：借鉴仓库内第三方演示的侧边栏与 Markdown 实现。共享外壳改为分组导航，桌面可折叠为图标栏并记住选择，新增「新对话」，移动端用顶栏菜单与底部「更多」打开抽屉；助手正文增加流式解析节流、任务列表/表格/引用/链接排版、代码块复制自动复位，以及按需加载的 Mermaid 图表（`strict` 模式、图片标签转义、流式保留上一张有效图、查找时强制源码视图）。实际验证：单测 53 文件/370 项、个人 Web E2E 36 项、`@aven/web` 构建、format/lint/Web typecheck 通过；Mermaid 为独立异步 chunk。未新增会话历史（无列表 API）、未做视觉回归基线或真实模型长回复性能测量。详见 [WEB-10](docs/development/WEB_10.md)。
 
@@ -147,6 +155,9 @@ M4–M6 的实现与执行记录不等于双端设计评审、真实 Provider、
 | [WEB-03 连接器与会话小组件](docs/development/WEB_03.md) | 连接器目录、动态表单、12 种会话小组件渲染与外部跳转确认 |
 | [WEB-04 Halo 界面与动效](docs/development/WEB_04.md) | Grok Bot 风格深色主题、屏幕栈与 Sheet、Mock 授权卡片、CSS 动效与 UI 夹具截图 |
 | [WEB-06 独立页面与真实接入](docs/development/WEB_06.md) | 独立路由、统一 Halo 外壳、真实模型解析/Worker 解密、真实连接器状态与禁用 Mock 路径 |
+| [WEB-12 第二轮 Grok 对齐](docs/development/WEB_12.md) | 连接应用 Grok 布局、composer 双钮三态、消息动作 hover-reveal、顶栏时间戳与查找条过渡 |
+| [WEB-13 会话历史与语音听写](docs/development/WEB_13.md) | 0044 会话历史读侧函数与列表端点、侧栏最近对话、`?c=` 恢复会话、Web Speech 听写 |
+| [WEB-14 桌面对话与侧栏对齐](docs/development/WEB_14.md) | 宽屏聊天、Bot 资料侧栏、连接应用目录弹层；同尺寸桌面视觉复核待补 |
 | [WEB-07 交互打磨与消息动画](docs/development/WEB_07.md) | 消息弹出、流式 rAF 缓冲、复制/快捷提问、页面过渡与减少动态 |
 | [安全与试点准入交付记录](docs/development/BLOCKS_AND_REPORTS.md) | 个人拉黑、举报、24h 邀请频控与双向阻断验证 |
 | [日程与活动 API](docs/api/AVAILABILITY_EVENTS.md) | 忙闲块、忙闲投影、共享授权、多方求交与活动状态机 |

@@ -135,12 +135,9 @@ export function ProfileScreen({
         <ListRow
           icon="computer"
           label="电脑"
-          value="已就绪"
+          value="空闲"
           onClick={() =>
-            onPlaceholder(
-              '电脑',
-              '当前设备已就绪，已配置安全的本地环境与受控执行沙箱。',
-            )
+            onPlaceholder('电脑', '电脑接入尚未开放。当前设备没有可用的受控执行环境。')
           }
         />
       </div>

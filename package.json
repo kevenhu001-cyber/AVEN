@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev:web": "pnpm build:packages && node scripts/dev.mjs web",
+    "dev:web:mock": "pnpm build:packages && node scripts/mock-web.mjs",
     "dev:api": "pnpm build:packages && node scripts/dev.mjs api",
     "dev:worker": "pnpm build:packages && node scripts/dev.mjs worker",
     "dev:mobile": "pnpm build:packages && node scripts/dev.mjs mobile",

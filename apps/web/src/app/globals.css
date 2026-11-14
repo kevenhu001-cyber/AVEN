@@ -187,3 +187,21 @@ footer {
     padding-top: var(--aven-space-40);
   }
 }
+
+/* Local mock mode (AVEN_WEB_MOCK=1): a fixed, unmissable label on every page. */
+.mock-banner {
+  position: fixed;
+  top: 12px;
+  right: 68px;
+  z-index: 200;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #b45309;
+  background: #fde68a;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  pointer-events: none;
+}

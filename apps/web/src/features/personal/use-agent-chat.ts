@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentTurnRequest } from '@aven/contracts';
 import { api, authExpired, errorText, writeUncertain, webCall } from './api';
+import { pairConversationTurns } from './halo/history';
 export type ChatTurn = {
   key: string;
   input: string;
@@ -28,6 +29,10 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState('');
   const conversationId = useRef<string | undefined>(undefined);
+  const [activeConversationId, setActiveConversationId] = useState<string | undefined>(undefined);
+  // Increments whenever a stored conversation is loaded wholesale, so the renderer can
+  // treat the restored turns as known (no replay of entrance animations).
+  const [hydrationSeq, setHydrationSeq] = useState(0);
   const pending = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const mounted = useRef(true);
@@ -192,6 +197,7 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
         return;
       }
       conversationId.current = result.conversationId;
+      setActiveConversationId(result.conversationId);
       const next = { ...turn, runId: result.runId, status: 'queued' as const };
       patch(turn.key, { runId: result.runId, status: 'queued' });
       await stream(next, abort);
@@ -280,6 +286,59 @@ export function useAgentChat(suspended: boolean, onExpired: () => void) {
     }
     setTurns([]);
     conversationId.current = undefined;
+    setActiveConversationId(undefined);
   }
-  return { turns, draft, setDraft, send, resume, retryCreate: create, cancel, busy, reset };
+
+  /**
+   * Swap the workspace over to a stored conversation. The durable messages feed is
+   * fetched here and paired into turns; a later send continues the same conversation
+   * because `conversationId` is set on success. Throws so the caller can surface the
+   * failure; the in-flight lock keeps sends from interleaving with the restore.
+   */
+  const restoreConversation = useCallback(
+    async (id: string, signal: AbortSignal): Promise<void> => {
+      if (pending.current || suspended) return;
+      pending.current = true;
+      try {
+        const result = await api.agent.listConversationMessages(
+          id,
+          { limit: 200 },
+          webCall(signal),
+        );
+        if (signal.aborted || !mounted.current) return;
+        const historyTurns: ChatTurn[] = pairConversationTurns(result.data).map((pair) => ({
+          key: pair.key,
+          input: pair.input,
+          answer: pair.answer,
+          ...(pair.runId ? { runId: pair.runId } : {}),
+          cursor: 0,
+          createdAt: pair.createdAt,
+          status: pair.complete ? ('completed' as const) : ('failed' as const),
+          request: { input: pair.input },
+          cancelKey: crypto.randomUUID(),
+        }));
+        conversationId.current = id;
+        setActiveConversationId(id);
+        setTurns(historyTurns);
+        setHydrationSeq((value) => value + 1);
+      } finally {
+        pending.current = false;
+      }
+    },
+    [suspended],
+  );
+  return {
+    turns,
+    draft,
+    setDraft,
+    send,
+    resume,
+    retryCreate: create,
+    cancel,
+    busy,
+    reset,
+    activeConversationId,
+    hydrationSeq,
+    restoreConversation,
+  };
 }

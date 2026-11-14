@@ -67,7 +67,7 @@ async function account(suffix) {
     await page.getByRole('button', { name: '登录', exact: true }).click();
   }
   await openChat(page);
-  await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '今天想探索什么？' })).toBeVisible();
   await context.storageState({ path: statePath });
   chmodSync(statePath, 0o600);
   const meResponse = await context.request.get(`${base}/api/v1/auth/me`);

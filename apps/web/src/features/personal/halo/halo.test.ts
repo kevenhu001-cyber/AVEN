@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appsRowAction,
   applyMasterNotification,
+  composerAction,
   connectButton,
+  connectedServiceCount,
   credentialLabel,
   detectConnectorIntent,
   groupCatalog,
@@ -10,6 +13,7 @@ import {
 } from './catalog';
 import { currentScreen, initialStack, popScreen, pushScreen, screenPosition } from './navigation';
 import {
+  composeModePrefix,
   countHighlights,
   countMatches,
   highlightSegments,
@@ -99,6 +103,16 @@ describe('halo chat text', () => {
     expect(template).toContain('1. 帮我连接 Gmail');
     expect(template).toContain('2. 找 一家咖啡馆');
     expect(templateFromConversation('AVEN', [])).toContain('还没有提问');
+  });
+  it('prepends each active mode prefix exactly once', () => {
+    expect(composeModePrefix('你好', {})).toBe('你好');
+    expect(composeModePrefix('你好', { deepSearch: true })).toBe('[全网深搜] 你好');
+    expect(composeModePrefix('你好', { deepSearch: true, deepThink: true })).toBe(
+      '[深度思考] [全网深搜] 你好',
+    );
+    expect(composeModePrefix('[全网深搜] 你好', { deepSearch: true })).toBe('[全网深搜] 你好');
+    expect(composeModePrefix('你好', { funMode: true })).toBe('[幽默风趣] 你好');
+    expect(composeModePrefix('', { deepSearch: true })).toBe('[全网深搜] ');
   });
 });
 
@@ -193,5 +207,30 @@ describe('halo connect-apps catalog', () => {
     expect(masterNotificationState({ ...applyMasterNotification(true), eventUpdates: false })).toBe(
       'mixed',
     );
+  });
+  it('counts connected gateway services from real statuses', () => {
+    expect(connectedServiceCount([])).toBe(0);
+    expect(connectedServiceCount(['connected', undefined, 'pending', 'connected'])).toBe(2);
+    expect(connectedServiceCount(['failed', 'expired'])).toBe(0);
+  });
+  it('picks the catalog row action from gateway mapping and connection state', () => {
+    expect(appsRowAction(true, false)).toEqual({
+      label: '授权',
+      tone: 'authorize',
+      disabled: false,
+    });
+    expect(appsRowAction(true, true)).toEqual({ label: '已连接', tone: 'done', disabled: false });
+    expect(appsRowAction(false, false)).toEqual({
+      label: '未接入',
+      tone: 'neutral',
+      disabled: true,
+    });
+  });
+  it('switches the composer main control across voice, send and stop', () => {
+    expect(composerAction(false, null)).toBe('voice');
+    expect(composerAction(true, null)).toBe('send');
+    expect(composerAction(true, 'active')).toBe('stop');
+    expect(composerAction(false, 'active')).toBe('stop');
+    expect(composerAction(true, 'cancelling')).toBe('stop');
   });
 });

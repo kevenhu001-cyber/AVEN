@@ -92,3 +92,15 @@ export function templateFromConversation(botName: string, userMessages: string[]
   lines.push('', '仅含你的提问，不含回复、记忆或连接资料。');
   return lines.join('\n');
 }
+
+/** Prepend the active chat-mode prefixes exactly once; shared by composer, Enter and quick prompts. */
+export function composeModePrefix(
+  raw: string,
+  modes: { deepSearch?: boolean; deepThink?: boolean; funMode?: boolean },
+): string {
+  let input = raw;
+  if (modes.deepSearch && !input.startsWith('[全网深搜]')) input = `[全网深搜] ${input}`;
+  if (modes.deepThink && !input.includes('[深度思考]')) input = `[深度思考] ${input}`;
+  if (modes.funMode && !input.includes('[幽默风趣]')) input = `[幽默风趣] ${input}`;
+  return input;
+}

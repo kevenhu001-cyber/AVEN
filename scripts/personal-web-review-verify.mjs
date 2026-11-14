@@ -49,7 +49,7 @@ try {
     await page.getByRole('button', { name: '登录', exact: true }).click();
   }
   await openChat(page);
-  await expect(page.getByRole('heading', { name: '今天，想聊点什么？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '今天想探索什么？' })).toBeVisible();
   check(true, 'synthetic account reaches the personal workspace');
 
   const csrf = (await context.cookies()).find((c) => c.name === 'aven_csrf')?.value;

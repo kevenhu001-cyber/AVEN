@@ -3,14 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import type { PluginActionManifest, PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { PageHead } from '@/components/shell/page';
+import { Icon } from './icon';
 import { api, errorText, webCall } from './api';
-import { connectorServiceFor, useConnectors } from './connectors';
-import { categoryLabels, credentialLabel, groupCatalog } from './halo/catalog';
+import { connectorServiceFor, connectorServices, useConnectors } from './connectors';
+import {
+  appsRowAction,
+  categoryLabels,
+  connectedServiceCount,
+  credentialLabel,
+  groupCatalog,
+  matchesQuery,
+} from './halo/catalog';
 import { PluginLogo } from './halo/plugin-logo';
+import { Mascot } from './mascot';
 import { ActionForm, type ConnectorResult } from './plugins/connector-dialog';
 import { WidgetCard } from './plugins/widget-card';
 
@@ -18,12 +28,16 @@ function serviceFor(plugin: PluginManifest) {
   return connectorServiceFor(plugin.id);
 }
 
-export function AppsCatalog({ pluginId }: { pluginId?: string }) {
+/** Grok-style 连接应用 catalog: flat grouped rows, a right-hand action pill per row and a
+ * bottom search bar on mobile. Class names `.apps-item` / `.apps-main` and the h1 are E2E anchors. */
+export function AppsCatalog({ pluginId, dialog = false }: { pluginId?: string; dialog?: boolean }) {
   const router = useRouter();
   const [plugins, setPlugins] = useState<PluginManifest[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
+  const [showMoreCategories, setShowMoreCategories] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [action, setAction] = useState<{
     plugin: PluginManifest;
@@ -56,8 +70,6 @@ export function AppsCatalog({ pluginId }: { pluginId?: string }) {
   }, [load]);
 
   const selected = pluginId ? plugins.find((plugin) => plugin.id === pluginId) : undefined;
-  const sections = useMemo(() => groupCatalog(plugins, query, false), [plugins, query]);
-
   const connectorStatus = useCallback(
     (plugin: PluginManifest) => {
       const service = serviceFor(plugin);
@@ -65,6 +77,51 @@ export function AppsCatalog({ pluginId }: { pluginId?: string }) {
     },
     [connectors],
   );
+
+  const connectedCount = useMemo(
+    () =>
+      connectedServiceCount(
+        Object.keys(connectorServices).map((service) => connectors.statusFor(service)),
+      ),
+    [connectors],
+  );
+  const sections = useMemo(() => {
+    if (!dialog) return groupCatalog(plugins, query, false);
+    const filtered = plugins.filter(
+      (plugin) => matchesQuery(plugin, query) && (category === 'all' || plugin.category === category),
+    );
+    if (query.trim())
+      return filtered.length ? [{ id: 'search', title: '搜索结果', plugins: filtered }] : [];
+    if (category !== 'all')
+      return filtered.length
+        ? [
+            {
+              id: category,
+              title: categoryLabels[category] ?? category,
+              plugins: filtered,
+            },
+          ]
+        : [];
+    return groupCatalog(filtered, '', true);
+  }, [category, dialog, plugins, query]);
+
+  const dialogCategories = useMemo(
+    () => [...new Set(plugins.map((plugin) => plugin.category))],
+    [plugins],
+  );
+  const connectedPlugins = useMemo(() => {
+    const seen = new Set<string>();
+    return plugins.filter((plugin) => {
+      const service = serviceFor(plugin);
+      if (!service || connectors.statusFor(service) !== 'connected' || seen.has(service)) return false;
+      seen.add(service);
+      return true;
+    });
+  }, [connectors, plugins]);
+  const visibleDialogCategories =
+    showMoreCategories || dialogCategories.length <= 5
+      ? dialogCategories
+      : dialogCategories.slice(0, 5);
 
   if (pluginId) {
     return (
@@ -109,138 +166,244 @@ export function AppsCatalog({ pluginId }: { pluginId?: string }) {
     );
   }
 
-  return (
-    <div className="page">
-      <PageHead
-        title="连接应用"
-        description="按需调用服务端连接器。只有已配置真实凭据的应用可以执行动作；授权由 Open Connector 网关完成。"
-        actions={
-          <label className="halo-search apps-search">
-            <span className="sr-only">搜索应用和技能</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索应用和技能"
-            />
-          </label>
-        }
+  const search = (
+    <label className="halo-search apps-search">
+      <Icon name="search" size={17} />
+      <span className="sr-only">搜索应用和技能</span>
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="搜索应用和技能"
       />
-      {status === 'error' && (
-        <Alert variant="warning">
-          {error}{' '}
-          <button type="button" className="halo-text-button" onClick={() => void load()}>
-            刷新目录
-          </button>
-        </Alert>
+    </label>
+  );
+
+  return (
+    <div className={dialog ? 'apps-page apps-page-dialog' : 'page apps-page'}>
+      {dialog ? (
+        <header className="apps-dialog-head">
+          <div className="apps-dialog-topline">
+            <DialogPrimitive.Title asChild>
+              <h1>连接应用</h1>
+            </DialogPrimitive.Title>
+            <Link className="apps-connected-link" href="/connectors">
+              <span className="apps-connected-icons" aria-hidden="true">
+                {connectedPlugins.slice(0, 4).map((plugin) => (
+                  <PluginLogo key={plugin.id} id={plugin.id} category={plugin.category} />
+                ))}
+              </span>
+              <span>已连接 {connectedCount} 个</span>
+              <Icon name="chevron" size={20} />
+            </Link>
+            <DialogPrimitive.Close
+              className="halo-round halo-round-ghost"
+              aria-label="关闭连接应用"
+            >
+              <Icon name="x" size={20} />
+            </DialogPrimitive.Close>
+          </div>
+          <div className="apps-dialog-search-row">
+            {search}
+            <button
+              type="button"
+              className="apps-template-link"
+              disabled
+              title="Bot 模板尚未开放"
+            >
+              <Mascot size={24} state="idle" />
+              <span>Bot 模板</span>
+              <Icon name="chevron" size={17} />
+            </button>
+          </div>
+          <div className="apps-category-list" role="tablist" aria-label="应用类别">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={category === 'all'}
+              className="apps-category-chip"
+              data-active={category === 'all'}
+              onClick={() => setCategory('all')}
+            >
+              全部
+            </button>
+            {visibleDialogCategories.map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={category === value}
+                className="apps-category-chip"
+                data-active={category === value}
+                onClick={() => setCategory(value)}
+              >
+                {categoryLabels[value] ?? value}
+              </button>
+            ))}
+            {dialogCategories.length > 5 && (
+              <button
+                type="button"
+                className="apps-category-chip apps-category-more"
+                aria-expanded={showMoreCategories}
+                onClick={() => setShowMoreCategories((value) => !value)}
+              >
+                {showMoreCategories ? '收起' : '更多'}
+                <Icon name="down" size={15} />
+              </button>
+            )}
+          </div>
+        </header>
+      ) : (
+        <PageHead
+          title="连接应用"
+          description="按需调用服务端连接器。只有已配置真实凭据的应用可以执行动作；授权由 Open Connector 网关完成。"
+          actions={
+            <span className="halo-pill halo-pill-neutral apps-count">
+              已连接 {connectedCount} 个
+            </span>
+          }
+        />
       )}
-      {status === 'loading' && !plugins.length && (
-        <div className="apps-loading" role="status">
-          <span className="halo-skeleton" />
-          <span className="halo-skeleton" />
-          <span className="halo-skeleton" />
-          <span className="sr-only">正在读取连接器目录…</span>
-        </div>
-      )}
-      {status === 'ready' && !sections.length && (
-        <div className="page-empty">
-          <h2>没有匹配的应用</h2>
-          <p>换个关键词，或清空搜索查看全部应用。</p>
-          <button type="button" className="shell-link-button" onClick={() => setQuery('')}>
-            清空搜索
-          </button>
-        </div>
-      )}
-      {sections.map((section) => (
-        <section key={section.id} className="apps-section">
-          <h2 className="apps-heading">{section.title}</h2>
-          <ul className="apps-list">
-            {section.plugins.map((plugin) => {
-              const service = serviceFor(plugin);
-              const connected = connectorStatus(plugin) === 'connected';
-              const canRun = plugin.credentialStatus === 'configured';
-              const expanded = open === plugin.id;
-              return (
-                <li key={plugin.id} className="apps-item" data-expanded={expanded}>
-                  <div className="apps-row">
-                    <button
-                      type="button"
-                      className="apps-main"
-                      aria-expanded={expanded}
-                      onClick={() => setOpen(expanded ? null : plugin.id)}
-                    >
-                      <PluginLogo id={plugin.id} category={plugin.category} />
-                      <span className="apps-text">
-                        <span className="apps-name">
-                          {plugin.name}
-                          <span className="apps-category">
-                            {categoryLabels[plugin.category] ?? plugin.category}
+      <div className="apps-body">
+        {status === 'error' && (
+          <Alert variant="warning">
+            {error}{' '}
+            <button type="button" className="halo-text-button" onClick={() => void load()}>
+              刷新目录
+            </button>
+          </Alert>
+        )}
+        {status === 'loading' && !plugins.length && (
+          <div className="apps-loading" role="status">
+            <span className="halo-skeleton" />
+            <span className="halo-skeleton" />
+            <span className="halo-skeleton" />
+            <span className="sr-only">正在读取连接器目录…</span>
+          </div>
+        )}
+        {status === 'ready' && !sections.length && (
+          <div className="page-empty">
+            <h2>没有匹配的应用</h2>
+            <p>换个关键词，或清空搜索查看全部应用。</p>
+            <button type="button" className="shell-link-button" onClick={() => setQuery('')}>
+              清空搜索
+            </button>
+          </div>
+        )}
+        {sections.map((section) => (
+          <section key={section.id} className="apps-section" id={`apps-section-${section.id}`}>
+            <h2 className="apps-heading">
+              <span>
+                {dialog && section.id === 'featured' ? '为你推荐' : section.title}
+              </span>
+              {dialog && (
+                <Link className="apps-view-all" href="/apps">
+                  查看全部
+                </Link>
+              )}
+            </h2>
+            <ul className="apps-list">
+              {section.plugins.map((plugin) => {
+                const service = serviceFor(plugin);
+                const connected = connectorStatus(plugin) === 'connected';
+                const canRun = plugin.credentialStatus === 'configured';
+                const rowAction = appsRowAction(Boolean(service), connected);
+                const expanded = open === plugin.id;
+                return (
+                  <li key={plugin.id} className="apps-item" data-expanded={expanded}>
+                    <div className="apps-row">
+                      <button
+                        type="button"
+                        className="apps-main halo-press-soft"
+                        aria-expanded={expanded}
+                        onClick={() => setOpen(expanded ? null : plugin.id)}
+                      >
+                        <PluginLogo id={plugin.id} category={plugin.category} />
+                        <span className="apps-text">
+                          <span className="apps-name">
+                            {plugin.name}
+                            {!dialog && (
+                              <span className="apps-category">
+                                {categoryLabels[plugin.category] ?? plugin.category}
+                              </span>
+                            )}
                           </span>
+                          <span className="apps-desc">{plugin.description}</span>
+                          {!dialog && (
+                            <span className="apps-meta">
+                              <span>{credentialLabel(plugin.credentialStatus)}</span>
+                              {service && <span>{connected ? '网关已连接' : '网关未连接'}</span>}
+                            </span>
+                          )}
                         </span>
-                        <span className="apps-desc">{plugin.description}</span>
-                        <span className="apps-meta">
+                      </button>
+                      {rowAction.disabled ? (
+                        <button
+                          type="button"
+                          className="halo-pill halo-pill-neutral"
+                          disabled
+                          aria-label={`${plugin.name} 尚未接入`}
+                        >
+                          {rowAction.label}
+                        </button>
+                      ) : (
+                        <Link
+                          className={`halo-pill halo-pill-${rowAction.tone} halo-press`}
+                          href="/connectors"
+                          aria-label={`${rowAction.label} ${plugin.name}`}
+                        >
+                          {connected && <Icon name="check" size={14} />}
+                          {rowAction.label}
+                        </Link>
+                      )}
+                    </div>
+                    {expanded && (
+                      <div className="apps-expand">
+                        <div className="apps-expand-meta">
                           <span>{credentialLabel(plugin.credentialStatus)}</span>
                           <span>{plugin.readOnly ? '只读' : '可写入'}</span>
                           {service && <span>{connected ? '网关已连接' : '网关未连接'}</span>}
-                        </span>
-                      </span>
-                    </button>
-                    {service ? (
-                      <Link
-                        className="halo-pill halo-pill-light"
-                        href="/connectors"
-                        aria-label={`${connected ? '管理' : '授权'} ${plugin.name}`}
-                      >
-                        {connected ? '管理授权' : '授权'}
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        className="halo-pill halo-pill-neutral"
-                        disabled
-                        aria-label={`${plugin.name} 尚未接入`}
-                      >
-                        尚未接入
-                      </button>
+                        </div>
+                        <div className="apps-actions">
+                          {plugin.actions.map((item) => (
+                            <button
+                              key={item.name}
+                              type="button"
+                              className="halo-chip"
+                              disabled={!canRun}
+                              onClick={() => setAction({ plugin, action: item })}
+                            >
+                              {item.title}
+                            </button>
+                          ))}
+                          {!canRun && (
+                            <span className="apps-note">未配置真实凭据，动作暂不可用。</span>
+                          )}
+                        </div>
+                        {action && action.plugin.id === plugin.id && (
+                          <ActionForm
+                            key={`${action.plugin.id}:${action.action.name}`}
+                            plugin={action.plugin}
+                            action={action.action}
+                            onClose={() => setAction(null)}
+                            onResult={(next) => {
+                              setAction(null);
+                              setResult(next);
+                            }}
+                            onExpired={() => router.refresh()}
+                          />
+                        )}
+                        {result && result.pluginId === plugin.id && <ResultCard result={result} />}
+                      </div>
                     )}
-                  </div>
-                  {expanded && (
-                    <div className="apps-actions">
-                      {plugin.actions.map((item) => (
-                        <button
-                          key={item.name}
-                          type="button"
-                          className="halo-chip"
-                          disabled={!canRun}
-                          onClick={() => setAction({ plugin, action: item })}
-                        >
-                          {item.title}
-                        </button>
-                      ))}
-                      {!canRun && <span className="apps-note">未配置真实凭据，动作暂不可用。</span>}
-                    </div>
-                  )}
-                  {expanded && action && action.plugin.id === plugin.id && (
-                    <ActionForm
-                      key={`${action.plugin.id}:${action.action.name}`}
-                      plugin={action.plugin}
-                      action={action.action}
-                      onClose={() => setAction(null)}
-                      onResult={(next) => {
-                        setAction(null);
-                        setResult(next);
-                      }}
-                      onExpired={() => router.refresh()}
-                    />
-                  )}
-                  {expanded && result && result.pluginId === plugin.id && (
-                    <ResultCard result={result} />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+      {!dialog && <div className="apps-searchbar">{search}</div>}
     </div>
   );
 }

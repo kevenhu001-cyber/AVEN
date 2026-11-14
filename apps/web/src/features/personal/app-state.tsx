@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { PluginManifest } from '@aven/contracts';
+import type { ConversationSummary, PluginManifest } from '@aven/contracts';
 import { api, authExpired, errorText, webCall } from './api';
 import { detectConnectorIntent } from './halo/catalog';
 import type { CatalogState, ChatExtra, ConnectorResult } from './halo/types';
@@ -18,13 +18,19 @@ import { useSession } from './session';
 
 const INTENT_HINT = /(连接|连上|接入|授权|绑定|添加|connect|authorize)/i;
 
+type ConversationsStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 type ChatState = ReturnType<typeof useAgentChat> & {
   extras: ChatExtra[];
   celebrate: boolean;
   sendMessage: (text: string) => void;
   addAuthCard: (plugin: PluginManifest, source: 'sheet' | 'intent') => void;
   addResult: (result: ConnectorResult) => void;
+  clearExtras: () => void;
   newChat: () => void;
+  conversations: ConversationSummary[];
+  conversationsStatus: ConversationsStatus;
+  reloadConversations: () => void;
 };
 
 const ChatContext = createContext<ChatState | null>(null);
@@ -67,10 +73,43 @@ function useCatalogState(onExpired: () => void): CatalogState {
   return { plugins, loading, loaded, error, load };
 }
 
+/** Sidebar recent-conversation feed; the first load is visible, later refreshes are silent. */
+function useConversationsState(onExpired: () => void) {
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [status, setStatus] = useState<ConversationsStatus>('loading');
+  const generation = useRef(0);
+  const reload = useCallback(() => {
+    const seq = ++generation.current;
+    api.agent
+      .listConversations({ limit: 20 }, webCall())
+      .then((result) => {
+        if (seq !== generation.current) return;
+        setConversations(result.data);
+        setStatus('ready');
+      })
+      .catch((cause) => {
+        if (seq !== generation.current) return;
+        if (authExpired(cause)) {
+          onExpired();
+          return;
+        }
+        setStatus('error');
+      });
+  }, [onExpired]);
+  useEffect(() => {
+    reload();
+    return () => {
+      generation.current += 1;
+    };
+  }, [reload]);
+  return { conversations, status, reload };
+}
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const { suspended, invalidate } = useSession();
   const chat = useAgentChat(suspended, invalidate);
   const catalog = useCatalogState(invalidate);
+  const conversations = useConversationsState(invalidate);
   const [extras, setExtras] = useState<ChatExtra[]>([]);
   const celebrate = false;
   const timers = useRef<number[]>([]);
@@ -98,6 +137,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setExtras((items) => [...items, { kind: 'result', createdAt: Date.now(), ...result }]);
   }, []);
 
+  const clearExtras = useCallback(() => setExtras([]), []);
+
   const sendMessage = useCallback(
     (text: string) => {
       const trimmed = text.trim();
@@ -118,6 +159,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setExtras([]);
   }, [chat]);
 
+  // A finished turn is durable on the server; refresh the sidebar feed silently so the
+  // conversation shows up (or its title updates) without a manual reload.
+  const terminalKeys = chat.turns
+    .filter((turn) => ['completed', 'failed', 'cancelled'].includes(turn.status))
+    .map((turn) => turn.key)
+    .join('|');
+  const seenTerminal = useRef('');
+  useEffect(() => {
+    const previous = seenTerminal.current;
+    seenTerminal.current = terminalKeys;
+    if (previous && terminalKeys.length > previous.length) conversations.reload();
+  }, [terminalKeys, conversations]);
+
   return (
     <CatalogContext.Provider value={catalog}>
       <ChatContext.Provider
@@ -128,7 +182,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           sendMessage,
           addAuthCard,
           addResult,
+          clearExtras,
           newChat,
+          conversations: conversations.conversations,
+          conversationsStatus: conversations.status,
+          reloadConversations: conversations.reload,
         }}
       >
         {children}

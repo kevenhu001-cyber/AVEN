@@ -739,6 +739,8 @@ erDiagram
 
 `conversations`/`conversation_members`/`messages`：M3-05 启用个人会话（`owner_user_id`）；关系/组织会话在 M4/M5 接入。`messages.derived_from_run_id` 唯一绑定一个 AI 派生消息，删除 run 时级联删除派生消息。
 
+0044 增加两个只读函数支撑个人会话历史恢复（`messages.body` 永久保留用户原文与 AI 最终回复，不依赖 24 小时即过期的事件流）：`app.list_conversations(limit, cursor_at, cursor_id)` 按 `(created_at,id)` keyset 倒序返回本人 active 会话及首条用户消息摘要（title ≤200 字符）；`app.list_conversation_messages(conversation_id, limit, cursor_at, cursor_id)` 校验会话归属（否则 42501，API 层转 404）后按 `(created_at,id)` keyset 正序返回未删除消息。两函数均 `SECURITY DEFINER` 且经 `app.peer_actor()` 校验活跃个人上下文，仅授予 `aven_app` 执行。
+
 ### 9.2 `agent_steps`
 
 `id`、`run_id`、`sequence`、`type`、`status`、`input_summary`、`output_summary`、`started_at`、`completed_at`、`error_code`；唯一 `(run_id, sequence)`。

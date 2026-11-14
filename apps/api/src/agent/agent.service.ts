@@ -6,6 +6,8 @@ import {
   AgentRunEventSchema,
   AgentRunSchema,
   AgentTurnResponseSchema,
+  ConversationListSchema,
+  ConversationMessageListSchema,
   type AgentCancelResponse,
   type AgentRun,
   type AgentRunEvent,
@@ -13,6 +15,8 @@ import {
   type AgentRunStatus,
   type AgentTurnRequest,
   type AgentTurnResponse,
+  type ConversationList,
+  type ConversationMessageList,
 } from '@aven/contracts';
 import { parseAIProviderConfig } from '@aven/ai-core';
 import { createApplicationPool, withRequestContext, type DatabasePool } from '@aven/database';
@@ -304,6 +308,61 @@ export class AgentService implements OnModuleDestroy {
     const row = result.rows[0];
     if (!row) throw new NotFoundException();
     return mapRun(row);
+  }
+
+  /**
+   * Personal conversation history. Both reads are owner-scoped SQL functions over the
+   * durable messages table (events expire after 24 hours), so restoring a conversation
+   * never depends on the live event stream.
+   */
+  async listConversations(
+    auth: AuthContext,
+    limit: number,
+    cursorCreatedAt: string | undefined,
+    cursorId: string | undefined,
+  ): Promise<ConversationList> {
+    const result = await withRequestContext(this.getPool(), this.context(auth), async (client) =>
+      client.query<{ result: unknown }>('SELECT app.list_conversations($1,$2,$3) AS result', [
+        limit,
+        cursorCreatedAt ?? null,
+        cursorId ?? null,
+      ]),
+    );
+    const list = result.rows[0]?.result;
+    if (!list) throw new NotFoundException();
+    return ConversationListSchema.parse(list);
+  }
+
+  async listConversationMessages(
+    auth: AuthContext,
+    conversationId: string,
+    limit: number,
+    cursorCreatedAt: string | undefined,
+    cursorId: string | undefined,
+  ): Promise<ConversationMessageList> {
+    const result = await withRequestContext(this.getPool(), this.context(auth), async (client) => {
+      try {
+        return await client.query<{ result: unknown }>(
+          'SELECT app.list_conversation_messages($1,$2,$3,$4) AS result',
+          [conversationId, limit, cursorCreatedAt ?? null, cursorId ?? null],
+        );
+      } catch (error) {
+        // The SQL function raises 42501 when the conversation is not owned by the
+        // caller; that must surface as a plain 404 without leaking ownership facts.
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          (error as { code?: string }).code === '42501'
+        ) {
+          throw new NotFoundException();
+        }
+        throw error;
+      }
+    });
+    const list = result.rows[0]?.result;
+    if (!list) throw new NotFoundException();
+    return ConversationMessageListSchema.parse(list);
   }
 
   async getStreamContext(auth: AuthContext, runId: string): Promise<AgentStreamContext> {

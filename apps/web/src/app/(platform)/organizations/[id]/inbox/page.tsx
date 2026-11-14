@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
 import { StateView } from '../../state-view';
 import { Icon } from '@/features/personal/icon';
 
@@ -143,8 +142,6 @@ const INITIAL_INBOX_ITEMS: InboxItem[] = [
 ];
 
 export default function OrganizationInboxPage() {
-  const params = useParams<{ id: string }>();
-  const orgId = params?.id ?? '';
   const searchInputId = useId();
 
   const [items, setItems] = useState<InboxItem[]>(INITIAL_INBOX_ITEMS);
@@ -189,9 +186,7 @@ export default function OrganizationInboxPage() {
   const handleSelectItem = (item: InboxItem) => {
     setSelectedItem(item);
     if (item.unread) {
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, unread: false } : i)),
-      );
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, unread: false } : i)));
     }
   };
 
@@ -344,13 +339,31 @@ export default function OrganizationInboxPage() {
             backgroundColor: 'var(--aven-color-surface-primary)',
           }}
         >
-          <div style={{ fontSize: 'var(--aven-font-size-body-sm)', color: 'var(--aven-color-foreground-secondary)' }}>
+          <div
+            style={{
+              fontSize: 'var(--aven-font-size-body-sm)',
+              color: 'var(--aven-color-foreground-secondary)',
+            }}
+          >
             待审阅投递
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 600, marginTop: 'var(--aven-space-4)', color: 'var(--aven-color-accent)' }}>
+          <div
+            style={{
+              fontSize: '28px',
+              fontWeight: 600,
+              marginTop: 'var(--aven-space-4)',
+              color: 'var(--aven-color-accent)',
+            }}
+          >
             {stats.pendingCount}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--aven-color-foreground-secondary)', marginTop: 'var(--aven-space-4)' }}>
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--aven-color-foreground-secondary)',
+              marginTop: 'var(--aven-space-4)',
+            }}
+          >
             需优先确认与回复
           </div>
         </div>
@@ -363,13 +376,24 @@ export default function OrganizationInboxPage() {
             backgroundColor: 'var(--aven-color-surface-primary)',
           }}
         >
-          <div style={{ fontSize: 'var(--aven-font-size-body-sm)', color: 'var(--aven-color-foreground-secondary)' }}>
+          <div
+            style={{
+              fontSize: 'var(--aven-font-size-body-sm)',
+              color: 'var(--aven-color-foreground-secondary)',
+            }}
+          >
             沟通协同中
           </div>
           <div style={{ fontSize: '28px', fontWeight: 600, marginTop: 'var(--aven-space-4)' }}>
             {stats.reviewingCount}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--aven-color-foreground-secondary)', marginTop: 'var(--aven-space-4)' }}>
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--aven-color-foreground-secondary)',
+              marginTop: 'var(--aven-space-4)',
+            }}
+          >
             已建立意向通道
           </div>
         </div>
@@ -382,13 +406,24 @@ export default function OrganizationInboxPage() {
             backgroundColor: 'var(--aven-color-surface-primary)',
           }}
         >
-          <div style={{ fontSize: 'var(--aven-font-size-body-sm)', color: 'var(--aven-color-foreground-secondary)' }}>
+          <div
+            style={{
+              fontSize: 'var(--aven-font-size-body-sm)',
+              color: 'var(--aven-color-foreground-secondary)',
+            }}
+          >
             导师可信引荐
           </div>
           <div style={{ fontSize: '28px', fontWeight: 600, marginTop: 'var(--aven-space-4)' }}>
             {stats.referralCount}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--aven-color-foreground-secondary)', marginTop: 'var(--aven-space-4)' }}>
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--aven-color-foreground-secondary)',
+              marginTop: 'var(--aven-space-4)',
+            }}
+          >
             带加密防伪签名背书
           </div>
         </div>
@@ -401,13 +436,24 @@ export default function OrganizationInboxPage() {
             backgroundColor: 'var(--aven-color-surface-primary)',
           }}
         >
-          <div style={{ fontSize: 'var(--aven-font-size-body-sm)', color: 'var(--aven-color-foreground-secondary)' }}>
+          <div
+            style={{
+              fontSize: 'var(--aven-font-size-body-sm)',
+              color: 'var(--aven-color-foreground-secondary)',
+            }}
+          >
             收件总计
           </div>
           <div style={{ fontSize: '28px', fontWeight: 600, marginTop: 'var(--aven-space-4)' }}>
             {items.length}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--aven-color-foreground-secondary)', marginTop: 'var(--aven-space-4)' }}>
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--aven-color-foreground-secondary)',
+              marginTop: 'var(--aven-space-4)',
+            }}
+          >
             已接入隐私隔离协议
           </div>
         </div>
@@ -460,7 +506,14 @@ export default function OrganizationInboxPage() {
           marginBottom: 'var(--aven-space-16)',
         }}
       >
-        <div style={{ display: 'flex', gap: 'var(--aven-space-8)', overflowX: 'auto', paddingBottom: '4px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--aven-space-8)',
+            overflowX: 'auto',
+            paddingBottom: '4px',
+          }}
+        >
           {(
             [
               { key: 'all', label: '全部' },
@@ -490,7 +543,9 @@ export default function OrganizationInboxPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 'var(--aven-space-8)', flex: 1, maxWidth: '380px' }}>
-          <label htmlFor={searchInputId} className="sr-only">搜索申请人姓名、主题或技能关键词</label>
+          <label htmlFor={searchInputId} className="sr-only">
+            搜索申请人姓名、主题或技能关键词
+          </label>
           <input
             id={searchInputId}
             type="search"
@@ -606,7 +661,9 @@ export default function OrganizationInboxPage() {
                     marginBottom: 'var(--aven-space-8)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--aven-space-12)' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 'var(--aven-space-12)' }}
+                  >
                     <div
                       style={{
                         width: '36px',
@@ -624,7 +681,13 @@ export default function OrganizationInboxPage() {
                       {item.avatarText}
                     </div>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--aven-space-8)' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--aven-space-8)',
+                        }}
+                      >
                         <span style={{ fontWeight: 600, fontSize: 'var(--aven-font-size-body)' }}>
                           {item.applicantName}
                         </span>
@@ -663,7 +726,9 @@ export default function OrganizationInboxPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--aven-space-12)' }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 'var(--aven-space-12)' }}
+                  >
                     <span
                       style={{
                         fontSize: '12px',
@@ -892,13 +957,23 @@ export default function OrganizationInboxPage() {
                   {getCategoryLabel(selectedItem.category)}
                 </span>
                 {selectedItem.opportunityTitle && (
-                  <span style={{ marginLeft: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                  <span
+                    style={{
+                      marginLeft: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                    }}
+                  >
                     <Icon name="chevron" size={12} />
                     <span>{selectedItem.opportunityTitle}</span>
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--aven-color-success)', fontWeight: 500 }}>
+              <div
+                style={{ fontSize: '12px', color: 'var(--aven-color-success)', fontWeight: 500 }}
+              >
                 意向对齐度：{selectedItem.matchScore}%
               </div>
             </div>
@@ -916,7 +991,16 @@ export default function OrganizationInboxPage() {
                 }}
               >
                 <strong>引荐签署人：</strong> {selectedItem.referralSigner}
-                <div style={{ fontSize: '12px', color: 'var(--aven-color-foreground-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--aven-color-foreground-secondary)',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
                   <Icon name="verified" size={13} style={{ color: 'var(--aven-color-accent)' }} />
                   <span>签署已通过跨机构数字身份体系确权，保证推荐内容真实可追溯</span>
                 </div>
@@ -1116,7 +1200,13 @@ export default function OrganizationInboxPage() {
                     boxSizing: 'border-box',
                   }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--aven-space-8)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 'var(--aven-space-8)',
+                  }}
+                >
                   <button
                     type="submit"
                     disabled={!replyText.trim()}

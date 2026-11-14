@@ -27,6 +27,7 @@ const brandIcons: Record<string, string> = {
   outlook: 'outlook',
   googledrive: 'googledrive',
   googlecalendar: 'googlecalendar',
+  'googlecalendar.calendar': 'googlecalendar',
 };
 
 const byCategory: Record<string, IconName> = {

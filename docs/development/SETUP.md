@@ -47,6 +47,19 @@ corepack pnpm dev:mobile        # Expo；需设置 EXPO_PUBLIC_API_URL
 - 认证 API 已实现注册/登录/会话/验证/重置；Web/Mobile 页面尚未接入。
 - 依赖就绪 200 不代表业务可用；组织/机会/引荐仍未开放。
 
+## 无 Docker/Postgres 的模拟启动
+
+没有 Docker/Postgres、只想开发或查看个人 Web 界面时，可用内置模拟 API 层：
+
+```bash
+corepack pnpm dev:web:mock      # 等价于 AVEN_WEB_MOCK=1 pnpm dev:web，仅 Web，无需 infra/api/worker
+```
+
+- `AVEN_WEB_MOCK=1` 时 Web 不再把 `/api/v1/*` 代理到真实 API，而是由应用内 Route Handler（`apps/web/src/mocks/`）返回内存中的模拟数据；登录态、对话（模拟流式回复）、会话历史、应用目录、通知、记忆均可操作。
+- 模拟回复固定以「【模拟回复】」开头；每个页面右上角显示「模拟数据 · 非真实服务」徽标；每个响应带 `x-aven-mock` 头。模拟数据不代表任何功能完成。
+- 关闭方式：不设该变量运行 `pnpm dev:web` 即恢复真实代理（rewrite 走 `beforeFiles`，模拟层不可达）。生产构建同样受该变量控制，不得在真实部署中开启。
+- 边界：不模拟 RLS/权限/幂等完整语义；`/health`、`/admin`、`/organizations` 无模拟数据（诊断页会显示不可用）；模拟状态刷新即重置。
+
 ## 检查命令
 
 ```bash

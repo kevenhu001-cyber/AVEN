@@ -9,7 +9,9 @@ const commands = {
 };
 const command = commands[target];
 if (!command) throw new Error('Expected api or web.');
+// Windows resolves pnpm through a .cmd shim, which Node only spawns via a shell.
 const child = spawn(command[0], command[1], {
+  shell: process.platform === 'win32',
   cwd: root,
   stdio: 'inherit',
   env: {

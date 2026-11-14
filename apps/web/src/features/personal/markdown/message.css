@@ -558,7 +558,8 @@
   animation: grok-pulse 1.8s ease-in-out infinite;
 }
 @keyframes grok-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -580,4 +581,3 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
-

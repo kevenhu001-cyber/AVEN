@@ -96,6 +96,7 @@ export type MenuItem = {
   icon: IconName;
   onSelect: () => void;
   disabled?: boolean;
+  checked?: boolean;
 };
 
 /** Dropdown menu that scales and fades from the trigger's corner. Keyboard: arrows, Home/End, Esc. */
@@ -103,16 +104,19 @@ export function Menu({
   label,
   items,
   icon = 'ellipsis',
+  triggerText,
 }: {
   label: string;
   items: MenuItem[];
   icon?: IconName;
+  triggerText?: string;
 }) {
   const [phase, setPhase] = useState<'closed' | 'open' | 'closing'>('closed');
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const id = useId();
+  const actionableItems = 'button[role^="menuitem"]:not([disabled])';
 
   const close = useCallback((focusTrigger = true) => {
     setPhase((current) => (current === 'open' ? 'closing' : current));
@@ -125,9 +129,7 @@ export function Menu({
 
   useEffect(() => {
     if (phase !== 'open') return;
-    list.current
-      ?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
-      ?.focus({ preventScroll: true });
+    list.current?.querySelector<HTMLButtonElement>(actionableItems)?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!list.current?.contains(target) && !trigger.current?.contains(target)) close(false);
@@ -137,10 +139,7 @@ export function Menu({
   }, [phase, close]);
 
   function onKey(event: KeyboardEvent<HTMLDivElement>) {
-    const nodes = [
-      ...(list.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ??
-        []),
-    ];
+    const nodes = [...(list.current?.querySelectorAll<HTMLButtonElement>(actionableItems) ?? [])];
     const index = nodes.indexOf(document.activeElement as HTMLButtonElement);
     if (event.key === 'Escape' || event.key === 'Tab') {
       event.preventDefault();
@@ -162,11 +161,14 @@ export function Menu({
 
   return (
     <div className="halo-menu-anchor">
-      <RoundButton
+      <button
         ref={trigger}
-        tone="ghost"
-        icon={icon}
-        label={label}
+        type="button"
+        className={
+          triggerText ? 'halo-menu-trigger halo-press' : 'halo-round halo-round-ghost halo-press'
+        }
+        aria-label={triggerText ? `${label}：${triggerText}` : label}
+        title={label}
         aria-haspopup="menu"
         aria-expanded={phase === 'open'}
         aria-controls={phase !== 'closed' ? id : undefined}
@@ -177,7 +179,10 @@ export function Menu({
             setPhase('open');
           }
         }}
-      />
+      >
+        {triggerText && <span>{triggerText}</span>}
+        <Icon name={icon} size={triggerText ? 16 : 22} />
+      </button>
       {phase !== 'closed' && (
         <div
           id={id}
@@ -192,16 +197,18 @@ export function Menu({
             <button
               key={item.id}
               type="button"
-              role="menuitem"
+              role={item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
+              aria-checked={item.checked}
               className="halo-menu-item"
               disabled={item.disabled}
               onClick={() => {
-                close(false);
+                if (item.checked === undefined) close(false);
                 item.onSelect();
               }}
             >
               <Icon name={item.icon} size={22} />
               <span>{item.label}</span>
+              {item.checked && <Icon name="check" size={16} className="halo-menu-check" />}
             </button>
           ))}
         </div>

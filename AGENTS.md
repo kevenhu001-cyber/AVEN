@@ -4,6 +4,12 @@
 
 ## 1. 当前阶段
 
+- 2026-11-14 **Web 内置模拟启动途径（AVEN_WEB_MOCK）**已交付：本机无 Docker/Postgres 时可用 `pnpm dev:web:mock` 启动仅含模拟 API 的个人 Web——`apps/web/src/mocks/`（内存种子状态 + `mockRequest` 分发器 + SSE 流式模拟回复，全部经 contracts schema 自校验、带 `x-aven-mock` 头）、`app/api/v1/[...path]/route.ts` 捕获层、`next.config.ts` 条件 rewrite（非 mock 模式走 beforeFiles，模拟层不可达）、每页「模拟数据 · 非真实服务」徽标、回复固定「【模拟回复】」前缀。覆盖 auth/agent（含 turns+events+conversations）/memories/notifications/plugins/open-connector/connections；不模拟 RLS/幂等完整语义，/health、/admin、/organizations 无模拟数据。单测 +5 项（mock 闭环：me 种 CSRF、turns→SSE→历史、取消、目录）。模拟数据不代表任何功能完成；仅用于界面开发，不得在真实部署开启。见 `docs/development/SETUP.md`「无 Docker/Postgres 的模拟启动」。
+
+- 2026-11-14 **WEB-13 会话历史全栈与语音听写**已交付：新增 `0044_conversation_history`（`app.list_conversations` / `app.list_conversation_messages` 读侧函数，keyset 分页、SECURITY DEFINER、peer_actor 校验）、contracts/API（`GET agent/conversations`、`GET agent/conversations/:id/messages`，42501→404）与 api-client 方法；个人 Web 侧栏新增「最近对话」（桌面侧栏 + 移动抽屉、当前会话高亮、turn 终态后静默刷新），URL `?c=` 恢复历史会话（消息配对纯函数 `pairConversationTurns`、`restoreConversation` in-flight 锁、恢复内容预填 known 不重播动画、后续发送复用同一 conversationId）；麦克风按钮在支持浏览器上真实听写（Web Speech API zh-CN、listening 态脉动、`appendDictation` 纯函数），不支持时保留占位提示。format/lint/typecheck 20 任务/单测 55 文件 381 项/构建 12 任务/个人 Web E2E 42 项通过；合成夹具截图核对侧栏与恢复对话。**本机无 Docker，`db:verify`（0044 空库/升级）与真实链路复验未执行**，须在具备 Docker 的环境补验；「语音模式」「电脑」「Slack」「定时任务」仍为占位。详见 `docs/development/WEB_13.md`。
+
+- 2026-11-14 **WEB-12 个人 Web 第二轮 Grok 对齐**已交付：按用户提供的 5 张 Grok App 截图重排连接应用页（页头「已连接 n 个」真实网关计数 pill、扁平分区行、右侧「授权/已连接/未接入」pill、移动端底部 sticky 搜索栏，`.apps-item`/`.apps-main` 与 h1「连接应用」等 E2E 锚点保留）；聊天顶栏新增会话时间戳，输入区改为麦克风 + 三态主钮（空草稿=语音模式占位、有草稿=发送、运行中=停止，占位为诚实提示），消息 meta 状态文本保持可见但降噪，动作按钮桌面 hover 显现、最后一条回复与触屏常驻，查找条改为双向滑动过渡（inert + visibility 离开 a11y 树），mode pill 激活色收敛到令牌，`chat.tsx` 拆分 `TurnArticle`/`TurnMeta`/`Composer`。format/lint/typecheck 20 任务/单测 53 文件 374 项/构建 12 任务/个人 Web E2E 40 项全部通过；合成夹具截图核对 apps/profile/chat 桌面与移动布局。语音输入/模式、电脑、Slack、定时任务仍为占位，未新增会话历史或接口。顺手修复 HEAD 上两个既有 lint 错误（inbox 未用变量、正则转义）与 `scripts/test-server.mjs` Windows spawn。详见 `docs/development/WEB_12.md`。
+
 - 2026-11-14 **WEB-10 侧边栏重构与 Markdown 渲染增强**已交付：借鉴 `chat-demo-main/` 的分组侧栏与 Markdown 实现。共享外壳改为「对话 / 我的空间」分组导航，桌面可折叠为图标栏并用 `localStorage`（`aven.shell.sidebar`）记住选择，新增「开启新对话」，移动端用顶栏菜单与底部「更多导航」打开 Radix Dialog 抽屉；助手正文增加按渲染耗时的流式解析节流（查找时停用）、任务列表/表格/引用/链接排版、代码复制 2 秒自动复位，以及按需加载的 `mermaid@12.3.0` 图表（`strict` 模式、图片标签转义、串行渲染、流式保留上一张有效图、查找时强制源码视图）。单测 53 文件/370 项、个人 Web E2E 36 项、`@aven/web` 构建、format/lint/Web typecheck 通过；Mermaid 为独立异步 chunk。未新增会话历史（无列表 API），未做视觉回归基线或真实模型长回复性能测量。详见 `docs/development/WEB_10.md`。
 
 - 2026-11-13 **WEB-08 交互细化与消息动效门控**已交付：消息弹出改为 `data-fresh` 门控，只对本次进入页面后新增的气泡播放，重新打开已有对话不重播；助手气泡按「该 turn 是否已出现回复」判断，流式首字仍会弹入，`RichText` 用 `memo` 减少流式重渲染；新增未读回复徽标、失败/取消后「再试一次」、已取消部分回复可复制、7000 字起的 `n/8000` 输入计数、全局 Escape 关闭查找，并修复 `/chat?q=` 组件复用时的参数同步；连接应用行、应用项、首页 Bot 与底部导航补充过渡反馈。单测 50 文件/346 项、E2E 30 项、构建 12 任务通过；format/lint/Web typecheck 通过。详见 `docs/development/WEB_08.md`。
@@ -193,6 +199,7 @@ corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm build
 corepack pnpm test:e2e   # 本机缺少 Playwright headless shell 时加 PLAYWRIGHT_CHANNEL=chrome
+corepack pnpm dev:web:mock   # 无 Docker/Postgres 的模拟启动：仅 Web + 内置模拟 API（界面开发用，见 SETUP.md）
 ```
 
 开发启动：`corepack pnpm dev:web`、`dev:api`、`dev:worker`、`dev:mobile`。数据库迁移与 seed 命令在 M0-05 实际验证后补充，不要提前编造。

@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { useShellNavigation } from '@/components/shell/navigation-context';
 import { Icon } from './icon';
 import { Mascot, type MascotState } from './mascot';
+import { composerAction, type ComposerAction } from './halo/catalog';
 import { ConnectorAuthCard } from './halo/connector-auth-card';
 import { ChatWelcome } from './halo/home';
 import { Menu, RoundButton } from './halo/primitives';
-import { countHighlights, highlightSegments, stepMatch } from './halo/text';
-import { buildTimeline, isNearBottom, recallVisible } from './halo/timeline';
+import { composeModePrefix, countHighlights, highlightSegments, stepMatch } from './halo/text';
+import { buildTimeline, formatChatTimestamp, isNearBottom, recallVisible } from './halo/timeline';
 import type { ChatExtra } from './halo/types';
+import { appendDictation, useSpeechRecognition } from './use-speech-recognition';
 import { WidgetCard } from './plugins/widget-card';
 import { MarkdownMessage } from './markdown/message';
 import { countMarkdownHighlights } from './markdown/text';
@@ -36,6 +38,7 @@ const labels = {
 const activeStatuses = ['sending', 'queued', 'running', 'cancelling'];
 
 type Chat = ReturnType<typeof useAgentChat>;
+type ChatModes = { deepSearch: boolean; deepThink: boolean; funMode: boolean };
 type Item = { key: string; createdAt: number } & (
   { type: 'turn'; turn: ChatTurn } | { type: 'extra'; extra: ChatExtra }
 );
@@ -139,7 +142,7 @@ function SpeechButton({ text }: { text: string }) {
       window.speechSynthesis.cancel();
       const clean = text
         .replace(/<think>[\s\S]*?<\/think>/g, '')
-        .replace(/[#*`_~\[\]()$]/g, '')
+        .replace(/[#*`_~[\]()$]/g, '')
         .trim();
       if (!clean) return;
       const utterance = new SpeechSynthesisUtterance(clean);
@@ -204,6 +207,320 @@ function FeedbackButtons() {
   );
 }
 
+/**
+ * Status line plus per-answer tools. The status text stays visible (it is an E2E and verify
+ * anchor); the tools reveal on hover/focus on pointer devices and stay pinned on the latest
+ * answered reply so touch devices always have a stable target.
+ */
+function TurnMeta({
+  turn,
+  fresh,
+  pinned,
+  onUnavailable,
+  onRetry,
+}: {
+  turn: ChatTurn;
+  fresh: boolean;
+  pinned: boolean;
+  onUnavailable: (message: string) => void;
+  onRetry: (text: string) => void;
+}) {
+  return (
+    <div className="halo-turn-meta" data-fresh={fresh ? 'true' : undefined}>
+      <div className="turn-state" data-status={turn.status} aria-live="polite">
+        <span>{labels[turn.status]}</span>
+      </div>
+      {turn.answer && !activeStatuses.includes(turn.status) && (
+        <div className="halo-msg-tools" data-pinned={pinned ? 'true' : undefined}>
+          <CopyButton text={turn.answer} onUnavailable={onUnavailable} />
+          <SpeechButton text={turn.answer} />
+          <FeedbackButtons />
+          <button
+            type="button"
+            className="halo-msg-action"
+            aria-label="重新生成回复"
+            onClick={() => onRetry(turn.input)}
+          >
+            <Icon name="refresh" size={14} />
+            重新生成
+          </button>
+        </div>
+      )}
+      {(turn.status === 'failed' || turn.status === 'cancelled') && (
+        <button
+          type="button"
+          className="halo-msg-action"
+          aria-label="重新发送这条提问"
+          onClick={() => onRetry(turn.input)}
+        >
+          <Icon name="refresh" size={14} />
+          再试一次
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** One conversation turn: user bubble, streaming answer, typing indicator and meta row. */
+function TurnArticle({
+  turn,
+  userFresh,
+  answerFresh,
+  pinned,
+  highlight,
+  inOffset,
+  outOffset,
+  current,
+  onUnavailable,
+  onRetry,
+  onRetryCreate,
+  onResume,
+}: {
+  turn: ChatTurn;
+  userFresh: boolean;
+  answerFresh: boolean;
+  pinned: boolean;
+  highlight: string;
+  inOffset: number;
+  outOffset: number;
+  current: number;
+  onUnavailable: (message: string) => void;
+  onRetry: (text: string) => void;
+  onRetryCreate: (turn: ChatTurn) => void;
+  onResume: (turn: ChatTurn) => void;
+}) {
+  const waiting =
+    ['sending', 'queued'].includes(turn.status) || (turn.status === 'running' && !turn.answer);
+  return (
+    <article className="chat-turn halo-turn" data-fresh={userFresh ? 'true' : undefined}>
+      <p className="chat-bubble user-bubble" data-fresh={userFresh ? 'true' : undefined}>
+        <RichText text={turn.input} query={highlight} offset={inOffset} current={current} />
+      </p>
+      {turn.answer ? (
+        <div
+          className="chat-bubble assistant-bubble assistant-prose"
+          data-streaming={turn.status === 'running'}
+          data-fresh={answerFresh ? 'true' : undefined}
+        >
+          <MarkdownMessage
+            text={turn.answer}
+            query={highlight}
+            offset={outOffset}
+            current={current}
+            animate={answerFresh}
+            streaming={turn.status === 'running'}
+          />
+        </div>
+      ) : (
+        waiting && (
+          <p
+            className="halo-typing"
+            aria-label={labels[turn.status]}
+            data-fresh={userFresh ? 'true' : undefined}
+          >
+            <span />
+            <span />
+            <span />
+          </p>
+        )
+      )}
+      <TurnMeta
+        turn={turn}
+        fresh={userFresh}
+        pinned={pinned}
+        onUnavailable={onUnavailable}
+        onRetry={onRetry}
+      />
+      {turn.error && (
+        <Alert variant="warning" className="my-2">
+          {turn.error}
+        </Alert>
+      )}
+      {turn.status === 'unknown' && (
+        <Button variant="secondary" onClick={() => onRetryCreate(turn)}>
+          核对发送结果
+        </Button>
+      )}
+      {turn.status === 'disconnected' && turn.runId && (
+        <Button variant="secondary" onClick={() => onResume(turn)}>
+          重新读取回复
+        </Button>
+      )}
+    </article>
+  );
+}
+
+/** Grok-style composer: +, auto-growing input, dictation mic and a three-state main control. */
+function Composer({
+  chat,
+  botName,
+  active,
+  activeTurn,
+  modes,
+  modeMenu,
+  onOpenApps,
+  onVoicePlaceholder,
+  onVoiceError,
+}: {
+  chat: Chat;
+  botName: string;
+  active: boolean;
+  activeTurn: ChatTurn | undefined;
+  modes: ChatModes;
+  modeMenu: React.ReactNode;
+  onOpenApps: () => void;
+  onVoicePlaceholder: () => void;
+  onVoiceError: (message: string) => void;
+}) {
+  const input = useRef<HTMLTextAreaElement>(null);
+  const action: ComposerAction = composerAction(
+    chat.draft.trim().length > 0,
+    activeTurn ? (activeTurn.status === 'cancelling' ? 'cancelling' : 'active') : null,
+  );
+  const voice = useSpeechRecognition({
+    onFinal: (text) => chat.setDraft((prev) => appendDictation(prev, text)),
+    onError: (code) =>
+      onVoiceError(
+        code === 'not-allowed' || code === 'service-not-allowed'
+          ? '麦克风权限被拒绝。请在浏览器中允许后重试。'
+          : '语音输入出现问题，请重试。',
+      ),
+  });
+
+  function submit() {
+    const raw = chat.draft.trim();
+    if (!raw) return;
+    chat.send(composeModePrefix(raw, modes));
+  }
+
+  useEffect(() => {
+    const node = input.current;
+    if (node) {
+      node.style.height = 'auto';
+      node.style.height = `${Math.min(node.scrollHeight, 156)}px`;
+    }
+  }, [chat.draft]);
+
+  return (
+    <form
+      className="halo-composer"
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+    >
+      {chat.draft.length > 7000 && (
+        <span
+          className="halo-composer-count"
+          data-limit={chat.draft.length >= 8000 ? 'true' : undefined}
+          aria-live="polite"
+        >
+          {chat.draft.length}/8000
+        </span>
+      )}
+      <label className="sr-only" htmlFor="chat-input">
+        向 AVEN 提问
+      </label>
+      <textarea
+        id="chat-input"
+        ref={input}
+        value={chat.draft}
+        onChange={(event) => chat.setDraft(event.target.value)}
+        placeholder={`向 ${botName} 提问`}
+        maxLength={8000}
+        rows={1}
+        tabIndex={active ? 0 : -1}
+        onKeyDown={(event) => {
+          if (
+            event.key === 'Enter' &&
+            !event.shiftKey &&
+            !event.nativeEvent.isComposing &&
+            event.keyCode !== 229
+          ) {
+            event.preventDefault();
+            submit();
+          }
+        }}
+      />
+      <div className="halo-composer-tools">
+        <button
+          type="button"
+          className="halo-composer-plus halo-press"
+          aria-label="连接器"
+          aria-haspopup="dialog"
+          title="连接应用"
+          onClick={onOpenApps}
+          disabled={chat.busy}
+        >
+          <Icon name="plus" size={22} />
+        </button>
+        {modeMenu}
+        <button
+          type="button"
+          className="halo-composer-mic halo-press"
+          data-listening={voice.listening ? 'true' : undefined}
+          aria-label={voice.listening ? '停止语音输入' : '语音输入'}
+          title={
+            voice.supported
+              ? voice.listening
+                ? '停止语音输入'
+                : '语音输入'
+              : '语音输入（当前浏览器不支持）'
+          }
+          onClick={() => {
+            if (!voice.supported) {
+              onVoicePlaceholder();
+              return;
+            }
+            if (voice.listening) {
+              voice.stop();
+              return;
+            }
+            if (!voice.start()) onVoicePlaceholder();
+          }}
+          disabled={chat.busy && !voice.listening}
+        >
+          <Icon name="mic" size={20} />
+        </button>
+        {action === 'stop' ? (
+          <button
+            key="stop"
+            type="button"
+            className="halo-composer-go halo-swap halo-press"
+            disabled={activeTurn?.status === 'cancelling'}
+            onClick={() => activeTurn && void chat.cancel(activeTurn)}
+            aria-label="停止回复"
+          >
+            <Icon name="square" size={18} />
+          </button>
+        ) : action === 'send' ? (
+          <button
+            key="send"
+            type="submit"
+            className="halo-composer-go halo-swap halo-press"
+            disabled={chat.busy}
+            aria-label="发送消息"
+          >
+            <Icon name="arrow-up" size={22} />
+          </button>
+        ) : (
+          <button
+            key="voice"
+            type="button"
+            className="halo-composer-go halo-swap halo-press"
+            data-action="voice"
+            aria-label="语音模式"
+            title="语音模式尚未开放"
+            onClick={onVoicePlaceholder}
+          >
+            <Icon name="wave" size={22} />
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
 export function Chat({
   chat,
   suspended,
@@ -220,6 +537,8 @@ export function Chat({
   onNewChat,
   onShareTemplate,
   onRunAction,
+  onVoicePlaceholder,
+  onVoiceError,
   onUnavailable,
 }: {
   chat: Chat;
@@ -237,12 +556,13 @@ export function Chat({
   onNewChat: () => void;
   onShareTemplate: () => void;
   onRunAction: (plugin: PluginManifest, actionName: string) => void;
+  onVoicePlaceholder: () => void;
+  onVoiceError: (message: string) => void;
   onUnavailable: (message: string) => void;
 }) {
   const openNavigation = useShellNavigation();
   const transcript = useRef<HTMLDivElement>(null);
   const thread = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLTextAreaElement>(null);
   const findInput = useRef<HTMLInputElement>(null);
   const header = useRef<HTMLElement>(null);
   const nearBottom = useRef(true);
@@ -305,7 +625,7 @@ export function Chat({
 
   useEffect(() => {
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-    input.current?.focus({ preventScroll: true });
+    document.getElementById('chat-input')?.focus({ preventScroll: true });
   }, []);
 
   // A render-phase update (not an effect) so a search query from the URL opens the find bar
@@ -315,6 +635,17 @@ export function Chat({
     setFinding(true);
     setQuery(searchRequest.query);
     setCurrent(0);
+  }
+
+  // Restored conversations are marked known (not fresh) in the same render that first
+  // shows them, so reopening history never replays the bubble entrance animations.
+  const [seenHydration, setSeenHydration] = useState(0);
+  if (chat.hydrationSeq !== seenHydration) {
+    setSeenHydration(chat.hydrationSeq);
+    for (const turn of chat.turns) {
+      animationState.known.turns.add(turn.key);
+      if (turn.answer) animationState.known.answers.add(turn.key);
+    }
   }
 
   const items: Item[] = [
@@ -356,6 +687,9 @@ export function Chat({
   const answerCount = chat.turns.reduce((count, turn) => count + (turn.answer ? 1 : 0), 0);
   const timeline = buildTimeline(items, Math.max(now, ...items.map((item) => item.createdAt)));
   const lastUser = [...chat.turns].reverse()[0];
+  const lastAnsweredKey = [...chat.turns].reverse().find((turn) => turn.answer)?.key ?? null;
+  const lastActivityAt = items.length ? Math.max(...items.map((item) => item.createdAt)) : null;
+  const modes: ChatModes = { deepSearch, deepThink, funMode };
   const highlight = finding ? query : '';
   const offsets = new Map<string, number>();
   let total = 0;
@@ -430,14 +764,6 @@ export function Chat({
   }, []);
 
   useEffect(() => {
-    const node = input.current;
-    if (node) {
-      node.style.height = 'auto';
-      node.style.height = `${Math.min(node.scrollHeight, 156)}px`;
-    }
-  }, [chat.draft]);
-
-  useEffect(() => {
     if (finding) findInput.current?.focus({ preventScroll: true });
   }, [finding]);
 
@@ -489,7 +815,19 @@ export function Chat({
           <Mascot size={26} state={mascotState} />
           <span>{botName}</span>
         </button>
+        {lastActivityAt !== null && (
+          <span className="halo-chat-stamp">{formatChatTimestamp(lastActivityAt, now)}</span>
+        )}
         <span className="halo-head-spacer" />
+        <button
+          type="button"
+          className="halo-chat-share halo-press"
+          aria-label="分享对话模板"
+          title="复制只包含你提问的对话模板"
+          onClick={onShareTemplate}
+        >
+          分享
+        </button>
         {lastUser && (
           <button
             type="button"
@@ -520,6 +858,27 @@ export function Chat({
                 setCurrent(0);
               },
             },
+            {
+              id: 'deep-search',
+              label: '全网深搜',
+              icon: 'globe',
+              checked: deepSearch,
+              onSelect: () => setDeepSearch((value) => !value),
+            },
+            {
+              id: 'deep-think',
+              label: '深度思考',
+              icon: 'brain',
+              checked: deepThink,
+              onSelect: () => setDeepThink((value) => !value),
+            },
+            {
+              id: 'fun-mode',
+              label: '趣味模式',
+              icon: 'sparkles',
+              checked: funMode,
+              onSelect: () => setFunMode((value) => !value),
+            },
             { id: 'template', label: '分享为模板…', icon: 'upload', onSelect: onShareTemplate },
             {
               id: 'new',
@@ -531,62 +890,65 @@ export function Chat({
           ]}
         />
       </header>
-      {finding && (
-        <div className="halo-find" role="search">
-          <Icon name="search" size={18} />
-          <label className="sr-only" htmlFor="halo-find-input">
-            在聊天中查找
-          </label>
-          <input
-            id="halo-find-input"
-            ref={findInput}
-            value={query}
-            placeholder="在聊天中查找"
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setCurrent(0);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                setCurrent((value) => stepMatch(value, total, event.shiftKey ? -1 : 1));
-              }
-              if (event.key === 'Escape') setFinding(false);
-            }}
-          />
-          <span className="halo-find-count" aria-live="polite">
-            {query.trim() ? (total ? `${shown + 1}/${total}` : '无结果') : ''}
-          </span>
-          <button
-            type="button"
-            className="halo-find-step"
-            aria-label="上一个"
-            disabled={!total}
-            onClick={() => setCurrent((v) => stepMatch(v, total, -1))}
-          >
-            <Icon name="up" size={18} />
-          </button>
-          <button
-            type="button"
-            className="halo-find-step"
-            aria-label="下一个"
-            disabled={!total}
-            onClick={() => setCurrent((v) => stepMatch(v, total, 1))}
-          >
-            <Icon name="down" size={18} />
-          </button>
-          <button
-            type="button"
-            className="halo-text-button"
-            onClick={() => {
-              setFinding(false);
-              setQuery('');
-            }}
-          >
-            完成
-          </button>
-        </div>
-      )}
+      {/* Always mounted so the bar can slide in and out; `inert` keeps it out of the a11y tree when closed. */}
+      <div className="halo-find" role="search" data-open={finding} inert={!finding}>
+        <Icon name="search" size={18} />
+        <label className="sr-only" htmlFor="halo-find-input">
+          在聊天中查找
+        </label>
+        <input
+          id="halo-find-input"
+          ref={findInput}
+          value={query}
+          placeholder="在聊天中查找"
+          tabIndex={finding ? 0 : -1}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setCurrent(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              setCurrent((value) => stepMatch(value, total, event.shiftKey ? -1 : 1));
+            }
+            if (event.key === 'Escape') setFinding(false);
+          }}
+        />
+        <span className="halo-find-count" aria-live="polite">
+          {query.trim() ? (total ? `${shown + 1}/${total}` : '无结果') : ''}
+        </span>
+        <button
+          type="button"
+          className="halo-find-step"
+          aria-label="上一个"
+          disabled={!total}
+          tabIndex={finding ? 0 : -1}
+          onClick={() => setCurrent((v) => stepMatch(v, total, -1))}
+        >
+          <Icon name="up" size={18} />
+        </button>
+        <button
+          type="button"
+          className="halo-find-step"
+          aria-label="下一个"
+          disabled={!total}
+          tabIndex={finding ? 0 : -1}
+          onClick={() => setCurrent((v) => stepMatch(v, total, 1))}
+        >
+          <Icon name="down" size={18} />
+        </button>
+        <button
+          type="button"
+          className="halo-text-button"
+          tabIndex={finding ? 0 : -1}
+          onClick={() => {
+            setFinding(false);
+            setQuery('');
+          }}
+        >
+          完成
+        </button>
+      </div>
       <div
         className="halo-transcript"
         ref={transcript}
@@ -605,105 +967,22 @@ export function Chat({
               );
             const item = entry.item;
             if (item.type === 'turn') {
-              const turn = item.turn;
-              const userFresh = freshTurn(turn.key);
-              const answerFresh = freshAnswer(turn);
-              const waiting =
-                ['sending', 'queued'].includes(turn.status) ||
-                (turn.status === 'running' && !turn.answer);
               return (
-                <article
+                <TurnArticle
                   key={entry.key}
-                  className="chat-turn halo-turn"
-                  data-fresh={userFresh ? 'true' : undefined}
-                >
-                  <p
-                    className="chat-bubble user-bubble"
-                    data-fresh={userFresh ? 'true' : undefined}
-                  >
-                    <RichText
-                      text={turn.input}
-                      query={highlight}
-                      offset={offsets.get(`${entry.key}:in`) ?? 0}
-                      current={shown}
-                    />
-                  </p>
-                  {turn.answer ? (
-                    <div
-                      className="chat-bubble assistant-bubble assistant-prose"
-                      data-streaming={turn.status === 'running'}
-                      data-fresh={answerFresh ? 'true' : undefined}
-                    >
-                      <MarkdownMessage
-                        text={turn.answer}
-                        query={highlight}
-                        offset={offsets.get(`${entry.key}:out`) ?? 0}
-                        current={shown}
-                        animate={answerFresh}
-                        streaming={turn.status === 'running'}
-                      />
-                    </div>
-                  ) : (
-                    waiting && (
-                      <p
-                        className="halo-typing"
-                        aria-label={labels[turn.status]}
-                        data-fresh={userFresh ? 'true' : undefined}
-                      >
-                        <span />
-                        <span />
-                        <span />
-                      </p>
-                    )
-                  )}
-                  <div className="halo-turn-meta" data-fresh={userFresh ? 'true' : undefined}>
-                    <div className="turn-state" data-status={turn.status} aria-live="polite">
-                      <span>{labels[turn.status]}</span>
-                    </div>
-                    {turn.answer && !activeStatuses.includes(turn.status) && (
-                      <>
-                        <CopyButton text={turn.answer} onUnavailable={onUnavailable} />
-                        <SpeechButton text={turn.answer} />
-                        <FeedbackButtons />
-                        <button
-                          type="button"
-                          className="halo-msg-action"
-                          aria-label="重新生成回复"
-                          onClick={() => chat.send(turn.input)}
-                        >
-                          <Icon name="refresh" size={14} />
-                          重新生成
-                        </button>
-                      </>
-                    )}
-                    {(turn.status === 'failed' || turn.status === 'cancelled') && (
-                      <button
-                        type="button"
-                        className="halo-msg-action"
-                        aria-label="重新发送这条提问"
-                        onClick={() => chat.send(turn.input)}
-                      >
-                        <Icon name="refresh" size={14} />
-                        再试一次
-                      </button>
-                    )}
-                  </div>
-                  {turn.error && (
-                    <Alert variant="warning" className="my-2">
-                      {turn.error}
-                    </Alert>
-                  )}
-                  {turn.status === 'unknown' && (
-                    <Button variant="secondary" onClick={() => void chat.retryCreate(turn)}>
-                      核对发送结果
-                    </Button>
-                  )}
-                  {turn.status === 'disconnected' && turn.runId && (
-                    <Button variant="secondary" onClick={() => void chat.resume(turn)}>
-                      重新读取回复
-                    </Button>
-                  )}
-                </article>
+                  turn={item.turn}
+                  userFresh={freshTurn(item.turn.key)}
+                  answerFresh={freshAnswer(item.turn)}
+                  pinned={item.turn.key === lastAnsweredKey}
+                  highlight={highlight}
+                  inOffset={offsets.get(`${entry.key}:in`) ?? 0}
+                  outOffset={offsets.get(`${entry.key}:out`) ?? 0}
+                  current={shown}
+                  onUnavailable={onUnavailable}
+                  onRetry={(text) => chat.send(text)}
+                  onRetryCreate={(turn) => void chat.retryCreate(turn)}
+                  onResume={(turn) => void chat.resume(turn)}
+                />
               );
             }
             const extra = item.extra;
@@ -781,140 +1060,46 @@ export function Chat({
           </span>
         )}
       </button>
-      <div className="halo-mode-bar" aria-label="模型与探索模式切换">
-        <button
-          type="button"
-          className="halo-mode-pill"
-          data-active={deepSearch ? 'true' : 'false'}
-          data-mode="search"
-          onClick={() => setDeepSearch((prev) => !prev)}
-          title="启用全网实时检索与深度信息召回"
-        >
-          <Icon name="globe" size={14} />
-          <span>全网深搜</span>
-        </button>
-        <button
-          type="button"
-          className="halo-mode-pill"
-          data-active={deepThink ? 'true' : 'false'}
-          data-mode="think"
-          onClick={() => setDeepThink((prev) => !prev)}
-          title="展示完整思考推演链与深层分析"
-        >
-          <Icon name="brain" size={14} />
-          <span>深度思考</span>
-        </button>
-        <button
-          type="button"
-          className="halo-mode-pill"
-          data-active={funMode ? 'true' : 'false'}
-          data-mode="fun"
-          onClick={() => setFunMode((prev) => !prev)}
-          title="Grok 标志性机智幽默应答风格"
-        >
-          <Icon name="sparkles" size={14} />
-          <span>趣味模式</span>
-        </button>
-      </div>
-      <form
-        className="halo-composer"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const raw = chat.draft.trim();
-          if (!raw) return;
-          let finalInput = raw;
-          if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
-            finalInput = `[全网深搜] ${finalInput}`;
-          }
-          if (deepThink && !finalInput.includes('[深度思考]')) {
-            finalInput = `[深度思考] ${finalInput}`;
-          }
-          if (funMode && !finalInput.includes('[幽默风趣]')) {
-            finalInput = `[幽默风趣] ${finalInput}`;
-          }
-          nearBottom.current = true;
-          chat.send(finalInput);
-        }}
-      >
-        {chat.draft.length > 7000 && (
-          <span
-            className="halo-composer-count"
-            data-limit={chat.draft.length >= 8000 ? 'true' : undefined}
-            aria-live="polite"
-          >
-            {chat.draft.length}/8000
-          </span>
-        )}
-        <button
-          type="button"
-          className="halo-composer-plus halo-press"
-          aria-label="连接器"
-          title="连接应用"
-          onClick={onOpenApps}
-          disabled={chat.busy}
-        >
-          <Icon name="plus" size={24} />
-        </button>
-        <label className="sr-only" htmlFor="chat-input">
-          向 AVEN 提问
-        </label>
-        <textarea
-          id="chat-input"
-          ref={input}
-          value={chat.draft}
-          onChange={(event) => chat.setDraft(event.target.value)}
-          placeholder={`向 ${botName} 提问`}
-          maxLength={8000}
-          rows={1}
-          tabIndex={active ? 0 : -1}
-          onKeyDown={(event) => {
-            if (
-              event.key === 'Enter' &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing &&
-              event.keyCode !== 229
-            ) {
-              event.preventDefault();
-              const raw = chat.draft.trim();
-              if (!raw) return;
-              let finalInput = raw;
-              if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
-                finalInput = `[全网深搜] ${finalInput}`;
-              }
-              if (deepThink && !finalInput.includes('[深度思考]')) {
-                finalInput = `[深度思考] ${finalInput}`;
-              }
-              if (funMode && !finalInput.includes('[幽默风趣]')) {
-                finalInput = `[幽默风趣] ${finalInput}`;
-              }
-              nearBottom.current = true;
-              chat.send(finalInput);
-            }
-          }}
-        />
-        {activeTurn ? (
-          <button
-            key="stop"
-            type="button"
-            className="halo-composer-go halo-swap halo-press"
-            disabled={activeTurn.status === 'cancelling'}
-            onClick={() => void chat.cancel(activeTurn)}
-            aria-label="停止回复"
-          >
-            <Icon name="square" size={18} />
-          </button>
-        ) : (
-          <button
-            key="send"
-            type="submit"
-            className="halo-composer-go halo-swap halo-press"
-            disabled={chat.busy || !chat.draft.trim()}
-            aria-label="发送消息"
-          >
-            <Icon name="arrow-up" size={22} />
-          </button>
-        )}
-      </form>
+      <Composer
+        chat={chat}
+        botName={botName}
+        active={active}
+        activeTurn={activeTurn}
+        modes={modes}
+        modeMenu={
+          <Menu
+            label="回复模式"
+            icon="down"
+            triggerText={deepSearch || deepThink || funMode ? '自定义' : '默认'}
+            items={[
+              {
+                id: 'search',
+                label: '全网深搜',
+                icon: 'globe',
+                checked: deepSearch,
+                onSelect: () => setDeepSearch((prev) => !prev),
+              },
+              {
+                id: 'think',
+                label: '深度思考',
+                icon: 'brain',
+                checked: deepThink,
+                onSelect: () => setDeepThink((prev) => !prev),
+              },
+              {
+                id: 'fun',
+                label: '趣味模式',
+                icon: 'sparkles',
+                checked: funMode,
+                onSelect: () => setFunMode((prev) => !prev),
+              },
+            ]}
+          />
+        }
+        onOpenApps={onOpenApps}
+        onVoicePlaceholder={onVoicePlaceholder}
+        onVoiceError={onVoiceError}
+      />
       {!timeline.length && (
         <div className="halo-quick-prompts" aria-label="快捷提问">
           {[
@@ -928,19 +1113,7 @@ export function Chat({
               key={prompt}
               type="button"
               className="halo-chip"
-              onClick={() => {
-                let finalInput = prompt;
-                if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
-                  finalInput = `[全网深搜] ${finalInput}`;
-                }
-                if (deepThink && !finalInput.includes('[深度思考]')) {
-                  finalInput = `[深度思考] ${finalInput}`;
-                }
-                if (funMode && !finalInput.includes('[幽默风趣]')) {
-                  finalInput = `[幽默风趣] ${finalInput}`;
-                }
-                chat.send(finalInput);
-              }}
+              onClick={() => chat.send(composeModePrefix(prompt, modes))}
             >
               {prompt}
             </button>

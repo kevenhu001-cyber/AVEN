@@ -57,8 +57,7 @@ export function connectorStatusLabel(status: string | undefined): string {
 async function readError(response: Response): Promise<string> {
   if (response.status === 401) return '请先登录。';
   if (response.status === 403) return '当前会话校验已变化，请刷新后重试。';
-  if (response.status === 503)
-    return '网关配置未就绪或授权服务不可用，请联系管理员核对授权状态。';
+  if (response.status === 503) return '网关配置未就绪或授权服务不可用，请联系管理员核对授权状态。';
   return '操作未确认，请先刷新状态，不要重复授权。';
 }
 

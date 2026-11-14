@@ -392,8 +392,11 @@ test.describe('shell navigation', () => {
     await expect(page.locator('.shell-sidebar')).toBeHidden();
 
     await expect(page.getByRole('navigation', { name: '个人导航', exact: true })).toBeHidden();
-    await expect(page.getByRole('button', { name: /语音/ })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '发送消息', exact: true })).toBeDisabled();
+    // WEB-12: mic and a voice-mode placeholder sit beside the input; the send arrow only
+    // appears once the draft has text, so an empty composer has no send button.
+    await expect(page.getByRole('button', { name: '语音输入', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '语音模式', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '发送消息', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '打开导航', exact: true }).click();
     const drawer = page.getByRole('dialog');
     await expect(drawer).toBeVisible();
@@ -505,4 +508,96 @@ test('long replies share a bounded reading column with the composer and reflow o
   await expect(page.getByRole('button', { name: '打开导航', exact: true })).toBeVisible();
   await expect(page.getByLabel('向 AVEN 提问', { exact: true })).toBeInViewport();
   await expect(page.locator('.halo-composer')).toHaveCSS('box-shadow', 'none');
+});
+
+test('sidebar restores stored conversations and continues them in place', async ({
+  page,
+  context,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  const conversationId = '33333333-3333-4333-8333-333333333333';
+  await page.route('**/api/v1/agent/conversations?*', (route) =>
+    route.fulfill({
+      json: {
+        data: [
+          {
+            id: conversationId,
+            title: '昨晚 CI 排查',
+            createdAt: '2026-11-13T18:29:00.000Z',
+            updatedAt: '2026-11-13T19:38:00.000Z',
+          },
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  await page.route(`**/api/v1/agent/conversations/${conversationId}/messages?*`, (route) =>
+    route.fulfill({
+      json: {
+        data: [
+          {
+            id: 'd1111111-1111-4111-8111-111111111101',
+            body: '昨晚 CI 挂了什么？',
+            contentType: 'text',
+            derivedFromRunId: null,
+            createdAt: '2026-11-13T18:29:00.000Z',
+            editedAt: null,
+          },
+          {
+            id: 'd1111111-1111-4111-8111-111111111102',
+            body: '1348 个前端单元测试里只挂了 1 个。',
+            contentType: 'text',
+            derivedFromRunId: '11111111-1111-4111-8111-111111111111',
+            createdAt: '2026-11-13T18:30:00.000Z',
+            editedAt: null,
+          },
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  await markdownStream(page, ['这是恢复后的后续回复。']);
+  // Registered after markdownStream, so this handler wins for the follow-up turn and
+  // proves the restored conversation id is reused instead of starting a new one.
+  await page.route('**/api/v1/agent/turns', (route) =>
+    route.fulfill({
+      status: 201,
+      json: {
+        runId: '11111111-1111-4111-8111-111111111111',
+        conversationId,
+        status: 'queued',
+        streamUrl: '/api/v1/agent/runs/11111111-1111-4111-8111-111111111111/events',
+      },
+    }),
+  );
+  let followUpConversation: string | undefined;
+  page.on('request', (request) => {
+    if (request.url().endsWith('/api/v1/agent/turns') && request.method() === 'POST') {
+      followUpConversation = (request.postDataJSON() as { conversationId?: string }).conversationId;
+    }
+  });
+
+  await page.goto('/chat');
+  const recent = page.getByRole('link', { name: '昨晚 CI 排查', exact: true });
+  // Desktop shows the feed in the sidebar; the mobile-web project shows it in the drawer.
+  if (await page.locator('.shell-sidebar').isHidden()) {
+    await page.getByRole('button', { name: '打开导航', exact: true }).click();
+  }
+  await expect(recent).toBeVisible();
+  await recent.click();
+  await expect(page).toHaveURL(new RegExp(`c=${conversationId}`));
+  await expect(page.locator('.user-bubble')).toHaveText('昨晚 CI 挂了什么？');
+  await expect(page.locator('.assistant-prose')).toContainText('只挂了 1 个。');
+  // Restored turns are known content: no entrance animation replay.
+  await expect(page.locator('[data-fresh="true"]')).toHaveCount(0);
+
+  await page.getByLabel('向 AVEN 提问', { exact: true }).fill('帮我接着查');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  await expect(page.getByText('回复完成', { exact: true })).toHaveCount(2);
+  expect(followUpConversation).toBe(conversationId);
+  expect(errors).toEqual([]);
 });

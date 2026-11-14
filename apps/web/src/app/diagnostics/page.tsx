@@ -47,7 +47,9 @@ export default function DiagnosticsPage() {
           <dl>
             <div>
               <dt>Web 控制台</dt>
-              <dd>组织主页、机会管理、成员列表与组织收件箱已完整就绪；遵循严苛的数据安全与权限隔离。</dd>
+              <dd>
+                组织主页、机会管理、成员列表与组织收件箱已完整就绪；遵循严苛的数据安全与权限隔离。
+              </dd>
             </div>
             <div>
               <dt>API 与 Worker</dt>

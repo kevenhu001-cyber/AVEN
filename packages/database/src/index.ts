@@ -10,7 +10,7 @@ export type DatabasePoolRole = 'aven_migrator' | 'aven_app' | 'aven_worker' | 'a
 export type DatabasePool = Pool;
 export type DatabaseClient = PoolClient;
 
-export const requiredSchemaVersion = '0043_agent_provider_runtime';
+export const requiredSchemaVersion = '0044_conversation_history';
 
 export function createPool(
   role: DatabasePoolRole = 'aven_app',

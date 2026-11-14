@@ -217,8 +217,7 @@ function queryInstantDelivery(
       {
         itemId: `${platform}-mock-1`,
         platform,
-        storeName:
-          platform === 'taobao_flash' ? '附近闪购优选门店' : '附近美团优选门店',
+        storeName: platform === 'taobao_flash' ? '附近闪购优选门店' : '附近美团优选门店',
         productTitle: `${input.query.trim()} · 约 ${Math.min(35, input.maxEtaMinutes)} 分钟送达`,
         priceCents: 3900,
         deliveryFeeCents: 200,

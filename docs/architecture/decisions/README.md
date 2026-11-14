@@ -21,6 +21,7 @@
 | [ADR-017](0017-personal-web-increment.md) | 用户授权的个人 Web 限定接入 | 本轮实施；整体设计门与其他范围保持待验收 |
 | [ADR-018](0018-personal-web-halo-ui.md) | 个人 Web 采用 Halo（Grok Bot 风格）深色界面 | 已接受；部分取代 ADR-017 视觉方向，功能与安全范围不变 |
 | [ADR-021](0021-personal-web-refinement.md) | 对话首页、阅读轴、手机输入优先与视觉规则收敛 | 已接受；部分取代 ADR-018 的入口与视觉结构，验证见 WEB-11 |
+| [ADR-022](0022-personal-web-desktop-reference.md) | 桌面对话、Bot 资料侧栏与连接应用弹层对齐 | 用户明确要求；只调整个人 Web 桌面呈现，功能与授权边界不变，验证见 WEB-14 |
 
 新增 ADR 时：
 

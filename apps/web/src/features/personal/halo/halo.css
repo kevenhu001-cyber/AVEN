@@ -260,6 +260,10 @@
 .personal-app .halo-search input:focus-visible {
   outline: none;
 }
+.personal-app .halo-search input:focus,
+.personal-app .halo-composer textarea:focus {
+  box-shadow: none;
+}
 .halo-search:focus-within {
   border-color: var(--aven-color-focus-ring);
 }
@@ -496,7 +500,7 @@
   overflow-y: auto;
 }
 .halo-chat[data-empty='true'] {
-  padding-top: clamp(96px, 20dvh, 180px);
+  padding-top: clamp(92px, 21dvh, 220px);
 }
 .halo-chat[data-empty='true'] .halo-transcript {
   flex: 0 0 auto;
@@ -504,7 +508,7 @@
   padding-block: 0;
 }
 .halo-chat[data-empty='true'] .halo-composer {
-  margin-top: var(--aven-space-24);
+  margin-top: clamp(24px, 4.2dvh, 36px);
   margin-bottom: 0;
 }
 .personal-app .halo-chat-nav {
@@ -529,6 +533,22 @@
 .halo-head-spacer {
   flex: 1;
   pointer-events: none;
+}
+/* Conversation recency next to the bot pill (Grok style); hidden only on the narrowest phones. */
+.halo-chat-stamp {
+  flex-shrink: 0;
+  margin-left: -2px;
+  color: var(--aven-color-foreground-tertiary);
+  font-size: var(--aven-font-size-caption);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  animation: halo-fade-in 240ms var(--aven-easing-standard) both;
+}
+@media (max-width: 400px) {
+  .halo-chat-stamp {
+    display: none;
+  }
 }
 .personal-app .halo-bot-pill {
   display: inline-flex;
@@ -582,6 +602,7 @@
 .halo-chat-head .halo-menu-anchor {
   z-index: 1;
 }
+/* Always mounted; slides in and out and leaves the a11y tree when closed (inert + visibility). */
 .halo-find {
   position: absolute;
   top: calc(max(12px, env(safe-area-inset-top)) + 56px);
@@ -598,8 +619,24 @@
   border: 1px solid var(--aven-color-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: var(--aven-color-foreground-secondary);
-  animation: halo-drop 220ms var(--aven-easing-emphasized) both;
-  transition: border-color var(--aven-duration-fast) var(--aven-easing-standard);
+  opacity: 0;
+  transform: translateY(-8px);
+  visibility: hidden;
+  transition:
+    opacity 180ms var(--aven-easing-standard),
+    transform 200ms var(--aven-easing-emphasized),
+    visibility 0s linear 200ms,
+    border-color var(--aven-duration-fast) var(--aven-easing-standard);
+}
+.halo-find[data-open='true'] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity 180ms var(--aven-easing-standard),
+    transform 200ms var(--aven-easing-emphasized),
+    visibility 0s,
+    border-color var(--aven-duration-fast) var(--aven-easing-standard);
 }
 .personal-app .halo-find input {
   flex: 1;
@@ -657,14 +694,10 @@
   padding: 0 12px;
 }
 .personal-app .halo-chat-empty h1 {
-  margin: var(--aven-space-24) 0 var(--aven-space-8);
-  font-size: var(--aven-font-size-display);
-  font-weight: var(--aven-font-weight-medium);
-  line-height: var(--aven-line-height-display);
-}
-.halo-chat-empty p {
   margin: 0;
-  font-size: var(--aven-font-size-body-sm);
+  font-size: clamp(22px, 2vw, 26px);
+  font-weight: var(--aven-font-weight-semibold);
+  line-height: var(--aven-line-height-display);
 }
 .halo-time {
   margin: 18px 0 14px;
@@ -839,23 +872,17 @@
 .halo-composer {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   flex-shrink: 0;
   width: calc(100% - 32px);
   max-width: var(--aven-layout-chat);
   margin: 0 auto max(16px, env(safe-area-inset-bottom));
-  padding: 8px 10px;
+  padding: 8px 10px 9px;
   border-radius: var(--aven-radius-composer);
-  border: 1px solid var(--aven-color-border);
+  border: 1px solid var(--workspace-outline, var(--aven-color-border));
   background: var(--aven-color-surface);
-  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
-  transition:
-    border-color var(--aven-duration-fast) var(--aven-easing-standard),
-    box-shadow var(--aven-duration-fast) var(--aven-easing-standard);
-}
-.halo-chat[data-empty='false'] .halo-composer {
-  box-shadow: none;
+  transition: border-color var(--aven-duration-fast) var(--aven-easing-standard);
 }
 .halo-composer-count {
   position: absolute;
@@ -871,13 +898,13 @@
   color: var(--aven-color-warning);
 }
 .halo-composer:focus-within {
-  border-color: var(--aven-color-control-border);
+  border-color: var(--workspace-outline-focus, var(--aven-color-control-border));
 }
 .personal-app .halo-composer textarea {
-  flex: 1;
-  min-height: var(--aven-layout-control);
+  width: 100%;
+  min-height: 40px;
   max-height: 156px;
-  padding: 10px 8px;
+  padding: 7px 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -917,8 +944,29 @@
   color: var(--aven-color-foreground);
 }
 .personal-app .halo-composer-mic {
-  background: var(--aven-color-surface-secondary);
+  background: transparent;
   color: var(--aven-color-foreground-secondary);
+}
+.personal-app .halo-composer-mic:hover:not(:disabled) {
+  background: var(--aven-color-surface-hover);
+  color: var(--aven-color-foreground);
+}
+/* Active dictation: accent tint plus a soft opacity pulse (opacity only, reduced-motion safe). */
+.personal-app .halo-composer-mic[data-listening='true'] {
+  background: color-mix(in srgb, var(--aven-color-accent) 20%, var(--aven-color-surface-secondary));
+  color: var(--aven-color-accent);
+}
+.personal-app .halo-composer-mic[data-listening='true'] svg {
+  animation: halo-mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes halo-mic-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 .personal-app .halo-composer-go {
   background: var(--aven-color-primary);
@@ -927,6 +975,47 @@
     opacity var(--aven-duration-fast) var(--aven-easing-standard),
     background-color var(--aven-duration-fast) var(--aven-easing-standard),
     transform var(--aven-duration-fast) var(--aven-easing-standard);
+}
+.personal-app .halo-composer-go[data-action='voice'] {
+  background: var(--aven-color-background);
+  color: var(--workspace-voice, var(--aven-color-accent));
+}
+.personal-app .halo-composer-go[data-action='voice']:hover {
+  background: var(--aven-color-surface-hover);
+}
+.halo-composer-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.halo-composer-tools > .halo-menu-anchor {
+  margin-inline-start: auto;
+}
+.halo-composer-tools .halo-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform-origin: bottom right;
+}
+.halo-composer .halo-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--aven-layout-control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--aven-radius-full);
+  background: transparent;
+  color: var(--aven-color-foreground-secondary);
+  font-size: var(--aven-font-size-body-sm);
+  font-weight: var(--aven-font-weight-medium);
+}
+.halo-composer .halo-menu-trigger:hover,
+.halo-composer .halo-menu-trigger[aria-expanded='true'] {
+  background: var(--aven-color-surface-hover);
+  color: var(--aven-color-foreground);
+}
+.halo-menu-check {
+  margin-inline-start: auto;
 }
 .halo-composer-go:disabled {
   opacity: 0.25;
@@ -1792,19 +1881,31 @@
 .halo-turn-meta .turn-state {
   margin: -4px 4px 0;
 }
+/* Per-answer tools: visible by default (touch, reduced motion), revealed on hover/focus on
+   pointer devices, and pinned on the latest answered reply. Opacity lives on the wrapper so
+   the data-fresh entrance animation on the children keeps playing. */
 .halo-msg-tools {
   display: flex;
+  align-items: center;
   gap: 4px;
+  min-width: 0;
   opacity: 1;
   transform: none;
   transition:
     opacity 160ms var(--aven-easing-standard),
     transform 160ms var(--aven-easing-standard);
 }
-.chat-turn:hover .halo-msg-tools,
-.chat-turn:focus-within .halo-msg-tools {
-  opacity: 1;
-  transform: none;
+@media (hover: hover) {
+  .chat-turn .halo-msg-tools:not([data-pinned='true']) {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  .chat-turn:hover .halo-msg-tools,
+  .chat-turn:focus-within .halo-msg-tools,
+  .chat-turn .halo-msg-tools[data-pinned='true'] {
+    opacity: 1;
+    transform: none;
+  }
 }
 .halo-msg-action {
   display: inline-flex;
@@ -1838,65 +1939,12 @@
 }
 
 /* Grok & ChatGPT mode toggle bar */
-.halo-mode-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: calc(100% - 32px);
-  max-width: var(--aven-layout-chat);
-  margin: 0 auto 10px;
-  padding: 0 4px;
-  overflow-x: auto;
-}
-.halo-mode-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: var(--aven-radius-full);
-  border: 1px solid var(--aven-color-border);
-  background: var(--aven-color-surface-secondary);
-  color: var(--aven-color-foreground-secondary);
-  font-size: var(--aven-font-size-micro);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--aven-duration-fast) var(--aven-easing-standard);
-  user-select: none;
-  white-space: nowrap;
-}
-.halo-mode-pill:hover {
-  background: var(--aven-color-surface-hover);
-  color: var(--aven-color-foreground);
-  border-color: var(--aven-color-control-border);
-}
-.halo-mode-pill:active {
-  transform: scale(0.96);
-}
-.halo-mode-pill[data-active='true'] {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--aven-color-accent);
-  border-color: rgba(59, 130, 246, 0.4);
-  font-weight: 600;
-}
-.halo-mode-pill[data-mode='think'][data-active='true'] {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-  border-color: rgba(139, 92, 246, 0.4);
-}
-.halo-mode-pill[data-mode='fun'][data-active='true'] {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.4);
-}
-
 /* quick prompts in the empty chat */
 .halo-quick-prompts {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 4px;
   flex-shrink: 0;
   width: calc(100% - 32px);
   max-width: var(--aven-layout-chat);
@@ -1904,24 +1952,15 @@
 }
 .halo-quick-prompts .halo-chip {
   animation: none;
+  background: transparent;
+  border-color: transparent;
+  padding-inline: 12px;
 }
-.halo-quick-prompts .halo-chip:nth-child(2) {
-  animation-delay: 55ms;
-}
-.halo-quick-prompts .halo-chip:nth-child(3) {
-  animation-delay: 110ms;
+.halo-quick-prompts .halo-chip:hover {
+  background: var(--aven-color-surface);
 }
 
-/* composer focus and send feedback */
-.halo-composer {
-  transition:
-    border-color var(--aven-duration-fast) var(--aven-easing-standard),
-    box-shadow var(--aven-duration-fast) var(--aven-easing-standard);
-}
-.halo-composer:focus-within {
-  outline: none;
-  border-color: var(--aven-color-control-border);
-}
+/* Composer send feedback */
 .personal-app .halo-composer-go:not(:disabled):active {
   transform: scale(0.96);
 }
@@ -2010,19 +2049,6 @@
 @media (max-width: 860px) {
   .shell-nav-link::before {
     display: none;
-  }
-}
-
-/* list/card hover only where a pointer can hover */
-@media (hover: hover) {
-  .apps-item:hover {
-    border-color: var(--aven-color-control-border);
-  }
-  .apps-item {
-    transition: border-color 180ms var(--aven-easing-standard);
-  }
-  .panel {
-    transition: border-color 180ms var(--aven-easing-standard);
   }
 }
 
@@ -2116,5 +2142,142 @@
   }
   .halo-quick-prompts {
     gap: var(--aven-space-8);
+  }
+}
+
+/* Desktop conversation composition from the supplied wide-screen reference. */
+@media (min-width: 861px) {
+  .halo-chat {
+    overflow: hidden;
+  }
+  .halo-chat-head {
+    height: 76px;
+    padding: 12px 28px 0;
+    background: transparent;
+  }
+  .personal-app .halo-bot-pill {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    height: 56px;
+    padding: 0 18px;
+    border: 1px solid var(--aven-color-border);
+    border-radius: 999px;
+    background: var(--aven-color-background-secondary);
+    transform: translateX(-50%);
+  }
+  .halo-chat-head[data-scrolled='true'] .halo-bot-pill {
+    padding-right: 18px;
+  }
+  .halo-chat-stamp {
+    display: none;
+  }
+  .personal-app .halo-chat-share {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    min-height: 52px;
+    margin-left: auto;
+    padding: 0 22px;
+    border: 1px solid var(--aven-color-border);
+    border-radius: 999px;
+    background: var(--aven-color-background-secondary);
+    color: var(--aven-color-foreground);
+    font-size: var(--aven-font-size-body);
+  }
+  .personal-app .halo-chat-share:hover {
+    background: var(--aven-color-surface-hover);
+  }
+  .halo-transcript {
+    padding: 92px 32px 24px;
+  }
+  .halo-chat[data-finding='true'] .halo-transcript {
+    padding-top: 142px;
+  }
+  .halo-thread {
+    width: 100%;
+    max-width: none;
+  }
+  .halo-time {
+    margin: 36px 0 34px;
+    font-size: 17px;
+  }
+  .halo-turn {
+    gap: 18px;
+    margin-bottom: 30px;
+  }
+  .personal-app .chat-bubble {
+    max-width: min(68%, 1120px);
+    padding: 18px 24px;
+    font-size: 20px;
+    line-height: 1.5;
+  }
+  .personal-app .user-bubble {
+    max-width: min(60%, 900px);
+    padding: 16px 22px;
+  }
+  .halo-auth {
+    max-width: min(68%, 1120px);
+  }
+  .halo-composer {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: calc(100% - 64px);
+    max-width: none;
+    min-height: 88px;
+    margin-bottom: max(22px, env(safe-area-inset-bottom));
+    padding: 10px 12px;
+    border-radius: 48px;
+  }
+  .personal-app .halo-composer textarea {
+    flex: 1;
+    width: 0;
+    min-height: 54px;
+    max-height: 132px;
+    padding: 12px 8px 12px 54px;
+    font-size: 20px;
+  }
+  .halo-composer-tools {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+  .halo-composer-tools > .halo-menu-anchor {
+    display: none;
+  }
+  .personal-app .halo-composer-plus {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+    background: var(--aven-color-surface-secondary);
+    color: var(--aven-color-foreground-secondary);
+    transform: translateY(-50%);
+  }
+  .personal-app .halo-composer-mic {
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+    background: var(--aven-color-surface-secondary);
+    color: var(--aven-color-foreground-secondary);
+  }
+  .personal-app .halo-composer-go {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+  }
+  .personal-app .halo-composer-go[data-action='voice'] {
+    background: #f4f4f4;
+    color: #141414;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-app .halo-chat-share,
+  .personal-app .halo-bot-pill {
+    transition: none;
   }
 }

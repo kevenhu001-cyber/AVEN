@@ -7,6 +7,7 @@ import {
   Inject,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UnprocessableEntityException,
@@ -19,6 +20,10 @@ import {
   AgentTurnRequestSchema,
   AgentTurnResponseSchema,
   AIProviderStatusSchema,
+  ConversationListSchema,
+  ConversationMessageListQuerySchema,
+  ConversationMessageListSchema,
+  ConversationListQuerySchema,
   RequestIdSchema,
 } from '@aven/contracts';
 import { AuthGuard } from '../auth/auth.guard.js';
@@ -68,6 +73,32 @@ export class AgentController {
   @Get('runs/:id')
   async getRun(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
     return AgentRunSchema.parse(await this.agent.getRun(auth, parseId(id)));
+  }
+
+  @Get('conversations')
+  async listConversations(@CurrentAuth() auth: AuthContext, @Query() query: unknown) {
+    const q = parse(ConversationListQuerySchema, query);
+    return ConversationListSchema.parse(
+      await this.agent.listConversations(auth, q.limit, q.cursorCreatedAt, q.cursorId),
+    );
+  }
+
+  @Get('conversations/:id/messages')
+  async listConversationMessages(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id') id: string,
+    @Query() query: unknown,
+  ) {
+    const q = parse(ConversationMessageListQuerySchema, query);
+    return ConversationMessageListSchema.parse(
+      await this.agent.listConversationMessages(
+        auth,
+        parseId(id),
+        q.limit,
+        q.cursorCreatedAt,
+        q.cursorId,
+      ),
+    );
   }
 
   @Post('runs/:id/cancel')

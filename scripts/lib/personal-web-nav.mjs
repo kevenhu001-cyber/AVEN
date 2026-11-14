@@ -57,3 +57,10 @@ export async function openPluginDirectory(page) {
   await page.getByRole('heading', { name: '连接应用', exact: true }).waitFor();
   await settle(page);
 }
+
+export async function openConnectorDialog(page) {
+  await page.getByRole('button', { name: '连接器', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '连接应用' });
+  await dialog.waitFor({ state: 'visible' });
+  return dialog;
+}

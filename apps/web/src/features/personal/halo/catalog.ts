@@ -109,6 +109,35 @@ export function credentialLabel(status: string) {
   return '缺少凭据';
 }
 
+/** Header pill on 连接应用: how many real gateway services are currently connected. */
+export function connectedServiceCount(statuses: readonly (string | undefined)[]): number {
+  return statuses.filter((status) => status === 'connected').length;
+}
+
+/** Right-hand pill for one catalog row, from the real Open Connector gateway state. */
+export type AppsRowAction = {
+  label: '授权' | '已连接' | '未接入';
+  tone: 'authorize' | 'done' | 'neutral';
+  disabled: boolean;
+};
+
+export function appsRowAction(hasGatewayService: boolean, connected: boolean): AppsRowAction {
+  if (!hasGatewayService) return { label: '未接入', tone: 'neutral', disabled: true };
+  if (connected) return { label: '已连接', tone: 'done', disabled: false };
+  return { label: '授权', tone: 'authorize', disabled: false };
+}
+
+/** Three-state main control on the composer: voice placeholder / send / stop. */
+export type ComposerAction = 'voice' | 'send' | 'stop';
+
+export function composerAction(
+  draftHasText: boolean,
+  activeStatus: 'active' | 'cancelling' | null,
+): ComposerAction {
+  if (activeStatus) return 'stop';
+  return draftHasText ? 'send' : 'voice';
+}
+
 /**
  * Detect a "帮我连接 Gmail" style request in the user's own message so the page can place a
  * connector card under it. This is a local UI rule, not model output.
