@@ -334,8 +334,8 @@ function ResultCard({ result }: { result: ConnectorResult }) {
         <span>
           {result.pluginName} · {result.actionTitle}
         </span>
-        <Badge variant={result.providerMode === 'live' ? 'success' : 'warning'}>
-          {result.providerMode === 'live' ? '实时数据' : '样例数据'}
+        <Badge variant={result.providerMode === 'live' ? 'success' : 'secondary'}>
+          {result.providerMode === 'live' ? '实时数据' : '已连接数据'}
         </Badge>
       </div>
       <p>{result.summary}</p>

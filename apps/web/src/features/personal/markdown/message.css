@@ -4,7 +4,7 @@
 }
 .markdown-message {
   min-width: 0;
-  line-height: 1.68;
+  line-height: var(--aven-line-height-body);
 }
 .markdown-message :where(p, ul, ol, blockquote, pre, table) {
   margin: 0.85em 0;
@@ -112,10 +112,10 @@
   font-size: 0.9em;
 }
 .markdown-message :not(pre) > code {
-  padding: 0.15em 0.42em;
+  padding: 0.18em 0.45em;
   border-radius: var(--aven-radius-sm);
-  background: #1c1c1f;
-  border: 1px solid var(--aven-color-border);
+  background: var(--aven-color-surface-secondary);
+  border: 0;
   color: var(--aven-color-foreground);
   font-size: 0.88em;
   white-space: break-spaces;
@@ -123,9 +123,9 @@
 .markdown-code-block {
   margin: 0.85em 0;
   overflow: hidden;
-  border: 1px solid var(--aven-color-border-strong);
-  border-radius: var(--aven-radius-lg);
-  background: #141416;
+  border: 1px solid var(--aven-color-border);
+  border-radius: var(--aven-radius-card);
+  background: var(--aven-color-surface);
 }
 .markdown-code-toolbar {
   display: flex;
@@ -370,41 +370,41 @@
 }
 
 /* Light Theme override */
-:root:not(.aven-theme-halo) .token-keyword {
+:root:not(:has(.aven-theme-halo)) .token-keyword {
   color: #8957e5;
 }
-:root:not(.aven-theme-halo) .token-type {
+:root:not(:has(.aven-theme-halo)) .token-type {
   color: #0086b3;
 }
-:root:not(.aven-theme-halo) .token-function {
+:root:not(:has(.aven-theme-halo)) .token-function {
   color: #005cc5;
 }
-:root:not(.aven-theme-halo) .token-string {
+:root:not(:has(.aven-theme-halo)) .token-string {
   color: #22863a;
 }
-:root:not(.aven-theme-halo) .token-number,
-:root:not(.aven-theme-halo) .token-boolean {
+:root:not(:has(.aven-theme-halo)) .token-number,
+:root:not(:has(.aven-theme-halo)) .token-boolean {
   color: #e36209;
 }
-:root:not(.aven-theme-halo) .token-comment {
+:root:not(:has(.aven-theme-halo)) .token-comment {
   color: #6a737d;
 }
-:root:not(.aven-theme-halo) .token-operator {
+:root:not(:has(.aven-theme-halo)) .token-operator {
   color: #d73a49;
 }
-:root:not(.aven-theme-halo) .token-punctuation {
+:root:not(:has(.aven-theme-halo)) .token-punctuation {
   color: #444d56;
 }
-:root:not(.aven-theme-halo) .token-property {
+:root:not(:has(.aven-theme-halo)) .token-property {
   color: #6f42c1;
 }
-:root:not(.aven-theme-halo) .token-tag {
+:root:not(:has(.aven-theme-halo)) .token-tag {
   color: #22863a;
 }
-:root:not(.aven-theme-halo) .token-variable {
+:root:not(:has(.aven-theme-halo)) .token-variable {
   color: #e36209;
 }
-:root:not(.aven-theme-halo) .token-plain {
+:root:not(:has(.aven-theme-halo)) .token-plain {
   color: #24292e;
 }
 .markdown-table-scroll {
@@ -412,7 +412,7 @@
   overflow-x: auto;
   margin: 0.9em 0;
   border: 1px solid var(--aven-color-border);
-  border-radius: var(--aven-radius-md);
+  border-radius: var(--aven-radius-card);
   background: var(--aven-color-background);
 }
 .markdown-message table {
@@ -431,7 +431,7 @@
 }
 .markdown-message th {
   background: var(--aven-color-background-secondary);
-  border-bottom-color: var(--aven-color-border-strong);
+  border-bottom-color: var(--aven-color-border);
   font-weight: var(--aven-font-weight-semibold);
   white-space: nowrap;
 }
@@ -502,7 +502,7 @@
 .markdown-message hr {
   margin: 1.6em 0;
   border: 0;
-  border-top: 1px solid var(--aven-color-border-strong);
+  border-top: 1px solid var(--aven-color-border);
 }
 .markdown-reveal {
   animation: markdown-reveal 220ms ease-out both;
@@ -520,3 +520,64 @@
     animation: none;
   }
 }
+
+/* Grok & ChatGPT style Reasoning Card */
+.grok-think-card {
+  margin: 0.6em 0 1em;
+  border-radius: var(--aven-radius-lg);
+  border: 1px solid var(--aven-color-border);
+  background: var(--aven-color-surface-secondary);
+  overflow: hidden;
+  transition: border-color var(--aven-duration-fast) var(--aven-easing-standard);
+}
+.grok-think-card[open] {
+  border-color: var(--aven-color-border);
+}
+.grok-think-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--aven-font-size-body-sm);
+  color: var(--aven-color-foreground-secondary);
+  list-style: none;
+}
+.grok-think-summary::-webkit-details-marker {
+  display: none;
+}
+.grok-think-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.grok-think-status[data-thinking='true'] .grok-think-icon {
+  color: #8b5cf6;
+  animation: grok-pulse 1.8s ease-in-out infinite;
+}
+@keyframes grok-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+}
+.grok-think-hint {
+  font-size: var(--aven-font-size-micro);
+  color: var(--aven-color-foreground-tertiary);
+}
+.grok-think-content {
+  padding: 10px 14px;
+  border-top: 1px solid var(--aven-color-border);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--aven-color-foreground-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+

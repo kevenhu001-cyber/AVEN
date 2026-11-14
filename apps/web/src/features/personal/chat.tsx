@@ -5,9 +5,11 @@ import type { PluginManifest } from '@aven/contracts';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useShellNavigation } from '@/components/shell/navigation-context';
 import { Icon } from './icon';
 import { Mascot, type MascotState } from './mascot';
 import { ConnectorAuthCard } from './halo/connector-auth-card';
+import { ChatWelcome } from './halo/home';
 import { Menu, RoundButton } from './halo/primitives';
 import { countHighlights, highlightSegments, stepMatch } from './halo/text';
 import { buildTimeline, isNearBottom, recallVisible } from './halo/timeline';
@@ -117,6 +119,91 @@ function CopyButton({
   );
 }
 
+function SpeechButton({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const toggleSpeech = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const clean = text
+        .replace(/<think>[\s\S]*?<\/think>/g, '')
+        .replace(/[#*`_~\[\]()$]/g, '')
+        .trim();
+      if (!clean) return;
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = 'zh-CN';
+      utterance.onend = () => setSpeaking(false);
+      utterance.onerror = () => setSpeaking(false);
+      setSpeaking(true);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="halo-msg-action"
+      aria-label={speaking ? '停止朗读' : '朗读回复'}
+      onClick={toggleSpeech}
+    >
+      <Icon name={speaking ? 'square' : 'volume'} size={14} />
+      {speaking ? '停止' : '朗读'}
+    </button>
+  );
+}
+
+function FeedbackButtons() {
+  const [liked, setLiked] = useState<boolean | null>(null);
+  return (
+    <span style={{ display: 'inline-flex', gap: '2px' }}>
+      <button
+        type="button"
+        className="halo-msg-action"
+        aria-label={liked === true ? '已赞同' : '赞同回答'}
+        onClick={() => setLiked((prev) => (prev === true ? null : true))}
+        style={
+          liked === true
+            ? {
+                color: 'var(--aven-color-accent)',
+                backgroundColor: 'var(--aven-color-surface-secondary)',
+              }
+            : undefined
+        }
+      >
+        <Icon name="thumbs-up" size={14} />
+      </button>
+      <button
+        type="button"
+        className="halo-msg-action"
+        aria-label={liked === false ? '已反对' : '不满意'}
+        onClick={() => setLiked((prev) => (prev === false ? null : false))}
+        style={
+          liked === false
+            ? {
+                color: 'var(--aven-color-warning)',
+                backgroundColor: 'var(--aven-color-surface-secondary)',
+              }
+            : undefined
+        }
+      >
+        <Icon name="thumbs-down" size={14} />
+      </button>
+    </span>
+  );
+}
+
 export function Chat({
   chat,
   suspended,
@@ -127,7 +214,6 @@ export function Chat({
   connectorStatus,
   celebrate,
   searchRequest,
-  onBack,
   onOpenProfile,
   onOpenApps,
   onOpenConnector,
@@ -145,7 +231,6 @@ export function Chat({
   connectorStatus: (pluginId: string) => string | undefined;
   celebrate: boolean;
   searchRequest: { query: string; seq: number } | null;
-  onBack: () => void;
   onOpenProfile: () => void;
   onOpenApps: () => void;
   onOpenConnector: (plugin: PluginManifest) => void;
@@ -154,6 +239,7 @@ export function Chat({
   onRunAction: (plugin: PluginManifest, actionName: string) => void;
   onUnavailable: (message: string) => void;
 }) {
+  const openNavigation = useShellNavigation();
   const transcript = useRef<HTMLDivElement>(null);
   const thread = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -169,6 +255,9 @@ export function Chat({
   const [seenSearch, setSeenSearch] = useState<{ query: string; seq: number } | null>(null);
   const [unread, setUnread] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const [deepSearch, setDeepSearch] = useState(false);
+  const [deepThink, setDeepThink] = useState(false);
+  const [funMode, setFunMode] = useState(false);
   const seenAnswers = useRef(0);
   // An entrance animation belongs to content added after this screen mounted. Re-opening an
   // existing conversation must not replay every bubble, and a running reply must still pop in
@@ -374,12 +463,26 @@ export function Chat({
   }
 
   return (
-    <section className="halo-chat" aria-label="与 AVEN 对话" aria-busy={chat.busy}>
+    <section
+      className="halo-chat"
+      data-empty={!timeline.length}
+      data-finding={finding}
+      aria-label="与 AVEN 对话"
+      aria-busy={chat.busy}
+    >
       <header ref={header} className="halo-chat-head" data-scrolled={scrolled}>
-        <RoundButton icon="back" label="返回" onClick={onBack} />
+        {openNavigation && (
+          <RoundButton
+            className="halo-chat-nav"
+            tone="ghost"
+            icon="menu"
+            label="打开导航"
+            onClick={openNavigation}
+          />
+        )}
         <button
           type="button"
-          className="halo-bot-pill halo-press"
+          className="halo-bot-pill halo-press-soft"
           onClick={onOpenProfile}
           aria-label={`查看 ${botName} 资料`}
         >
@@ -491,25 +594,7 @@ export function Chat({
         aria-label="对话内容"
         onScroll={measure}
       >
-        {!timeline.length && (
-          <div className="halo-chat-empty">
-            <Mascot size={88} state="hello" />
-            <h1>今天，想聊点什么？</h1>
-            <p className="muted">从一个还没成形的想法开始也可以。</p>
-            <div className="halo-quick-prompts">
-              {['帮我整理今天的想法', '我最近在忙什么？', '连接 Gmail'].map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  className="halo-chip"
-                  onClick={() => chat.send(prompt)}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {!timeline.length && <ChatWelcome />}
         <div className="halo-thread" ref={thread}>
           {timeline.map((entry) => {
             if (entry.kind === 'time')
@@ -545,7 +630,7 @@ export function Chat({
                   </p>
                   {turn.answer ? (
                     <div
-                      className="chat-bubble assistant-bubble"
+                      className="chat-bubble assistant-bubble assistant-prose"
                       data-streaming={turn.status === 'running'}
                       data-fresh={answerFresh ? 'true' : undefined}
                     >
@@ -576,7 +661,20 @@ export function Chat({
                       <span>{labels[turn.status]}</span>
                     </div>
                     {turn.answer && !activeStatuses.includes(turn.status) && (
-                      <CopyButton text={turn.answer} onUnavailable={onUnavailable} />
+                      <>
+                        <CopyButton text={turn.answer} onUnavailable={onUnavailable} />
+                        <SpeechButton text={turn.answer} />
+                        <FeedbackButtons />
+                        <button
+                          type="button"
+                          className="halo-msg-action"
+                          aria-label="重新生成回复"
+                          onClick={() => chat.send(turn.input)}
+                        >
+                          <Icon name="refresh" size={14} />
+                          重新生成
+                        </button>
+                      </>
                     )}
                     {(turn.status === 'failed' || turn.status === 'cancelled') && (
                       <button
@@ -648,8 +746,8 @@ export function Chat({
                   <span>
                     {extra.pluginName} · {extra.actionTitle}
                   </span>
-                  <Badge variant={extra.providerMode === 'live' ? 'success' : 'warning'}>
-                    {extra.providerMode === 'live' ? '实时数据' : '样例数据'}
+                  <Badge variant={extra.providerMode === 'live' ? 'success' : 'secondary'}>
+                    {extra.providerMode === 'live' ? '实时数据' : '已连接数据'}
                   </Badge>
                 </div>
                 <p
@@ -683,12 +781,59 @@ export function Chat({
           </span>
         )}
       </button>
+      <div className="halo-mode-bar" aria-label="模型与探索模式切换">
+        <button
+          type="button"
+          className="halo-mode-pill"
+          data-active={deepSearch ? 'true' : 'false'}
+          data-mode="search"
+          onClick={() => setDeepSearch((prev) => !prev)}
+          title="启用全网实时检索与深度信息召回"
+        >
+          <Icon name="globe" size={14} />
+          <span>全网深搜</span>
+        </button>
+        <button
+          type="button"
+          className="halo-mode-pill"
+          data-active={deepThink ? 'true' : 'false'}
+          data-mode="think"
+          onClick={() => setDeepThink((prev) => !prev)}
+          title="展示完整思考推演链与深层分析"
+        >
+          <Icon name="brain" size={14} />
+          <span>深度思考</span>
+        </button>
+        <button
+          type="button"
+          className="halo-mode-pill"
+          data-active={funMode ? 'true' : 'false'}
+          data-mode="fun"
+          onClick={() => setFunMode((prev) => !prev)}
+          title="Grok 标志性机智幽默应答风格"
+        >
+          <Icon name="sparkles" size={14} />
+          <span>趣味模式</span>
+        </button>
+      </div>
       <form
         className="halo-composer"
         onSubmit={(event) => {
           event.preventDefault();
+          const raw = chat.draft.trim();
+          if (!raw) return;
+          let finalInput = raw;
+          if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
+            finalInput = `[全网深搜] ${finalInput}`;
+          }
+          if (deepThink && !finalInput.includes('[深度思考]')) {
+            finalInput = `[深度思考] ${finalInput}`;
+          }
+          if (funMode && !finalInput.includes('[幽默风趣]')) {
+            finalInput = `[幽默风趣] ${finalInput}`;
+          }
           nearBottom.current = true;
-          chat.send();
+          chat.send(finalInput);
         }}
       >
         {chat.draft.length > 7000 && (
@@ -730,20 +875,23 @@ export function Chat({
               event.keyCode !== 229
             ) {
               event.preventDefault();
+              const raw = chat.draft.trim();
+              if (!raw) return;
+              let finalInput = raw;
+              if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
+                finalInput = `[全网深搜] ${finalInput}`;
+              }
+              if (deepThink && !finalInput.includes('[深度思考]')) {
+                finalInput = `[深度思考] ${finalInput}`;
+              }
+              if (funMode && !finalInput.includes('[幽默风趣]')) {
+                finalInput = `[幽默风趣] ${finalInput}`;
+              }
               nearBottom.current = true;
-              chat.send();
+              chat.send(finalInput);
             }
           }}
         />
-        <button
-          type="button"
-          className="halo-composer-mic halo-press"
-          aria-label="语音输入（尚未开放）"
-          aria-disabled="true"
-          onClick={() => onUnavailable('语音输入尚未开放。')}
-        >
-          <Icon name="mic" size={22} />
-        </button>
         {activeTurn ? (
           <button
             key="stop"
@@ -755,29 +903,50 @@ export function Chat({
           >
             <Icon name="square" size={18} />
           </button>
-        ) : chat.draft.trim() ? (
+        ) : (
           <button
             key="send"
             type="submit"
             className="halo-composer-go halo-swap halo-press"
-            disabled={chat.busy}
+            disabled={chat.busy || !chat.draft.trim()}
             aria-label="发送消息"
           >
             <Icon name="arrow-up" size={22} />
           </button>
-        ) : (
-          <button
-            key="voice"
-            type="button"
-            className="halo-composer-go halo-swap halo-press"
-            aria-label="语音对话（尚未开放）"
-            aria-disabled="true"
-            onClick={() => onUnavailable('语音对话尚未开放；可以先用文字提问。')}
-          >
-            <Icon name="wave" size={22} />
-          </button>
         )}
       </form>
+      {!timeline.length && (
+        <div className="halo-quick-prompts" aria-label="快捷提问">
+          {[
+            '帮我整理今天的想法',
+            '我最近在忙什么？',
+            '连接 Gmail',
+            '具身智能最新顶会趋势',
+            '全网深搜大模型技术路线',
+          ].map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className="halo-chip"
+              onClick={() => {
+                let finalInput = prompt;
+                if (deepSearch && !finalInput.startsWith('[全网深搜]')) {
+                  finalInput = `[全网深搜] ${finalInput}`;
+                }
+                if (deepThink && !finalInput.includes('[深度思考]')) {
+                  finalInput = `[深度思考] ${finalInput}`;
+                }
+                if (funMode && !finalInput.includes('[幽默风趣]')) {
+                  finalInput = `[幽默风趣] ${finalInput}`;
+                }
+                chat.send(finalInput);
+              }}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

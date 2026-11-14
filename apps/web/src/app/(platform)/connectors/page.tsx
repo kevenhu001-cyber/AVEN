@@ -117,7 +117,7 @@ export default function ConnectorsPage() {
         })}
       </div>
       <p className="small muted">
-        网关未配置或授权服务不可用时，页面会显示不可用状态，不会回退为模拟授权。
+        网关未配置或授权服务不可用时，页面会提示不可用，确保账号连接均通过合规凭证通道流转。
       </p>
     </div>
   );

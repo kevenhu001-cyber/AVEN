@@ -243,8 +243,7 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
     { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
   ]);
   await page.goto('/');
-  // Halo home first; the mascot opens the chat screen (ADR-018).
-  await page.getByRole('button', { name: '与 AVEN 对话', exact: true }).click();
+  // Home now opens the composer directly (ADR-021).
   const input = page.getByLabel('向 AVEN 提问', { exact: true });
   await input.fill('还没写完');
   await input.dispatchEvent('keydown', {
@@ -260,7 +259,6 @@ test('IME and multiline input do not submit; session expiry removes modal and dr
   await input.press('Enter');
   await expect(page.getByRole('button', { name: '核对发送结果', exact: true })).toBeVisible();
   expect(sends).toBe(1);
-  await page.getByRole('button', { name: '返回', exact: true }).click();
   await page.goto('/account');
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('heading', { name: '账号与设置' })).toBeVisible();
@@ -275,7 +273,7 @@ test('chat menu remains open when reopened during its exit transition', async ({
     route.fulfill({ contentType: 'application/json', body: JSON.stringify(me) }),
   );
   await page.goto('/');
-  await page.getByRole('button', { name: '与 AVEN 对话', exact: true }).click();
+  await expect(page.getByLabel('向 AVEN 提问', { exact: true })).toBeVisible();
   const trigger = page.getByRole('button', { name: '更多', exact: true });
   await trigger.click();
   await expect(page.getByRole('menu')).toBeVisible();
@@ -382,15 +380,21 @@ test.describe('shell navigation', () => {
     await expect(page.getByLabel('向 AVEN 提问', { exact: true })).toBeVisible();
   });
 
-  test('mobile drawer opens from the top bar, closes on Escape and after navigating', async ({
+  test('mobile chat keeps the composer clear and opens the shared navigation drawer', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: me }));
+    await page.route('**/api/v1/memories?*', (route) =>
+      route.fulfill({ json: { data: [], nextCursor: null } }),
+    );
     await page.goto('/');
     await expect(page.locator('.shell-sidebar')).toBeHidden();
 
-    await page.getByRole('button', { name: '更多导航', exact: true }).click();
+    await expect(page.getByRole('navigation', { name: '个人导航', exact: true })).toBeHidden();
+    await expect(page.getByRole('button', { name: /语音/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '发送消息', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: '打开导航', exact: true }).click();
     const drawer = page.getByRole('dialog');
     await expect(drawer).toBeVisible();
     await expect(drawer.getByRole('navigation', { name: '我的空间', exact: true })).toBeVisible();
@@ -402,6 +406,9 @@ test.describe('shell navigation', () => {
     await page.getByRole('dialog').getByRole('link', { name: '记忆与上下文', exact: true }).click();
     await expect(page).toHaveURL(/\/memory$/);
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: '个人导航', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '更多导航', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
   });
 });
 
@@ -424,4 +431,78 @@ test('mermaid fences render a diagram and switch back to source', async ({ page,
 
   await bubble.getByRole('button', { name: '图表', exact: true }).click();
   await expect(bubble.locator('.markdown-mermaid-diagram svg')).toBeVisible();
+});
+
+test('home sends directly and keeps the conversation and draft across profile navigation', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await markdownStream(page, ['这是保留在当前工作区的回复。']);
+  await page.route('**/api/v1/notifications/preferences', (route) =>
+    route.fulfill({
+      json: {
+        connectionInvitations: true,
+        connectionUpdates: true,
+        eventInvitations: true,
+        eventUpdates: true,
+        version: 0,
+      },
+    }),
+  );
+  await page.goto('/');
+  const input = page.getByLabel('向 AVEN 提问', { exact: true });
+  await expect(input).toBeVisible();
+  await input.fill('直接从首页开始');
+  await page.getByRole('button', { name: '发送消息', exact: true }).click();
+  await expect(page.locator('.assistant-prose')).toContainText('保留在当前工作区');
+  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  await input.fill('尚未发送的下一句话');
+  await page.getByRole('button', { name: '查看 AVEN 资料', exact: true }).click();
+  await expect(page).toHaveURL(/\/profile$/);
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(input).toHaveValue('尚未发送的下一句话');
+  await expect(page.locator('.assistant-prose')).toContainText('保留在当前工作区');
+  await expect(page.locator('.assistant-prose')).not.toHaveAttribute('data-fresh', 'true');
+  await expect(page.locator('.user-bubble')).toHaveText('直接从首页开始');
+});
+
+test('long replies share a bounded reading column with the composer and reflow on narrow screens', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    { name: 'aven_csrf', value: 'synthetic-csrf', url: 'http://127.0.0.1:3100' },
+  ]);
+  await markdownStream(page, [
+    '# 共同的阅读轴\n\n' +
+      '中文与 English 内容保持清晰。'.repeat(100) +
+      '\n\n```text\n' +
+      'long-line-'.repeat(100) +
+      '\n```',
+  ]);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '帮我整理今天的想法', exact: true }).click();
+  await expect(page.getByText('回复完成', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '打开导航', exact: true })).toBeHidden();
+  await expect(page.locator('.assistant-prose .token-plain').first()).toHaveCSS(
+    'color',
+    'rgb(237, 237, 237)',
+  );
+  const column = await page.locator('.assistant-prose').boundingBox();
+  const composer = await page.locator('.halo-composer').boundingBox();
+  expect(column).not.toBeNull();
+  expect(composer).not.toBeNull();
+  expect(column!.width).toBeLessThanOrEqual(761);
+  expect(Math.abs(column!.x - composer!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(column!.width - composer!.width)).toBeLessThanOrEqual(1);
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await expect(page.getByRole('button', { name: '打开导航', exact: true })).toBeVisible();
+  await expect(page.getByLabel('向 AVEN 提问', { exact: true })).toBeInViewport();
+  await expect(page.locator('.halo-composer')).toHaveCSS('box-shadow', 'none');
 });

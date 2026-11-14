@@ -8,6 +8,7 @@ import type { MeResponse } from '@aven/contracts';
 import { useChat } from '@/features/personal/app-state';
 import { Icon, type IconName } from '@/features/personal/icon';
 import { useProviderStatus } from '@/features/personal/use-provider-status';
+import { ShellNavigationContext } from './navigation-context';
 import './shell.css';
 
 const SIDEBAR_KEY = 'aven.shell.sidebar';
@@ -50,8 +51,7 @@ type NavItem = { href: string; label: string; icon: IconName; activeOn?: string[
 type NavSection = { id: string; label: string; items: NavItem[] };
 
 const personalPrimaryNav: NavItem[] = [
-  { href: '/', label: '首页', icon: 'new-chat' },
-  { href: '/chat', label: '对话', icon: 'chat' },
+  { href: '/', label: '对话', icon: 'chat', activeOn: ['/chat'] },
   { href: '/connections', label: '我的连接', icon: 'link' },
 ];
 
@@ -63,8 +63,7 @@ const personalSecondaryNav: NavItem[] = [
 ];
 
 const personalMobileNav: NavItem[] = [
-  { href: '/', label: '首页', icon: 'new-chat' },
-  { href: '/chat', label: '对话', icon: 'chat' },
+  { href: '/', label: '对话', icon: 'chat', activeOn: ['/chat'] },
   { href: '/connections', label: '连接', icon: 'link' },
   { href: '/apps', label: '应用', icon: 'apps' },
 ];
@@ -299,6 +298,9 @@ export function AppShell({
       className="shell aven-theme-halo personal-app"
       data-variant={variant}
       data-org-console={isOrganizationConsole || undefined}
+      data-conversation={
+        (variant === 'personal' && (pathname === '/' || pathname === '/chat')) || undefined
+      }
     >
       <aside className="shell-sidebar" data-collapsed={collapsed ? 'true' : 'false'}>
         <div className="shell-sidebar-top">
@@ -353,7 +355,11 @@ export function AppShell({
             {me ? <Avatar name={me.user.displayName} /> : <span className="shell-login">登录</span>}
           </Link>
         </header>
-        <main className="shell-main">{children}</main>
+        <main className="shell-main">
+          <ShellNavigationContext.Provider value={openDrawer}>
+            {children}
+          </ShellNavigationContext.Provider>
+        </main>
         <nav
           className="shell-bottomnav"
           aria-label={variant === 'personal' ? '个人导航' : '平台导航'}

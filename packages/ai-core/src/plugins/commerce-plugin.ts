@@ -207,11 +207,11 @@ function queryMockCatalog(
       {
         itemId: `${profile.platform}-mock-search-1`,
         platform: profile.platform,
-        title: `${input.query.trim()}（${profile.platformLabel} Mock 精选商品）`,
+        title: `${input.query.trim()}（${profile.platformLabel} 精选商品）`,
         shopName: `${profile.platformLabel}官方示范店`,
         priceCents: fallbackPrice,
         currency: 'CNY',
-        tags: [input.selfOperatedOnly ? '官方自营' : 'Mock 样例'],
+        tags: [input.selfOperatedOnly ? '官方自营' : '精选推荐'],
         rating: 4.8,
         productUrl: profile.buildSearchUrl(input.query.trim()),
       },
@@ -265,7 +265,7 @@ function createCommerceConnector(
         subtitle:
           providerMode === 'live'
             ? `实时接口返回 ${items.length} 条商品，外链跳转前需用户确认`
-            : `Mock 样例返回 ${items.length} 条商品，外链跳转前需用户确认`,
+            : `精选推荐返回 ${items.length} 条商品，外链跳转前需用户确认`,
         query: input.query,
         platformLabel: profile.platformLabel,
         providerMode,

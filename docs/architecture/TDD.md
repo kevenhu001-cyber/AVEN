@@ -792,6 +792,7 @@ SENTRY_DSN=
 |---|---|---|
 | [ADR-017](decisions/0017-personal-web-increment.md) | 个人 Web 限定接入、同源认证与无正文缓存 | 本轮用户授权实施；整体设计验收保持待审 |
 | [ADR-018](decisions/0018-personal-web-halo-ui.md) | 个人 Web Halo 深色界面、屏幕栈与 CSS 动效 | 已接受；视觉方向部分取代 ADR-017，功能范围不变 |
+| [ADR-021](decisions/0021-personal-web-refinement.md) | 首页与聊天共用工作区、阅读轴与手机导航收敛 | 用户授权实施；权限和数据边界不变，验证见 WEB-11 |
 | [ADR-001](decisions/0001-runtime-and-toolchain.md) | 运行时与工具链 | 已接受，M0-02/03 验证 |
 | [ADR-002](decisions/0002-identity-and-sessions.md) | 自建邮箱密码与会话 | 已接受，M2 实现 |
 | [ADR-003](decisions/0003-data-runtime.md) | Docker Compose 数据运行 | 部分被 ADR-008 取代 |

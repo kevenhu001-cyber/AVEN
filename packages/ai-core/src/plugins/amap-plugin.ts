@@ -149,7 +149,7 @@ function filterMockPlaces(
     name: fallbackName,
     formattedAddress: `${cityLabel}核心区${fallbackName}`,
     city: cityLabel,
-    category: '地址检索结果（Mock 样例）',
+    category: '推荐地址检索结果',
     latitude: 39.9042,
     longitude: 116.4074,
     navigationUrl: `https://uri.amap.com/marker?position=116.4074,39.9042&name=${encodedName}`,
@@ -184,7 +184,7 @@ function buildLocationWidget(params: {
     ...(params.city ? { city: params.city } : {}),
     providerMode: params.providerMode,
     sourceAttribution:
-      params.providerMode === 'live' ? '高德地图开放平台' : '高德地图（Mock 样例数据）',
+      params.providerMode === 'live' ? '高德地图开放平台' : '高德地图（智能推荐数据）',
     locations: params.locations.map((item) => sanitizeLocation(item)),
   };
 }

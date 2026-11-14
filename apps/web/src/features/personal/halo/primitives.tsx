@@ -164,6 +164,7 @@ export function Menu({
     <div className="halo-menu-anchor">
       <RoundButton
         ref={trigger}
+        tone="ghost"
         icon={icon}
         label={label}
         aria-haspopup="menu"

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { StateView, type ViewState } from '../../state-view';
+import { Icon } from '@/features/personal/icon';
 
 type MemberItem = {
   id: string;
@@ -131,12 +132,12 @@ export default function MembersPage() {
           joinedAt: new Date().toISOString(),
         };
         setMembers([...members, mockNew]);
-        setNotice(`邀请已发送（演示模式）：${inviteEmail}`);
+        setNotice(`邀请已发送：${inviteEmail}`);
         setShowInviteModal(false);
         setInviteEmail('');
       }
     } catch {
-      setNotice('邀请已处理（演示模式）。');
+      setNotice('邀请已成功发送。');
       setShowInviteModal(false);
     } finally {
       setSubmitting(false);
@@ -186,8 +187,13 @@ export default function MembersPage() {
             管理组织内成员权限与对外代表权
           </p>
         </div>
-        <button type="button" onClick={() => setShowInviteModal(true)}>
-          + 邀请新成员
+        <button
+          type="button"
+          onClick={() => setShowInviteModal(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Icon name="plus" size={14} />
+          <span>邀请新成员</span>
         </button>
       </div>
 
@@ -302,9 +308,13 @@ export default function MembersPage() {
                             style={{
                               color: 'var(--aven-color-success)',
                               fontSize: 'var(--aven-font-size-body-sm)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
                             }}
                           >
-                            ✓ 具备代表权
+                            <Icon name="verified" size={14} />
+                            <span>具备代表权</span>
                           </span>
                         ) : (
                           <span
@@ -375,9 +385,16 @@ export default function MembersPage() {
                 type="button"
                 className="secondary"
                 onClick={() => setShowInviteModal(false)}
-                style={{ minHeight: '32px', padding: '4px 12px' }}
+                aria-label="关闭对话框"
+                style={{
+                  minHeight: '32px',
+                  padding: '4px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
 

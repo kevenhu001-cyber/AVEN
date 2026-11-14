@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'AVEN · 对话与连接',
-  description: 'AVEN 个人 Web 开发验证版：对话、记忆与经授权的连接。',
+  description: 'AVEN：对话、记忆与经授权的智能协作平台。',
 };
 
 export const viewport: Viewport = {

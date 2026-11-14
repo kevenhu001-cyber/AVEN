@@ -11,6 +11,7 @@ const panelRoutes = {
 
 export async function openHome(page) {
   await page.goto('/');
+  await page.getByLabel('向 AVEN 提问', { exact: true }).waitFor({ state: 'visible' });
   await settle(page);
 }
 
@@ -29,7 +30,8 @@ export async function findInChat(page, query) {
 
 export async function newChat(page) {
   await openHome(page);
-  await page.getByRole('button', { name: '新对话', exact: true }).click();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menuitem', { name: '新对话', exact: true }).click();
   await page.getByLabel('向 AVEN 提问', { exact: true }).waitFor({ state: 'visible' });
   await settle(page);
 }

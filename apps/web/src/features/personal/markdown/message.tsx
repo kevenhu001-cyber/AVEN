@@ -345,6 +345,22 @@ function safeUrl(url: string) {
     : '';
 }
 
+function extractReasoning(rawText: string) {
+  const thinkStart = rawText.indexOf('<think>');
+  if (thinkStart === -1) {
+    return { thought: null, body: rawText };
+  }
+  const contentStart = thinkStart + 7;
+  const thinkEnd = rawText.indexOf('</think>', contentStart);
+  if (thinkEnd === -1) {
+    const thought = rawText.slice(contentStart).trim();
+    return { thought, body: '' };
+  }
+  const thought = rawText.slice(contentStart, thinkEnd).trim();
+  const body = (rawText.slice(0, thinkStart) + rawText.slice(thinkEnd + 8)).trim();
+  return { thought, body };
+}
+
 export const MarkdownMessage = memo(function MarkdownMessage({
   text,
   query,
@@ -364,7 +380,8 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   // Keep the full text while finding so match offsets stay aligned with the
   // highlight count computed from the whole answer.
   const throttled = useThrottledText(text, streaming && !query.trim());
-  const source = useMemo(() => normalizeMath(throttled), [throttled]);
+  const { thought, body } = useMemo(() => extractReasoning(throttled), [throttled]);
+  const source = useMemo(() => normalizeMath(body), [body]);
   const renderState = useMemo(
     () => ({ query, current, animate, streaming }),
     [query, current, animate, streaming],
@@ -372,18 +389,37 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   return (
     <RenderContext.Provider value={renderState}>
       <div className="markdown-message">
-        <Markdown
-          remarkPlugins={remarkPlugins}
-          rehypePlugins={[
-            [rehypeTextLeaves, { query, offset }],
-            [rehypeKatex, katexOptions],
-          ]}
-          components={components}
-          skipHtml
-          urlTransform={safeUrl}
-        >
-          {source}
-        </Markdown>
+        {thought ? (
+          <details className="grok-think-card" open={streaming && !body}>
+            <summary className="grok-think-summary">
+              <div
+                className="grok-think-status"
+                data-thinking={streaming && !body ? 'true' : undefined}
+              >
+                <Icon name="brain" size={14} className="grok-think-icon" />
+                <span>{streaming && !body ? '深度思考推演中…' : '已完成思考过程'}</span>
+              </div>
+              <span className="grok-think-hint">
+                {streaming && !body ? '实时推演' : '展开推演'}
+              </span>
+            </summary>
+            <div className="grok-think-content">{thought}</div>
+          </details>
+        ) : null}
+        {source ? (
+          <Markdown
+            remarkPlugins={remarkPlugins}
+            rehypePlugins={[
+              [rehypeTextLeaves, { query, offset }],
+              [rehypeKatex, katexOptions],
+            ]}
+            components={components}
+            skipHtml
+            urlTransform={safeUrl}
+          >
+            {source}
+          </Markdown>
+        ) : null}
       </div>
     </RenderContext.Provider>
   );

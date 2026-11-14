@@ -52,7 +52,6 @@ export function ChatPageClient() {
         connectorStatus={connectorStatus}
         celebrate={chat.celebrate}
         searchRequest={searchRequest}
-        onBack={() => router.push('/')}
         onOpenProfile={() => router.push('/profile')}
         onOpenApps={() => {
           if (!catalog.loaded) void catalog.load();

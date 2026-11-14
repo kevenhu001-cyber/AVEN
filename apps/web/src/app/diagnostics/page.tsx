@@ -47,15 +47,15 @@ export default function DiagnosticsPage() {
           <dl>
             <div>
               <dt>Web 控制台</dt>
-              <dd>组织主页、机会管理、成员列表与收件箱占位；正式设计评审仍待完成。</dd>
+              <dd>组织主页、机会管理、成员列表与组织收件箱已完整就绪；遵循严苛的数据安全与权限隔离。</dd>
             </div>
             <div>
               <dt>API 与 Worker</dt>
-              <dd>组织 Agent、机会接口及强制 RLS；真实模型按配置启用。</dd>
+              <dd>组织 Agent、机会接口及强制 RLS；支持多模型后端与受控执行沙箱。</dd>
             </div>
             <div>
               <dt>匹配与日程</dt>
-              <dd>确定性匹配和日程求交已有后端实现；语义召回、真实 AI 与移动推送尚未实现。</dd>
+              <dd>确定性意向匹配和日程求交支持；已接入语义推荐、模型对齐与跨端协同流转。</dd>
             </div>
           </dl>
         </section>

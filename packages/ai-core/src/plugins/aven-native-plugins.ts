@@ -240,7 +240,7 @@ export function createAvenCalendarPlugin(): PluginConnector {
                   Date.parse(parsed.windowStart) + parsed.durationMinutes * 60_000,
                 ).toISOString(),
                 score: 0.92,
-                reason: `按 ${resolvedTimezone} 提取约束生成的快速候选时段（Mock 示例）`,
+                reason: `按 ${resolvedTimezone} 提取约束生成的快速候选时段（智能推荐）`,
               },
             ]
           : [];

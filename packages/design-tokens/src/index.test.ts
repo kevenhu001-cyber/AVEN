@@ -130,14 +130,14 @@ describe('typography and layout scales', () => {
 describe('generated CSS', () => {
   const css = readFileSync(new URL('../dist/tokens.css', import.meta.url), 'utf8');
   it('emits typography, layout, and theme variables', () => {
-    expect(css).toContain('--aven-line-height-body: 1.65;');
+    expect(css).toContain('--aven-line-height-body: 1.75;');
     expect(css).toContain('--aven-font-weight-semibold: 600;');
     expect(css).toContain('--aven-font-family-sans:');
     expect(css).toContain('--aven-breakpoint-md: 768px;');
     expect(css).toContain(':root[data-theme="dark"]');
     expect(css).toContain('.aven-theme-halo,');
     expect(css).toContain(':root:has(.aven-theme-halo) {');
-    expect(css).toContain('--aven-halo-user-bubble: #5C5C5C;');
+    expect(css).toContain('--aven-halo-user-bubble: #303030;');
     expect(css).toContain('--aven-easing-spring:');
   });
   it('disables motion durations when reduced motion is requested', () => {

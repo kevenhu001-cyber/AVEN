@@ -12,6 +12,7 @@ import {
   duration,
   easing,
   haloExtras,
+  layout,
 } from '../dist/index.js';
 
 const variables = (values, prefix, unit = '') =>
@@ -27,6 +28,7 @@ const base = [
   variables(fontWeight, 'font-weight'),
   variables(letterSpacing, 'letter-spacing'),
   variables(breakpoint, 'breakpoint', 'px'),
+  variables(layout, 'layout', 'px'),
   variables(fontFamily, 'font-family'),
   variables(duration, 'duration', 'ms'),
   variables(easing, 'easing'),

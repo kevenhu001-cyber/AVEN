@@ -31,12 +31,10 @@
   }
   .personal-app button:focus-visible,
   .personal-app a:focus-visible,
-  .personal-app input:focus-visible,
-  .personal-app textarea:focus-visible,
   .personal-app select:focus-visible,
   .personal-app [tabindex='0']:focus-visible {
     outline: 2px solid var(--aven-color-focus-ring);
-    outline-offset: 3px;
+    outline-offset: 1px;
   }
   .personal-app input:not([type='checkbox']):not([type='radio']),
   .personal-app textarea,
@@ -46,17 +44,27 @@
     width: 100%;
     color: var(--aven-color-foreground);
     background: var(--aven-color-surface);
-    border: 1px solid var(--aven-color-control-border);
-    border-radius: 18px;
-    padding: 11px 14px;
+    border: 1px solid var(--aven-color-border);
+    border-radius: var(--aven-radius-lg);
+    padding: 10px 14px;
+    transition:
+      border-color var(--aven-duration-fast) var(--aven-easing-standard),
+      box-shadow var(--aven-duration-fast) var(--aven-easing-standard);
+  }
+  .personal-app input:focus,
+  .personal-app textarea:focus,
+  .personal-app select:focus {
+    outline: none;
+    border-color: var(--aven-color-control-border);
+    box-shadow: 0 0 0 1px var(--aven-color-control-border);
   }
   .personal-app textarea {
     resize: vertical;
   }
   .personal-app h1 {
-    font-size: 24px;
+    font-size: var(--aven-font-size-h1);
     line-height: 1.4;
-    font-weight: 500;
+    font-weight: var(--aven-font-weight-medium);
     margin: 8px 0 12px;
   }
   .personal-app h2 {
@@ -65,13 +73,13 @@
     margin: 0;
   }
   .personal-app h3 {
-    font-size: 16px;
+    font-size: var(--aven-font-size-body);
     line-height: 1.5;
     margin: 16px 0 10px;
-    font-weight: 500;
+    font-weight: var(--aven-font-weight-medium);
   }
   .personal-app p {
-    line-height: 1.65;
+    line-height: var(--aven-line-height-body);
     overflow-wrap: anywhere;
   }
 }
@@ -79,7 +87,7 @@
   color: var(--aven-color-foreground-secondary);
 }
 .personal-app .small {
-  font-size: 12px;
+  font-size: var(--aven-font-size-micro);
 }
 .personal-app .wrap {
   overflow-wrap: anywhere;
@@ -94,7 +102,7 @@
   background: var(--aven-color-warning-surface);
   border: 1px solid var(--aven-color-border);
   padding: 12px 16px;
-  border-radius: 18px;
+  border-radius: var(--aven-radius-lg);
   color: var(--aven-color-foreground);
 }
 .personal-app .button-row,
@@ -121,7 +129,7 @@
   place-items: center;
   background: var(--aven-color-surface-secondary);
   color: var(--aven-color-foreground);
-  border: 1px solid var(--aven-color-border-strong);
+  border: 1px solid var(--aven-color-border);
 }
 .auth-screen {
   min-height: 100dvh;
@@ -152,7 +160,7 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  font-size: 14px;
+  font-size: var(--aven-font-size-body-sm);
 }
 .session-cover {
   padding: 40px 20px;
@@ -164,7 +172,7 @@
   gap: 10px;
   align-items: flex-start;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--aven-font-size-body-sm);
 }
 .personal-app .check-row input {
   width: 18px;
@@ -235,13 +243,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--aven-font-size-caption);
   color: var(--aven-color-foreground-secondary);
 }
 .personal-app .widget-card {
   width: 100%;
   border-radius: var(--aven-radius-card);
-  border-color: var(--aven-color-border-strong);
+  border-color: var(--aven-color-border);
 }
 .widget-list {
   display: flex;
@@ -249,7 +257,7 @@
   gap: 6px;
   margin: 0;
   padding-left: 18px;
-  font-size: 14px;
+  font-size: var(--aven-font-size-body-sm);
   line-height: 1.6;
 }
 
@@ -282,7 +290,7 @@
   border-radius: 14px;
   color: var(--aven-color-foreground);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--aven-font-size-body-sm);
 }
 .account-links a:hover {
   background: var(--aven-color-surface-secondary);
@@ -295,7 +303,7 @@
   padding: 10px 12px;
   border-radius: 14px;
   background: var(--aven-color-surface-secondary);
-  font-size: 13px;
+  font-size: var(--aven-font-size-caption);
   color: var(--aven-color-foreground-secondary);
 }
 .provider-status[data-configured='true'] .shell-provider-dot {

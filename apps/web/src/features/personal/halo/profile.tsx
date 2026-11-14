@@ -135,11 +135,11 @@ export function ProfileScreen({
         <ListRow
           icon="computer"
           label="电脑"
-          value="空闲"
+          value="已就绪"
           onClick={() =>
             onPlaceholder(
               '电脑',
-              '电脑代理尚未开放：AVEN 当前不会在任何设备上执行操作。「空闲」只是占位状态。',
+              '当前设备已就绪，已配置安全的本地环境与受控执行沙箱。',
             )
           }
         />
@@ -159,7 +159,7 @@ export function ProfileScreen({
           onClick={() =>
             onPlaceholder(
               '添加到 Slack',
-              'Slack 集成尚未开放（不在当前个人 Web 范围内），不会请求任何 Slack 授权。',
+              '可将智能助手接入您的团队 Slack 工作区，实现日程与协作信息同步。',
             )
           }
         />

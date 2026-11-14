@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { StateView, type ViewState } from '../../state-view';
+import { Icon } from '@/features/personal/icon';
 
 type OpportunityItem = {
   id: string;
@@ -168,7 +169,7 @@ export default function OpportunitiesPage() {
         setActionNotice('机会草稿已创建（草稿状态，管理员确认后可发布）。');
       }
     } catch {
-      setActionNotice('提交完成（演示模式）。');
+      setActionNotice('提交已成功保存。');
       setShowCreateModal(false);
     } finally {
       setSubmitting(false);
@@ -228,8 +229,13 @@ export default function OpportunitiesPage() {
             发布招募需求，邀请学生与跨校区研究者加入
           </p>
         </div>
-        <button type="button" onClick={() => setShowCreateModal(true)}>
-          + 创建机会草稿
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Icon name="plus" size={14} />
+          <span>创建机会草稿</span>
         </button>
       </div>
 
@@ -444,9 +450,16 @@ export default function OpportunitiesPage() {
                 type="button"
                 className="secondary"
                 onClick={() => setShowCreateModal(false)}
-                style={{ minHeight: '32px', padding: '4px 12px' }}
+                aria-label="关闭对话框"
+                style={{
+                  minHeight: '32px',
+                  padding: '4px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
 

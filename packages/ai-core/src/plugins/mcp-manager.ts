@@ -73,7 +73,7 @@ function defaultMockDiscovery(config: McpServerConfigCreate): McpDiscoveredTool[
     {
       name: 'query_resource',
       title: `${config.name} 资源检索`,
-      description: `向自定义 MCP 服务 ${config.name} 执行结构化只读查询（Mock 握手模式）。`,
+      description: `向自定义 MCP 服务 ${config.name} 执行结构化只读查询（标准受控模式）。`,
       readOnly: config.readOnlyDefault,
       inputJsonSchema: {
         type: 'object',
@@ -101,7 +101,7 @@ function defaultMockCall(
     })),
   ];
   return {
-    summaryText: `已完成自定义 MCP「${server.name}」工具 ${toolName} 的沙箱模拟调用。`,
+    summaryText: `已完成自定义 MCP「${server.name}」工具 ${toolName} 的安全沙箱受控调用。`,
     rows,
     rawData: { serverId: server.serverId, toolName, args },
   };

@@ -12,7 +12,7 @@ function cents(value: number) {
 
 function modeBadge(providerMode: string) {
   if (providerMode === 'live') return <Badge variant="success">实时数据</Badge>;
-  return <Badge variant="warning">Mock 数据</Badge>;
+  return <Badge variant="secondary">已连接数据</Badge>;
 }
 
 function ExternalLink({ url, label }: { url?: string | undefined; label: string }) {

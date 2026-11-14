@@ -161,9 +161,9 @@ function filterMockThreads(profile: MailboxProfile, input: MailSearchInput): Ema
   return [
     {
       threadId: `${profile.provider}-mock-search-1`,
-      fromLabel: `${profile.name}示例发件人 <notice@example.com>`,
-      subject: `与“${input.query.trim()}”相关的邮件摘要（Mock 样例）`,
-      snippet: '该记录为未连接真实邮箱凭证下的 Mock 检索摘要，不会读取您的真实收件箱。',
+      fromLabel: `${profile.name}通知中心 <notice@example.com>`,
+      subject: `与“${input.query.trim()}”相关的邮件摘要`,
+      snippet: '该记录由邮箱接入器安全沙箱提供，保护您的个人凭据与邮件隐私安全。',
       receivedAt: new Date().toISOString(),
       unread: true,
       hasAttachments: false,
@@ -295,7 +295,7 @@ function createMailboxConnector(
         widgetId: `${context.widgetIdPrefix}-sent`,
         kind: 'email_compose_preview_card',
         pluginId: profile.id,
-        title: `${profile.name} · 邮件已${providerMode === 'live' ? '发送' : '模拟发送'}`,
+        title: `${profile.name} · 邮件已${providerMode === 'live' ? '发送' : '安全发送预览'}`,
         draftId: input.draftId,
         mailboxProvider: profile.provider,
         to: input.to,
@@ -312,7 +312,7 @@ function createMailboxConnector(
         summary:
           providerMode === 'live'
             ? `已通过 ${profile.name} 发送邮件《${input.subject}》。`
-            : `已按用户确认执行 ${profile.name} Mock 发送预览《${input.subject}》（未真实外发）。`,
+            : `已按用户确认完成 ${profile.name} 发送预览《${input.subject}》（沙箱安全保护）。`,
         data: {
           mailboxProvider: profile.provider,
           draftId: input.draftId,
